@@ -11,7 +11,6 @@
 
   /* Instruments not built yet. They show on the hub so the shape of the whole lab is visible. */
   const PLANNED = [
-    { field: 'water', name: 'Slow', tagline: 'Takes ages to warm up. And to cool.' },
   ];
 
   const plannedArt = '<svg viewBox="0 0 200 120" aria-hidden="true"><circle cx="100" cy="60" r="24" fill="none" stroke="currentColor" stroke-opacity=".5" stroke-width="2" stroke-dasharray="4 6"/></svg>';
