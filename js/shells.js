@@ -294,7 +294,7 @@
           const t = S.esc.t, hd2 = S.escFrom || (S.escFrom = handleAtEscape());
           const v = 120 + 55 * Math.sqrt(Math.max(0, S.esc.ke)), d = R * 0.14 + v * t;
           const x = hd2.x + Math.cos(hd2.ang) * d, y = hd2.y + Math.sin(hd2.ang) * d, a = clamp(1 - t / 1.6, 0, 1);
-          if (a > 0) { ctx.globalAlpha = a; ctx.beginPath(); ctx.arc(x, y, 9.5, 0, 7); ctx.fillStyle = pal.electron; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = pal.panel; ctx.stroke(); ctx.globalAlpha = 1; }
+          if (a > 0) { ctx.globalAlpha = a; BL.bigBall(ctx, x, y, 9.5, pal.electron, pal.panel); ctx.globalAlpha = 1; }
           else { S.esc = null; S.escFrom = null; }
         }
         if (S.flash) { S.flash.t += dt; const t = S.flash.t; if (t > 1) S.flash = null; else { ctx.beginPath(); ctx.arc(cx, cy, rs(k) * (0.6 + t * 0.6), 0, 7); ctx.lineWidth = 4; ctx.strokeStyle = BL.alpha(pal.electron, 1 - t); ctx.stroke(); } }

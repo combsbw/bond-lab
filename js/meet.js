@@ -448,15 +448,11 @@
         ctx.fillStyle = BL.alpha(col, charge ? 0.14 : 0.05); ctx.fill();
         ctx.lineWidth = 2.5; ctx.strokeStyle = BL.alpha(col, dim ? 0.3 : 0.65); ctx.stroke();
         // nucleus
-        ctx.beginPath(); ctx.arc(cx, L.cy, Math.max(7, L.r * 0.13), 0, 7);
-        ctx.fillStyle = col; ctx.fill();
-        ctx.lineWidth = 2.5; ctx.strokeStyle = pal.panel; ctx.stroke();
+        BL.bigBall(ctx, cx, L.cy, Math.max(7, L.r * 0.13), col, pal.panel);
         // outer electrons
         dots(el, cx, lost).forEach((d) => {
           if (S.held && S.phase === 'dragging' && S.held.i === d.i && ((S.held.side === 'a') === (cx === L.ax))) return;
-          ctx.beginPath(); ctx.arc(d.x, d.y, Math.max(5, L.r * 0.1), 0, 7);
-          ctx.fillStyle = pal.electron; ctx.fill();
-          ctx.lineWidth = 2; ctx.strokeStyle = pal.panel; ctx.stroke();
+          BL.bigBall(ctx, d.x, d.y, Math.max(5, L.r * 0.1), pal.electron, pal.panel);
         });
         const f = BL.fs(14);
         BL.label(ctx, el.sym + (charge > 0 ? '⁺' : charge < 0 ? '⁻' : ''), cx, L.cy + L.r + f * 1.4, { font: BL.font(800, 19, true) });
@@ -505,8 +501,7 @@
           const giver = S.held.side === 'a' ? S.a : S.b;
           ctx.setLineDash([5, 5]); ctx.lineWidth = 2; ctx.strokeStyle = BL.alpha(pal.electron, 0.7);
           ctx.beginPath(); ctx.moveTo(S.held.side === 'a' ? L.ax : L.bx, L.cy); ctx.lineTo(S.hx, S.hy); ctx.stroke(); ctx.setLineDash([]);
-          ctx.beginPath(); ctx.arc(S.hx, S.hy, Math.max(7, L.r * 0.13), 0, 7);
-          ctx.fillStyle = pal.electron; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = pal.panel; ctx.stroke();
+          BL.bigBall(ctx, S.hx, S.hy, Math.max(7, L.r * 0.13), pal.electron, pal.panel);
           const hold = BL.words.hold(giver.ie);
           BL.label(ctx, giver.sym + ' ' + hold.word + (BL.nums ? ' · ' + giver.ie.toFixed(1) + ' eV' : ''), S.hx, S.hy - f * 1.9,
             { font: BL.font(700, 13), border: pal.electron });
@@ -516,8 +511,7 @@
           const u = S.attempt.ok ? S.t : Math.sin(S.t * Math.PI) * 0.78;
           const x = from + (to - from) * u;
           const y = L.cy - Math.sin(Math.min(1, u) * Math.PI) * L.r * 0.55;
-          ctx.beginPath(); ctx.arc(x, y, Math.max(7, L.r * 0.13), 0, 7);
-          ctx.fillStyle = pal.electron; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = pal.panel; ctx.stroke();
+          BL.bigBall(ctx, x, y, Math.max(7, L.r * 0.13), pal.electron, pal.panel);
           if (!S.attempt.ok && S.t > 0.45) {
             BL.label(ctx, 'too expensive — it springs back', W / 2, L.cy - L.r * 1.25,
               { font: BL.font(800, 15), color: pal.types.covalent, border: pal.types.covalent });

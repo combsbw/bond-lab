@@ -38,14 +38,15 @@
 
   BL.register({
     id: 'cloud', field: 'atoms', order: 2, name: 'Cloud',
-    tagline: 'One electron, many snapshots, and a shape appears.',
-    lede: 'There is only one electron in this whole picture. Each dot is one snapshot of where it happened to be caught — take enough of them and a shape appears out of the scatter.',
+    tagline: 'One electron, many catches, and a shape fills in.',
+    lede: 'There is only one electron in this whole picture. Each sphere is one snapshot of where it happened to be caught — take enough of them and they fill in a shape, the region the electron actually occupies.',
     art, goals: GOALS,
 
     mount({ stage: stageHost, aux, dock }) {
       const S = {
         orb: A.ORBITALS[0], shape: 's', all: false, Z: 1,
         speed: 'fast', keep: 3000, running: true, twoTone: false, fit: true, slice: false,
+        show: 'both',
         yaw: 0.5, pitch: 0.35, spun: 0, userTurned: false,
         X: new Float32Array(CAP), Y: new Float32Array(CAP), Zc: new Float32Array(CAP), G: new Int8Array(CAP), R: new Float32Array(CAP),
         head: 0, count: 0, acc: 0, last: null, lastT: 0, total: 0, hist: null, histT: 0, hinted: false,
@@ -94,12 +95,20 @@
       const tonBtn = h('button', { type: 'button', class: 'chip soft', 'aria-pressed': 'false', onclick: () => { S.twoTone = !S.twoTone; sync(); } }, 'Show the two signs');
       const sliceBtn = h('button', { type: 'button', class: 'chip soft', 'aria-pressed': 'false', onclick: () => { S.slice = !S.slice; if (S.slice) goals.done('slice'); sync(); } }, 'Slice it open');
       const fitBtn = h('button', { type: 'button', class: 'chip soft', 'aria-pressed': 'true', onclick: () => { S.fit = !S.fit; sync(); } }, 'Zoom to fit');
+      const SHOWS = [['both', 'Both'], ['region', 'The region'], ['dots', 'The catches']];
+      const showBtns = SHOWS.map(([id, label]) =>
+        h('button', { type: 'button', 'aria-pressed': String(id === S.show), onclick: () => { S.show = id; sync(); } }, label));
+      dock.appendChild(h('section', {},
+        h('h2', {}, 'Show'),
+        h('div', { class: 'seg', role: 'group', 'aria-label': 'What to draw' }, showBtns),
+        h('p', { class: 'hint' }, 'The catches are where the electron was actually found, one sphere each. The region is the whole body it occupies, stacked up and seen through — thickest where it spends most of its time, see-through at the edges, and empty where there is nothing. The region fills in as the catches pile up, because that is where it comes from.')));
+
       dock.appendChild(h('section', {},
         h('h2', {}, 'Pull of the nucleus'),
         h('div', { class: 'chips', role: 'group', 'aria-label': 'Nucleus charge' }, zBtns),
         h('h2', { class: 'sub-h' }, 'Look'),
         h('div', { class: 'actions' }, fitBtn, tonBtn, sliceBtn),
-        h('p', { class: 'hint' }, 'Turn the cloud by dragging it. “Slice it open” keeps only the dots in a thin sheet through the middle, so empty rings show up. “Two signs” colors the two sides of the wave: red and blue are just labels for opposite signs, not charges.')));
+        h('p', { class: 'hint' }, 'Turn the cloud by dragging it. “Slice it open” keeps only a thin sheet through the middle, so empty rings show up. “Two signs” colors the two sides of the wave: red and blue are just labels for opposite signs, not charges.')));
 
       const goalsHost = h('section', {}, h('h2', {}, 'Try'));
       const goals = BL.goals(goalsHost, 'cloud', GOALS);
@@ -129,6 +138,7 @@
         }
         const o = S.orb, nodesR = o.n - o.l - 1, nodesA = o.l;
         orientNote.textContent = o.shapes.length > 1 ? 'The ' + o.id + ' group has ' + o.shapes.length + ' clouds, one pointing each way. Pick one, or stack them all.' : '';
+        showBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(SHOWS[i][0] === S.show)));
         speedBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(SPEEDS[i][0] === S.speed)));
         keepBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(KEEPS[i] === S.keep)));
         playBtn.textContent = S.running ? 'Pause' : 'Resume';
@@ -173,6 +183,159 @@
         if (S.spun > 2.2) goals.done('turn');
       });
 
+
+      /* ---------------- the orbital as a filled body ----------------
+         The catches say where the electron turns up. They do not, on their
+         own, say "this is the region it occupies" — which is the thing worth
+         walking away with. So behind the catches sits the orbital itself.
+
+         For every pixel, walk a line straight back into the screen and add up
+         how much electron is along it. Thin at the edges where the ray clips
+         the outside of the cloud, solid through the middle where it goes the
+         long way, and black-empty where there is a node. That is exactly what
+         looking through something translucent does, which is why it reads as
+         a body and not as a smear.
+
+         It is drawn small and scaled up: at this size the eye wants a smooth
+         body, and marching every screen pixel would cost more than it is
+         worth. The picture is only redone when the view has actually moved,
+         so turning the cloud stays at full frame rate. */
+      const fld = {
+        c: document.createElement('canvas'), w: 0, h: 0, img: null,
+        pos: null, neg: null, scratch: null, key: '', ready: false, ref: 0,
+      };
+      fld.g = fld.c.getContext('2d');
+
+      function fieldSize(W, H) {
+        const w = clamp(Math.round(W / 4.6), 44, 150);
+        const hh = Math.max(20, Math.round((w * H) / W));
+        if (fld.w === w && fld.h === hh) return;
+        fld.w = w; fld.h = hh;
+        fld.c.width = w; fld.c.height = hh;
+        fld.img = fld.g.createImageData(w, hh);
+        fld.pos = new Float32Array(w * hh);
+        fld.neg = new Float32Array(w * hh);
+        fld.scratch = new Float32Array(w * hh);
+        fld.key = '';
+      }
+
+      /* March the rays and fill the two sign buffers. */
+      function marchField(W, H, cx, cy, sc, cyaw, syaw, cp, sp, slab) {
+        const fw = fld.w, fh = fld.h;
+        const pos = fld.pos, neg = fld.neg;
+        pos.fill(0); neg.fill(0);
+
+        const o = S.orb;
+        const lut = A.radialTable(o.n, o.l);
+        const ang = A.ANG[S.shape];
+        const round = S.all;                        // a whole subshell is a sphere
+        const reach = A.orbitalExtent(o.n) / S.Z;   // nothing outside this
+        const reach2 = reach * reach;
+        const STEPS = 34, dz = (2 * reach) / STEPS;
+
+        // screen pixel -> the stage's own coordinates, then into the cloud's
+        const sx = W / fw, sy = H / fh, isc = 1 / sc;
+        const scratch = fld.scratch;
+        let nz = 0;
+        for (let fy = 0; fy < fh; fy++) {
+          const y1 = ((fy + 0.5) * sy - cy) * isc;
+          for (let fx = 0; fx < fw; fx++) {
+            const x1 = ((fx + 0.5) * sx - cx) * isc;
+            // the ray only passes through the cloud's sphere between these
+            const half2 = reach2 - x1 * x1 - y1 * y1;
+            if (half2 <= 0) continue;
+            let zHalf = Math.sqrt(half2);
+            if (S.slice) { if (zHalf > slab) zHalf = slab; }
+            let p = 0, q = 0;
+            const n = Math.max(2, Math.min(STEPS, Math.ceil((2 * zHalf) / dz)));
+            const step = (2 * zHalf) / n;
+            for (let k = 0; k < n; k++) {
+              const z2 = -zHalf + (k + 0.5) * step;
+              // undo the pitch, then the yaw, to get back to the cloud's own axes
+              const y0 = y1 * cp + z2 * sp, z1 = -y1 * sp + z2 * cp;
+              const x0 = x1 * cyaw - z1 * syaw, z0 = x1 * syaw + z1 * cyaw;
+              const r = Math.sqrt(x0 * x0 + y0 * y0 + z0 * z0);
+              if (r < 1e-7) continue;
+              const R = lut.at(r * S.Z);
+              if (R === 0) continue;
+              const Yv = round ? 1 : ang(x0 / r, y0 / r, z0 / r);
+              const psi = R * Yv;
+              const d = psi * psi * step;
+              if (R * Yv >= 0) p += d; else q += d;
+            }
+            const i = fy * fw + fx;
+            pos[i] = p; neg[i] = q;
+            if (p + q > 0) scratch[nz++] = p + q;
+          }
+        }
+        if (!nz) return 0;
+        /* A dumbbell has a handful of rays that go the whole length of a lobe
+           and are far brighter than anything else. Taking the brightest as the
+           reference would leave the rest of the cloud nearly invisible, so the
+           reference is a high percentile instead: a level most of the bright
+           part reaches, with the few outliers simply saturating. */
+        const use = scratch.subarray(0, nz);
+        use.sort();
+        return use[Math.min(nz - 1, Math.floor(nz * 0.97))];
+      }
+
+      /* Paint the two buffers into pixels. */
+      function paintField(pal, peak) {
+        if (peak <= 0) { fld.ready = false; return; }
+        fld.ref = fld.ref > 0 ? fld.ref + (peak - fld.ref) * 0.4 : peak;
+        /* Saturate well below the brightest ray, so the middle of the cloud
+           reads as a solid body instead of a single blinding dot. */
+        const ref = Math.max(1e-12, fld.ref * 0.22);
+        const d = fld.img.data, pos = fld.pos, neg = fld.neg;
+        const cloudRGB = BL.rgb(pal.cloud), posRGB = BL.rgb(pal.pos), negRGB = BL.rgb(pal.neg);
+        /* The density of a 1s cloud runs over four orders of magnitude between
+           the middle and the rim. Shown straight, everything but a dot in the
+           centre would be invisible, so the scale is compressed hard — the same
+           thing every photograph of a nebula does, and for the same reason. */
+        const GAMMA = 0.34, top = pal.dark ? 0.95 : 0.92;
+        /* A cloud has no edge — it only gets fainter forever. Drawn that way
+           it fills the frame with haze and never looks like a thing. So the
+           last whisper of it is dropped: below this, nothing is painted, and
+           just above it the body fades in smoothly. The line that comes out
+           sits near where a textbook draws its boundary surface, and for the
+           same reason — it is where the electron has effectively stopped. */
+        const LO = 0.2;
+        for (let i = 0, p = 0; i < pos.length; i++, p += 4) {
+          const a1 = pos[i], a2 = neg[i], tot = a1 + a2;
+          if (tot <= 0) { d[p + 3] = 0; continue; }
+          const u = Math.pow(tot / ref, GAMMA);
+          if (u <= LO) { d[p + 3] = 0; continue; }
+          const t = u >= 1 ? 1 : (u - LO) / (1 - LO);
+          const a = t * t * (3 - 2 * t) * top;
+          if (a <= 0.004) { d[p + 3] = 0; continue; }
+          const rgb = (S.twoTone && !S.all) ? (a1 >= a2 ? posRGB : negRGB) : cloudRGB;
+          d[p] = rgb[0]; d[p + 1] = rgb[1]; d[p + 2] = rgb[2];
+          d[p + 3] = a > 1 ? 255 : (a * 255) | 0;
+        }
+        fld.g.putImageData(fld.img, 0, 0);
+        fld.ready = true;
+      }
+
+      function drawField(pal, W, H, cx, cy, sc, cyaw, syaw, cp, sp, slab, fade) {
+        if (fade <= 0.002) return;
+        fieldSize(W, H);
+        // redo it when the picture would actually be different, not every frame
+        const key = [S.orb.id, S.shape, S.all, S.Z, S.slice, S.twoTone, S.fit, pal.dark,
+          Math.round(S.yaw * 24), Math.round(S.pitch * 24), Math.round(sc)].join('|');
+        if (key !== fld.key) {
+          fld.key = key;
+          paintField(pal, marchField(W, H, cx, cy, sc, cyaw, syaw, cp, sp, slab));
+        }
+        if (!fld.ready) return;
+        const sm = ctx.imageSmoothingEnabled;
+        ctx.imageSmoothingEnabled = true;
+        if (ctx.imageSmoothingQuality) ctx.imageSmoothingQuality = 'high';
+        ctx.globalAlpha = fade;
+        ctx.drawImage(fld.c, 0, 0, fld.w, fld.h, 0, 0, W, H);
+        ctx.globalAlpha = 1;
+        ctx.imageSmoothingEnabled = sm;
+      }
+
       /* ---------------- frame ---------------- */
       const extent = (n, Z) => ({ 1: 5.2, 2: 17, 3: 30 }[n]) / Z;
       function frame(dt) {
@@ -196,33 +359,46 @@
         const showBar = barPx > 18 && barPx < W * 0.6;
 
         const slab = (Math.min(W, H) * 0.46 / sc) * 0.09;
-        // the dots
-        const cnt = Math.min(S.count, S.keep), blend = pal.dark ? 'lighter' : 'source-over';
-        ctx.save(); ctx.globalCompositeOperation = blend;
-        const ds = pal.dark ? 2.6 : 2.9, big = cnt < 60 ? 5 : cnt < 400 ? 3.6 : ds;
-        const aBase = cnt < 60 ? 0.95 : cnt < 400 ? 0.8 : pal.dark ? 0.5 : 0.55;
-        let lastXY = null;
-        for (let k = 0; k < cnt; k++) {
-          const i = (S.head - 1 - k + CAP * 2) % CAP;
-          const x0 = S.X[i], y0 = S.Y[i], z0 = S.Zc[i];
-          const x1 = x0 * cyaw + z0 * syaw, z1 = -x0 * syaw + z0 * cyaw;
-          const y2 = y0 * cp - z1 * sp, z2 = y0 * sp + z1 * cp;
-          const px = cx + x1 * sc, py = cy + y2 * sc;
-          if (px < -4 || px > W + 4 || py < -4 || py > H + 4) continue;
-          if (S.slice && Math.abs(z2) > slab) continue;
-          const depth = clamp(0.5 + z2 / (ext * 2.2 || 1), 0, 1);       // 1 = near the viewer
-          const a = clamp(aBase * (0.55 + 0.6 * depth), 0, 1);
-          ctx.fillStyle = S.twoTone ? BL.alpha(S.G[i] > 0 ? pal.pos : pal.neg, Math.round(a * 20) / 20) : BL.alpha(pal.cloud, Math.round(a * 20) / 20);
-          const sz = big * (0.8 + 0.4 * depth);
-          ctx.fillRect(px - sz / 2, py - sz / 2, sz, sz);
-          if (k === 0) lastXY = [px, py];
+        const cnt = Math.min(S.count, S.keep);
+
+        /* The body comes in as the snapshots pile up, so the story still runs
+           the right way round: scatter first, then a shape out of the scatter. */
+        if (S.show !== 'dots') {
+          drawField(pal, W, H, cx, cy, sc, cyaw, syaw, cp, sp, slab, clamp(cnt / 260, 0, 1));
         }
-        ctx.restore();
+
+        // the snapshots, each one a little sphere rather than a speck of dirt
+        let lastXY = null;
+        if (S.show !== 'region') {
+          const blend = pal.dark ? 'lighter' : 'source-over';
+          ctx.save(); ctx.globalCompositeOperation = blend;
+          const base = cnt < 60 ? 3.1 : cnt < 400 ? 2.3 : cnt < 2000 ? 1.75 : 1.4;
+          const aBase = cnt < 60 ? 1 : cnt < 400 ? 0.9 : cnt < 2000 ? 0.7 : 0.55;
+          // past a couple of thousand the body carries the shape, so the
+          // snapshots thin out into texture instead of becoming a solid mat
+          const stride = cnt > 2600 ? Math.ceil(cnt / 2600) : 1;
+          for (let k = 0; k < cnt; k += stride) {
+            const i = (S.head - 1 - k + CAP * 2) % CAP;
+            const x0 = S.X[i], y0 = S.Y[i], z0 = S.Zc[i];
+            const x1 = x0 * cyaw + z0 * syaw, z1 = -x0 * syaw + z0 * cyaw;
+            const y2 = y0 * cp - z1 * sp, z2 = y0 * sp + z1 * cp;
+            const px = cx + x1 * sc, py = cy + y2 * sc;
+            if (px < -6 || px > W + 6 || py < -6 || py > H + 6) continue;
+            if (S.slice && Math.abs(z2) > slab) continue;
+            const depth = clamp(0.5 + z2 / (ext * 2.2 || 1), 0, 1);       // 1 = near the viewer
+            const a = clamp(aBase * (0.5 + 0.65 * depth), 0, 1);
+            const col = S.twoTone ? (S.G[i] > 0 ? pal.pos : pal.neg) : pal.cloud;
+            BL.ball(ctx, px, py, base * (0.78 + 0.45 * depth), col, Math.round(a * 20) / 20);
+            if (k === 0) lastXY = [px, py];
+          }
+          ctx.restore();
+        }
 
         // the nucleus, and the most recent snapshot
-        ctx.beginPath(); ctx.arc(cx, cy, 5, 0, 7); ctx.fillStyle = pal.fg; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = pal.panel; ctx.stroke();
+        BL.bigBall(ctx, cx, cy, 5.5, pal.fg, pal.panel);
         if (lastXY && (S.speed === 'one' || !S.running || cnt < 40)) {
           const age = (performance.now() - S.lastT) / 1000, pulse = BL.reduced ? 1 : 1 + 0.25 * Math.sin(age * 8);
+          BL.ball(ctx, lastXY[0], lastXY[1], 4.5, pal.electron);
           ctx.strokeStyle = pal.electron; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(lastXY[0], lastXY[1], 11 * pulse, 0, 7); ctx.stroke();
           BL.label(ctx, 'the electron, caught right now', clamp(lastXY[0], 120, W - 120), lastXY[1] < H * 0.18 ? lastXY[1] + 28 : lastXY[1] - 24, { font: BL.font(700, 13), border: pal.electron });
         }

@@ -283,7 +283,7 @@
         const order = S.el.slice().sort((a, b) => (S.drag && S.drag.e === a ? 1 : 0) - (S.drag && S.drag.e === b ? 1 : 0));
         order.forEach((e) => {
           const dragging = S.drag && S.drag.e === e, x = dragging ? S.drag.x : e.x, y = dragging ? S.drag.y : e.y;
-          ctx.beginPath(); ctx.arc(x, y, dragging ? 12 : 9.5, 0, 7); ctx.fillStyle = pal.electron; ctx.fill(); ctx.lineWidth = 2.5; ctx.strokeStyle = dragging ? pal.fg : pal.panel; ctx.stroke();
+          BL.bigBall(ctx, x, y, dragging ? 12 : 9.5, pal.electron, dragging ? pal.fg : pal.panel);
         });
         if (!S.hinted && !BL.reduced && S.el.length) {
           const e0 = S.el[S.el.length - 1], pulse = 1 + 0.2 * Math.sin(performance.now() / 260);

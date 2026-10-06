@@ -136,6 +136,106 @@
     return { x: x0, y: y - h / 2, w, h };
   };
 
+
+  /* -------------------------------------------------------------------
+     Electrons.
+
+     An electron drawn as a single square pixel reads as dirt on the screen.
+     Drawn as a little sphere — a highlight, a solid body, one pixel of soft
+     edge — it reads as a thing, and a cloud of them reads as a cloud of
+     things. The shading is a lie (an electron has no surface to catch the
+     light), but it is the lie that makes the picture legible, and it is the
+     same lie every chemistry book tells.
+
+     Spheres are pre-drawn once per colour and size and then stamped, because
+     an orbital can want several thousand of them in a single frame.
+     ------------------------------------------------------------------- */
+  const ballCache = new Map();
+  const isHex = (c) => typeof c === 'string' && c.charCodeAt(0) === 35;
+
+  BL.ballSprite = function (color, r) {
+    const key = color + '|' + r;
+    let c = ballCache.get(key);
+    if (c) return c;
+    const pad = 1.5, d = Math.max(3, Math.ceil((r + pad) * 2));
+    c = document.createElement('canvas');
+    c.width = d; c.height = d;
+    const g = c.getContext('2d'), m = d / 2;
+    if (isHex(color)) {
+      // the highlight is only worth drawing once a ball is big enough to see it
+      const hx = r >= 3 ? m - r * 0.32 : m, hy = r >= 3 ? m - r * 0.36 : m;
+      const grd = g.createRadialGradient(hx, hy, r * 0.05, m, m, r);
+      grd.addColorStop(0, r >= 3 ? BL.mix(color, '#ffffff', 0.5) : color);
+      grd.addColorStop(0.5, color);
+      grd.addColorStop(0.86, color);
+      grd.addColorStop(1, BL.alpha(color, 0));
+      g.fillStyle = grd;
+    } else {
+      g.fillStyle = color;
+    }
+    g.beginPath(); g.arc(m, m, r, 0, Math.PI * 2); g.fill();
+    if (ballCache.size > 240) ballCache.clear();
+    ballCache.set(key, c);
+    return c;
+  };
+
+  /* One electron. r is quantized so the sprite cache stays small. */
+  BL.ball = function (ctx, x, y, r, color, alpha) {
+    const rq = Math.max(0.75, Math.round(r * 4) / 4);
+    const sp = BL.ballSprite(color, rq);
+    const h = sp.width / 2;
+    if (alpha != null && alpha < 1) {
+      const prev = ctx.globalAlpha;
+      ctx.globalAlpha = prev * Math.max(0, alpha);
+      ctx.drawImage(sp, x - h, y - h);
+      ctx.globalAlpha = prev;
+    } else {
+      ctx.drawImage(sp, x - h, y - h);
+    }
+  };
+
+  /* An electron that is meant to be looked at rather than counted: the same
+     sphere with a ring around it, for the one the learner is holding. */
+  BL.bigBall = function (ctx, x, y, r, color, ringColor) {
+    BL.ball(ctx, x, y, r, color);
+    if (ringColor) {
+      ctx.lineWidth = Math.max(1.5, r * 0.3);
+      ctx.strokeStyle = ringColor;
+      ctx.beginPath(); ctx.arc(x, y, r + ctx.lineWidth * 0.5, 0, Math.PI * 2); ctx.stroke();
+    }
+  };
+
+  /* -------------------------------------------------------------------
+     Space-filling clouds.
+
+     A scatter of dots says "the electron turns up here sometimes". It does
+     not say "this is the region the electron occupies", which is the thing a
+     learner has to walk away holding. So wherever there is a cloud, there is
+     also a filled body of colour whose opacity is the density — thin where
+     the electron rarely goes, solid where it mostly lives — and the dots sit
+     on top of it as texture rather than as the whole story.
+
+     `blob` is the flat version: one soft, filled lobe. Clouds with two lobes
+     draw two of them and let the overlap do the rest.
+     ------------------------------------------------------------------- */
+  BL.blob = function (ctx, x, y, rx, ry, angle, color, peak) {
+    if (!(rx > 0) || !(ry > 0)) return;
+    ctx.save();
+    ctx.translate(x, y);
+    if (angle) ctx.rotate(angle);
+    ctx.scale(rx, ry);
+    const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+    const a = peak == null ? 0.5 : peak;
+    // a few stops rather than two, so the body reads as solid and only the rim fades
+    g.addColorStop(0, BL.alpha(color, a));
+    g.addColorStop(0.42, BL.alpha(color, a * 0.88));
+    g.addColorStop(0.72, BL.alpha(color, a * 0.5));
+    g.addColorStop(1, BL.alpha(color, 0));
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(0, 0, 1, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  };
+
   /* Minimal element builder: h('div', {class:'x', onclick: fn}, child, 'text') */
   BL.h = function (tag, attrs, ...kids) {
     const el = document.createElement(tag);

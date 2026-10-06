@@ -415,8 +415,9 @@
         const gl = ctx.createRadialGradient(x, y, 1, x, y, r * (2.3 + 2.2 * S.warm));
         gl.addColorStop(0, BL.alpha(pal.electron, (0.55 + 0.4 * S.warm) * a)); gl.addColorStop(1, BL.alpha(pal.electron, 0));
         ctx.fillStyle = gl; ctx.beginPath(); ctx.arc(x, y, r * (2.3 + 2.2 * S.warm), 0, 7); ctx.fill();
-        ctx.globalAlpha = a; ctx.beginPath(); ctx.arc(x, y, r, 0, 7); ctx.fillStyle = pal.panel; ctx.fill();
-        ctx.lineWidth = 4; ctx.strokeStyle = pal.electron; ctx.stroke(); ctx.globalAlpha = 1;
+        ctx.globalAlpha = a;
+        BL.ball(ctx, x, y, r, pal.electron);
+        ctx.globalAlpha = 1;
       }
       function wavePacket(x, y, ux, uy, E, alpha, bright) {
         const pal = BL.pal, col = photonRGB(E), len = 46, nx = -uy, ny = ux, wl = 7 + 28 / Math.max(0.6, Math.sqrt(E));

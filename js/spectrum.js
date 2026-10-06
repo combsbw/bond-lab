@@ -234,8 +234,8 @@
       const neighX = () => molX() + (bondLen() / 2 + S.nr) * L.unit;
 
       /* ---------------- cloud dots ---------------- */
-      const N = 760;
-      const mk = () => ({ u: clamp(randn(), -2.4, 2.4), v: clamp(randn(), -2.4, 2.4), lobe: Math.random() < 0.5 ? -1 : 1, s: 0.45 + Math.random() * 0.55 });
+      const N = 120;
+      const mk = () => ({ u: clamp(randn(), -1.9, 1.9), v: clamp(randn(), -1.9, 1.9), lobe: Math.random() < 0.5 ? -1 : 1, s: 0.45 + Math.random() * 0.55 });
       const P = Array.from({ length: N }, mk);
 
       /* ---------------- pointer ---------------- */
@@ -444,7 +444,6 @@
         const ax = cx - d / 2, bx = cx + d / 2;
         const t = 0.5 + 0.5 * u;
         const clx = ax + t * d + dq * L.unit * 1.2;
-        const blend = pal.dark ? 'lighter' : 'source-over';
 
         // the sticks: one line per shared pair, so a triple bond LOOKS tighter
         if (u < IONIC_AT) {
@@ -458,17 +457,24 @@
           ctx.lineCap = 'butt';
         }
 
-        // the shared cloud
+        /* The shared cloud is a body, not a sprinkle: a filled region whose
+           opacity is how much electron is there. Two overlapping lobes while
+           the sharing is even, merging into one as it leans. The spheres that
+           go on top afterwards are texture — they say "this is made of
+           electrons" — but the shape is carried by the fill. */
         const easeU = Math.pow(u, 0.8);
         const sx = Math.max(9, lerp(d * 0.2, rB * 0.44, easeU));
         const sy = Math.max(9, lerp(d * 0.17 * (1 + 0.18 * (S.order - 1)), rB * 0.44, easeU));
         const lobeDx = 0.17 * d * (1 - u);
         ctx.save();
-        ctx.globalCompositeOperation = blend;
-        ctx.translate(clx, cy); ctx.scale(sx * 2.7 + lobeDx, sy * 2.7);
-        const gg = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
-        gg.addColorStop(0, BL.alpha(pal.cloud, pal.dark ? 0.3 : 0.27)); gg.addColorStop(1, BL.alpha(pal.cloud, 0));
-        ctx.fillStyle = gg; ctx.beginPath(); ctx.arc(0, 0, 1, 0, 7); ctx.fill();
+        const peak = pal.dark ? 0.72 : 0.66;
+        if (lobeDx > 1) {
+          BL.blob(ctx, clx, cy, sx * 1.75 + lobeDx, sy * 1.7, 0, pal.cloud, peak);
+          BL.blob(ctx, clx - lobeDx, cy, sx * 1.9, sy * 2.0, 0, pal.cloud, peak * 0.8);
+          BL.blob(ctx, clx + lobeDx, cy, sx * 1.9, sy * 2.0, 0, pal.cloud, peak * 0.8);
+        } else {
+          BL.blob(ctx, clx, cy, sx * 2.2, sy * 2.2, 0, pal.cloud, peak);
+        }
         ctx.restore();
 
         // atoms
@@ -480,16 +486,15 @@
           ctx.strokeStyle = BL.alpha(pal.fg, 0.55); ctx.lineWidth = 2; ctx.stroke();
         });
 
-        // dots
+        // the electrons themselves, scattered through the body
         ctx.save();
-        ctx.globalCompositeOperation = blend;
-        const rc = BL.reduced ? 0.01 : 0.06;
+        const rc = BL.reduced ? 0.01 : 0.05;
         for (let i = 0; i < Math.ceil(N * rc); i++) P[(Math.random() * N) | 0] = mk();
-        const ds = pal.dark ? 2.4 : 2.6, base = pal.dark ? 0.3 : 0.38;
+        const dr = Math.max(1.5, L.unit * 0.045), base = pal.dark ? 0.42 : 0.5;
         for (let i = 0; i < N; i++) {
           const q = P[i];
-          ctx.fillStyle = BL.alpha(pal.cloud, Math.round((base + 0.5 * q.s) * 20) / 20);
-          ctx.fillRect(clx + q.lobe * lobeDx + q.u * sx - ds / 2, cy + q.v * sy - ds / 2, ds, ds);
+          BL.ball(ctx, clx + q.lobe * lobeDx + q.u * sx, cy + q.v * sy,
+            dr * (0.72 + 0.5 * q.s), pal.cloud, Math.round((base + 0.4 * q.s) * 20) / 20);
         }
         ctx.restore();
 

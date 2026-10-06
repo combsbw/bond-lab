@@ -161,6 +161,52 @@
       },
     };
   }
+
+  /* ---------------- orbitals as a filled volume ----------------
+     The sampler above answers "where might the electron be caught?", one
+     catch at a time. A drawing also has to answer the other question — "what
+     region does it occupy?" — which means adding the density up along the
+     line of sight for every pixel on the screen. That is a few hundred
+     thousand evaluations of the radial function per picture, so the radial
+     function gets turned into a lookup table once and read off it after.
+
+     Everything here is in Z = 1 units (a0). A heavier nucleus pulls the same
+     shape in by a factor of Z, so a drawing scales its coordinates and
+     nothing has to be rebuilt. */
+
+  /* Beyond this radius there is nothing left worth drawing (a0, at Z = 1). */
+  const EXTENT = { 1: 5.6, 2: 18, 3: 38 };
+  const orbitalExtent = (n) => EXTENT[n];
+
+  const lutCache = new Map();
+  /* radial(n, l, r) sampled on an even grid out to the extent. `.at(r)`
+     interpolates, and reads 0 past the end. */
+  function radialTable(n, l, M) {
+    const key = n + ',' + l + ',' + (M || 1024);
+    const hit = lutCache.get(key);
+    if (hit) return hit;
+    const steps = M || 1024, rmax = EXTENT[n], dr = rmax / steps;
+    const tab = new Float64Array(steps + 2);
+    for (let i = 0; i <= steps; i++) tab[i] = radial(n, l, i * dr);
+    const t = {
+      tab, rmax, dr, inv: 1 / dr, steps,
+      at(r) {
+        if (r >= rmax) return 0;
+        const u = r * this.inv, i = u | 0, f = u - i;
+        return tab[i] + (tab[i + 1] - tab[i]) * f;
+      },
+    };
+    if (lutCache.size > 24) lutCache.clear();
+    lutCache.set(key, t);
+    return t;
+  }
+
+  /* Every real orbital in a subshell, added together, comes out perfectly
+     round — that is the addition theorem, and it is why a filled p subshell
+     has no direction at all. Worth a named function, because it saves the
+     drawing from summing three or five shapes to get a sphere. */
+  const subshellIsRound = () => true;
+
   /* Orbitals offered in Cloud. `shapes` are the real-valued versions that make up each subshell. */
   const ORBITALS = [
     { id: '1s', n: 1, l: 0, shapes: ['s'], names: ['1s'] },
@@ -174,7 +220,7 @@
   const api = {
     RY, HC, EL, bySym, SUBSHELLS, configN, shellsN, zeff, shellCap, valenceN, isFull,
     levelE, gapE, wavelength, wavelengthRGB, photon,
-    radial, radialProb, rMax, ANG, sampler, ORBITALS,
+    radial, radialProb, rMax, ANG, sampler, radialTable, orbitalExtent, subshellIsRound, ORBITALS,
   };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else (root.BL = root.BL || {}).atoms = api;

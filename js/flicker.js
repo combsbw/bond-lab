@@ -24,6 +24,13 @@
     { id: 'liquid', text: 'Cool a crowd of atoms until they cling together.' },
     { id: 'compare', text: 'Sweep the temperature for three different gases and compare.' },
   ];
+  /* Where the electrons sit inside a cloud. Fixed once, so that when the
+     cloud slides off-centre they slide with it — which is the whole point. */
+  const SPECKS = Array.from({ length: 26 }, (_, i) => {
+    const a = i * 2.39996, r = Math.sqrt((i + 0.5) / 26) * 0.76;
+    return { x: Math.cos(a) * r, y: Math.sin(a) * r, s: ((i * 37) % 100) / 100 };
+  });
+
   const art =
     '<svg viewBox="0 0 200 120" aria-hidden="true"><g stroke="currentColor" stroke-width="3" fill="var(--wash)"><circle cx="64" cy="60" r="32"/><circle cx="140" cy="60" r="32"/></g>' +
     '<circle cx="58" cy="60" r="4.5" fill="var(--fg)"/><circle cx="146" cy="60" r="4.5" fill="var(--fg)"/>' +
@@ -123,7 +130,7 @@
         S.seenGi.add(i); if (S.seenGi.has(0) && S.seenGi.has(4)) goals.done('big');
       }
       function setR(r) {
-        S.r = clamp(r, 3.0, 10.0); rOut.textContent = S.r.toFixed(1) + ' Å'; rSl.value = String(Math.round(S.r * 10));
+        S.r = clamp(r, 3.0, 10.0); rOut.textContent = ''; rOut.append(BL.words.gap(S.r), BL.numv(' · ' + S.r.toFixed(1) + ' Å')); rSl.value = String(Math.round(S.r * 10));
         if (S.D) S.D.r = S.r;
         if (S.r <= 4.6) S.seenR.near = true; if (S.r >= 8) S.seenR.far = true; if (S.seenR.near && S.seenR.far) goals.done('range');
       }
@@ -202,11 +209,21 @@
         ctx.fillStyle = pal.muted; ctx.font = BL.font(400, 13); ctx.textAlign = 'center'; ctx.fillText('touching', q.x0 + touch * u, q.cy + R * 1.5 + BL.fs(13) * 1.2);
         for (let i = 0; i < 2; i++) {
           const nx = xs[i], dx = d.d[i * 2] * u, dy = d.d[i * 2 + 1] * u, cxx = nx + dx, cyy = q.cy + dy;
-          const grad = ctx.createRadialGradient(cxx, cyy, R * 0.1, cxx, cyy, R);
-          grad.addColorStop(0, BL.alpha(pal.cloud, pal.dark ? 0.55 : 0.5)); grad.addColorStop(1, BL.alpha(pal.cloud, pal.dark ? 0.12 : 0.1));
+          /* A filled body, densest in the middle, with the electrons it is
+             made of scattered through it — so "the cloud sloshes" is something
+             you can see happening to a thing rather than to a haze. */
+          const grad = ctx.createRadialGradient(cxx, cyy, R * 0.06, cxx, cyy, R);
+          grad.addColorStop(0, BL.alpha(pal.cloud, pal.dark ? 0.68 : 0.62));
+          grad.addColorStop(0.55, BL.alpha(pal.cloud, pal.dark ? 0.5 : 0.45));
+          grad.addColorStop(1, BL.alpha(pal.cloud, pal.dark ? 0.16 : 0.14));
           ctx.beginPath(); ctx.arc(cxx, cyy, R, 0, 7); ctx.fillStyle = grad; ctx.fill(); ctx.lineWidth = 2.5; ctx.setLineDash([6, 5]); ctx.strokeStyle = BL.alpha(pal.cloud, 0.9); ctx.stroke(); ctx.setLineDash([]);
+          const er = Math.max(1.6, R * 0.055);
+          for (let e = 0; e < SPECKS.length; e++) {
+            const sp = SPECKS[e];
+            BL.ball(ctx, cxx + sp.x * R, cyy + sp.y * R, er * (0.75 + 0.5 * sp.s), pal.cloud, 0.5 + 0.35 * sp.s);
+          }
           // nucleus
-          ctx.beginPath(); ctx.arc(nx, q.cy, Math.max(7, R * 0.09), 0, 7); ctx.fillStyle = pal.pos; ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = pal.panel; ctx.stroke();
+          BL.bigBall(ctx, nx, q.cy, Math.max(7, R * 0.09), pal.pos, pal.panel);
           // the lopsidedness: where the cloud has gone is − and where it left is +
           const m = Math.hypot(d.d[i * 2], d.d[i * 2 + 1]);
           if (m > 0.1) {
@@ -233,7 +250,8 @@
           BL.label(ctx, S.inst < 0 ? 'pulling together, right now' : 'pushing apart, right now', mid, y - 22, { font: BL.font(700, 13), border: col });
         }
         ctx.fillStyle = pal.fg; ctx.font = BL.font(800, 20, true); ctx.textAlign = 'left'; ctx.fillText(g.name, 14, 10 + BL.fs(20));
-        ctx.font = BL.font(400, 14); ctx.fillStyle = pal.muted; ctx.fillText(S.r.toFixed(1) + ' Å apart', 14, 10 + BL.fs(20) + BL.fs(14) * 1.3);
+        ctx.font = BL.font(400, 14); ctx.fillStyle = pal.muted;
+        ctx.fillText(BL.words.gap(S.r) + (BL.nums ? ' · ' + S.r.toFixed(1) + ' Å' : ''), 14, 10 + BL.fs(20) + BL.fs(14) * 1.3);
         if (!S.hinted && !BL.reduced) BL.label(ctx, 'drag a cloud off-center', W * 0.24, H - 18 - BL.fs(14) * 0.4, { font: BL.font(700, 14), border: pal.ui });
         ctx.beginPath(); ctx.arc(q.x1, q.cy, Math.max(7, R * 0.09) + 5, 0, 7); ctx.lineWidth = 2; ctx.strokeStyle = BL.alpha(pal.fg, 0.5); ctx.setLineDash([3, 4]); ctx.stroke(); ctx.setLineDash([]);
       }

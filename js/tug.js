@@ -89,8 +89,8 @@
       };
       stage.onresize();
 
-      const N = 1100;
-      const mk = () => ({ u: clamp(randn(), -2.5, 2.5), v: clamp(randn(), -2.5, 2.5), lobe: Math.random() < 0.5 ? -1 : 1, s: 0.45 + Math.random() * 0.55 });
+      const N = 150;
+      const mk = () => ({ u: clamp(randn(), -1.9, 1.9), v: clamp(randn(), -1.9, 1.9), lobe: Math.random() < 0.5 ? -1 : 1, s: 0.45 + Math.random() * 0.55 });
       const P = Array.from({ length: N }, mk);
 
       const probePos = () => ({ x: S.probe.nx * stage.w, y: S.probe.ny * stage.h });
@@ -318,15 +318,19 @@
         const xc = -L.d / 2 + t * L.d;
         const cw = rot(xc, 0);
         cw.x += v.shift.x; cw.y += v.shift.y;
-        const blend = pal.dark ? 'lighter' : 'source-over';
 
-        // soft glow under the cloud
+        /* The cloud is a filled body — opacity for how much electron is there —
+           rather than a sprinkle of specks. The spheres go on top of it. */
         ctx.save();
-        ctx.globalCompositeOperation = blend;
-        ctx.translate(cw.x, cw.y); ctx.rotate(S.theta); ctx.scale(sx * 2.7 + lobeDx, sy * 2.7);
-        const g = ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
-        g.addColorStop(0, BL.alpha(pal.cloud, pal.dark ? 0.28 : 0.26)); g.addColorStop(1, BL.alpha(pal.cloud, 0));
-        ctx.fillStyle = g; ctx.beginPath(); ctx.arc(0, 0, 1, 0, 7); ctx.fill();
+        const peak = pal.dark ? 0.72 : 0.66;
+        const ux = Math.cos(S.theta), uy = Math.sin(S.theta);
+        if (lobeDx > 1) {
+          BL.blob(ctx, cw.x, cw.y, sx * 1.75 + lobeDx, sy * 1.7, S.theta, pal.cloud, peak);
+          BL.blob(ctx, cw.x - ux * lobeDx, cw.y - uy * lobeDx, sx * 1.9, sy * 2.0, S.theta, pal.cloud, peak * 0.8);
+          BL.blob(ctx, cw.x + ux * lobeDx, cw.y + uy * lobeDx, sx * 1.9, sy * 2.0, S.theta, pal.cloud, peak * 0.8);
+        } else {
+          BL.blob(ctx, cw.x, cw.y, sx * 2.2, sy * 2.2, S.theta, pal.cloud, peak);
+        }
         ctx.restore();
 
         // atom bodies (drawn under the cloud so the glow reads through)
@@ -345,16 +349,14 @@
 
         // the cloud itself
         ctx.save();
-        ctx.globalCompositeOperation = blend;
-        const rc = BL.reduced ? 0.01 : 0.07;
+        const rc = BL.reduced ? 0.01 : 0.05;
         for (let i = 0; i < Math.ceil(N * rc); i++) P[(Math.random() * N) | 0] = mk();
-        const dotCol = pal.cloud, base = pal.dark ? 0.30 : 0.38, span = pal.dark ? 0.5 : 0.5, ds = pal.dark ? 2.5 : 2.7;
+        const dr = Math.max(1.5, L.unit * 0.06), base = pal.dark ? 0.42 : 0.5;
         for (let i = 0; i < N; i++) {
           const p = P[i];
           const lx = xc + p.lobe * lobeDx + p.u * sx, ly = p.v * sy;
           const x = L.cx + lx * cth - ly * sth + v.shift.x, y = L.cy + lx * sth + ly * cth + v.shift.y;
-          ctx.fillStyle = BL.alpha(dotCol, Math.round((base + span * p.s) * 20) / 20);
-          ctx.fillRect(x - ds / 2, y - ds / 2, ds, ds);
+          BL.ball(ctx, x, y, dr * (0.72 + 0.5 * p.s), pal.cloud, Math.round((base + 0.4 * p.s) * 20) / 20);
         }
         ctx.restore();
 
