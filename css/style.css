@@ -316,6 +316,9 @@ html[data-theme="light"] .readout .zone { color: var(--ui); }
 .mbar { height: 0.7rem; border-radius: 99px; background: var(--line); overflow: hidden; margin-top: 6px; }
 .mbar > div { height: 100%; background: var(--ui); border-radius: 99px; transition: width 0.15s; }
 .k-grab { width: 0 !important; height: 0 !important; border-radius: 0 !important; border: 0.55rem solid transparent !important; border-top: 0.8rem solid var(--electron) !important; border-bottom: 0 !important; background: none !important; }
+.k-edge { background: none; border: 3px dashed var(--fg) !important; }
+.k-soap { background: var(--electron); border-color: var(--electron) !important; }
+.k-arrow { width: 0 !important; height: 0 !important; border-radius: 0 !important; border: 0.5rem solid transparent !important; border-left: 0.9rem solid var(--neg) !important; border-right: 0 !important; background: none !important; }
 .ctl { margin-bottom: 18px; }
 .k-pos { background: var(--pos); border-color: var(--panel) !important; }
 .k-neg { background: var(--panel); border-color: var(--neg) !important; border-width: 3px !important; }
@@ -336,6 +339,7 @@ html[data-theme="light"] .readout .zone { color: var(--ui); }
   .stage.rungs-stage { aspect-ratio: 1 / 1.08 !important; }
   .stage.fl-stage { aspect-ratio: 1.3 / 1 !important; }
   .stage.cling-stage { aspect-ratio: 1.45 / 1 !important; }
+  .stage.skin-stage { aspect-ratio: 1.2 / 1 !important; }
   .stage.hs-stage { aspect-ratio: 1.2 / 1 !important; }
   .stage.fill-stage { aspect-ratio: 1.3 / 1 !important; }
   .stage.fill-stage.tall { aspect-ratio: 1 / 1.05 !important; }
