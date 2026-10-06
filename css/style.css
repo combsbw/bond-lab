@@ -303,8 +303,8 @@ html[data-theme="light"] .readout .zone { color: var(--ui); }
 .lab { font-weight: 700; font-size: 0.98rem; }
 .meters { display: grid; gap: 12px; margin-bottom: 14px; }
 .meter-row { display: flex; justify-content: space-between; gap: 12px; font-size: 1.05rem; }
-.bar { height: 0.7rem; border-radius: 99px; background: var(--line); overflow: hidden; margin-top: 6px; }
-.bar > div { height: 100%; background: var(--ui); border-radius: 99px; transition: width 0.15s; }
+.mbar { height: 0.7rem; border-radius: 99px; background: var(--line); overflow: hidden; margin-top: 6px; }
+.mbar > div { height: 100%; background: var(--ui); border-radius: 99px; transition: width 0.15s; }
 .k-pos { background: var(--pos); border-color: var(--panel) !important; }
 .k-neg { background: var(--panel); border-color: var(--neg) !important; border-width: 3px !important; }
 .k-hs { background: var(--t-hydrogen); border-radius: 99px; width: 1.6rem !important; border-color: var(--t-hydrogen) !important; }

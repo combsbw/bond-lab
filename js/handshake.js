@@ -267,7 +267,7 @@
       function meterText() {
         const now = performance.now(); if (now - (S.lastMeter || 0) < 200) return; S.lastMeter = now;
         meter.textContent = '';
-        const row = (k, v, pct) => meter.appendChild(h('div', { class: 'meter' }, h('div', { class: 'meter-row' }, h('span', {}, k), h('b', {}, v)), pct != null ? h('div', { class: 'bar' }, h('div', { style: 'width:' + clamp(pct, 0, 1) * 100 + '%' })) : null));
+        const row = (k, v, pct) => meter.appendChild(h('div', { class: 'meter' }, h('div', { class: 'meter-row' }, h('span', {}, k), h('b', {}, v)), pct != null ? h('div', { class: 'mbar' }, h('div', { style: 'width:' + clamp(pct, 0, 1) * 100 + '%' })) : null));
         if (S.scene === 'pair') {
           const g = S.grip;
           row('Grip of the handshake', g < 0.05 ? 'none' : Math.round(g * 100) + '%', g);
