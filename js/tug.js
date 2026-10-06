@@ -55,6 +55,7 @@
   BL.register({
     id: 'tug', field: 'bonding', order: 1, name: 'Tug',
     tagline: 'Two atoms, one electron cloud. Who holds it?',
+    lede: 'Two atoms and one cloud of electrons between them. Change how hard each one pulls, and watch the cloud lean toward whoever is winning.',
     art, goals: GOALS,
 
     mount({ stage: stageHost, aux, dock, params }) {

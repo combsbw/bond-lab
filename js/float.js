@@ -38,6 +38,7 @@
   BL.register({
     id: 'float', field: 'water', order: 4, name: 'Float',
     tagline: 'Ice does something odd.',
+    lede: 'A sheet of molecules that can pack loosely or tightly. Cool it down and watch which way this one goes — then look at the block floating in the tank.',
     art, goals: GOALS,
 
     mount({ stage: stageHost, aux, dock }) {
@@ -84,7 +85,7 @@
       const statusP = h('p', { class: 'status', 'aria-live': 'polite' });
       const meter = h('div', { class: 'meters' });
       const key = h('div', { class: 'legend' },
-        h('span', {}, h('i', { class: 'k-hs' }), 'a handshake'),
+        h('span', {}, h('i', { class: 'k-hs' }), 'a hydrogen bond'),
         h('span', {}, h('i', { class: 'k-edge' }), 'a hand with nobody to shake'));
       aux.appendChild(h('section', { class: 'panel' }, statusP, meter, key));
 
@@ -199,7 +200,8 @@
             if (shake) { ctx.lineWidth = Math.max(3, u * 0.17); ctx.strokeStyle = BL.alpha(col, 0.85); }
             else { ctx.lineWidth = Math.max(2, u * 0.08); ctx.strokeStyle = BL.alpha(pal.muted, 0.65); }
             ctx.stroke();
-            if (!shake) { ctx.beginPath(); ctx.arc(ex, ey, Math.max(1.8, u * 0.055), 0, 7); ctx.fillStyle = pal.muted; ctx.fill(); }
+            // the tip of an unshaken hand is a hydrogen, waiting for someone's lone pair
+            if (!shake) { ctx.beginPath(); ctx.arc(ex, ey, Math.max(1.8, u * 0.07), 0, 7); ctx.fillStyle = BL.mix(pal.panel, pal.pos, 0.6); ctx.fill(); ctx.lineWidth = 1; ctx.strokeStyle = BL.alpha(pal.pos, 0.7); ctx.stroke(); }
           }
           ctx.lineCap = 'butt';
         }
@@ -207,8 +209,11 @@
         for (let i = 0; i < G.n; i++) {
           const [x, y] = px(i);
           if (!s[i]) { ctx.beginPath(); ctx.arc(x, y, Math.max(1.2, u * 0.04), 0, 7); ctx.fillStyle = BL.alpha(pal.muted, 0.35); ctx.fill(); continue; }
-          ctx.beginPath(); ctx.arc(x, y, R, 0, 7); ctx.fillStyle = BL.mix(pal.panel, pal.fg, pal.dark ? 0.2 : 0.1); ctx.fill();
-          ctx.lineWidth = Math.max(1.5, u * 0.05); ctx.strokeStyle = pal.muted; ctx.stroke();
+          // the body is an oxygen when this sheet is water-like, so it carries the same
+          // colour as every other oxygen in the lab; the no-hands kind stays neutral grey
+          ctx.beginPath(); ctx.arc(x, y, R, 0, 7);
+          ctx.fillStyle = w ? BL.mix(pal.panel, pal.neg, 0.42) : BL.mix(pal.panel, pal.fg, pal.dark ? 0.2 : 0.1); ctx.fill();
+          ctx.lineWidth = Math.max(1.5, u * 0.05); ctx.strokeStyle = w ? pal.neg : pal.muted; ctx.stroke();
         }
         const f = BL.fs(14);
         BL.label(ctx, heatWord(S.T) + (w ? '' : ' · no hands'), 12 + 0, 14 + BL.fs(14), { font: BL.font(800, 16), border: pal.line2, align: 'left' });

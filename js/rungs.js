@@ -37,6 +37,7 @@
   BL.register({
     id: 'rungs', field: 'atoms', order: 1, name: 'Rungs',
     tagline: 'An electron can stand on some rungs and not others.',
+    lede: 'An electron in an atom can only stand on certain rungs of a ladder, never in between. Fire light at it and see which colours it will take and which it refuses.',
     art, goals: GOALS,
 
     mount({ stage: stageHost, aux, dock }) {
@@ -113,7 +114,9 @@
       function syncE() {
         slider.value = Math.round((S.E / Emax()) * 1000);
         const p = A.photon(Math.max(S.E, 0.001));
-        eOut.textContent = fmtE(S.E) + ' eV';
+        eOut.textContent = '';
+        eOut.append(S.E < 1.65 ? 'infrared — heat you feel' : S.E < 3.26 ? 'visible light' : S.E < 10 ? 'ultraviolet — the sunburn range' : 'far beyond ultraviolet',
+          BL.numv(' · ' + fmtE(S.E) + ' eV'));
         eSub.textContent = S.E < 0.02 ? 'Almost no energy.' : Math.round(p.nm) + ' nm · ' + bandWord(p.band) + (p.band === 'visible' ? ' · ' + colorWord(p.nm) : '');
       }
       function syncToggles() {

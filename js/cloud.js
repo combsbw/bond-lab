@@ -39,6 +39,7 @@
   BL.register({
     id: 'cloud', field: 'atoms', order: 2, name: 'Cloud',
     tagline: 'One electron, many snapshots, and a shape appears.',
+    lede: 'There is only one electron in this whole picture. Each dot is one snapshot of where it happened to be caught — take enough of them and a shape appears out of the scatter.',
     art, goals: GOALS,
 
     mount({ stage: stageHost, aux, dock }) {
@@ -136,8 +137,8 @@
         facts.textContent = '';
         const row = (k, v) => { facts.appendChild(h('div', { class: 'fact' }, h('dt', {}, k), h('dd', {}, v))); };
         row('Name', (S.all ? o.id + ' (all together)' : S.orb.names[o.shapes.indexOf(S.shape)]));
-        row('Energy', E.toFixed(2) + ' eV' + (o.l > 0 || o.n > 1 ? ' · rung ' + o.n : ' · the bottom rung'));
-        row('Typical distance', mean.toFixed(1) + ' a₀ = ' + (mean * BOHR).toFixed(2) + ' Å from the nucleus');
+        row('Energy', (BL.nums ? E.toFixed(2) + ' eV · ' : '') + (o.l > 0 || o.n > 1 ? 'rung ' + o.n + ', so it is held more loosely than the bottom one' : 'the bottom rung, held as tightly as this electron ever is'));
+        row('Typical distance', 'usually found ' + (mean * BOHR < 1 ? 'right up against' : mean * BOHR < 3 ? 'close to' : mean * BOHR < 7 ? 'well out from' : 'a long way out from') + ' the nucleus' + (BL.nums ? ' · ' + (mean * BOHR).toFixed(2) + ' Å' : ''));
         row('Empty places', (nodesR ? nodesR + (nodesR === 1 ? ' empty ring' : ' empty rings') : 'no empty rings') + (nodesA ? ' · ' + nodesA + (nodesA === 1 ? ' empty plane' : ' empty planes') : ''));
         row('Room for electrons', o.shapes.length + (o.shapes.length === 1 ? ' cloud' : ' clouds') + ' × 2 = up to ' + o.shapes.length * 2);
         S.hist = null;

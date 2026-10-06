@@ -39,6 +39,7 @@
   BL.register({
     id: 'climb', field: 'water', order: 3, name: 'Climb',
     tagline: 'Up a thin tube, against gravity.',
+    lede: 'Water climbs up a narrow tube on its own, against gravity. It grabs the walls and then drags the rest of itself up behind it.',
     art, goals: GOALS,
 
     mount({ stage: stageHost, aux, dock }) {
@@ -201,7 +202,7 @@
         const mols = [[wallX + R + 6, base - lift + R + 4], [wallX + R * 3 + 12, base - lift * 0.55 + R + 12], [wallX + R + 8, base - lift + R * 3.1 + 6], [wallX + R * 3.4 + 12, base + R * 2.1 + 8]];
         const cohW = 3 + 4 * S.coh / 100;
         for (let k = 1; k < mols.length; k++) { c.beginPath(); c.moveTo(mols[0][0], mols[0][1]); c.lineTo(mols[k][0], mols[k][1]); c.lineWidth = cohW * (k === 3 ? 0.5 : 1); c.strokeStyle = BL.alpha(pal.tHydrogen || pal.ui, 0.7); c.lineCap = 'round'; c.stroke(); c.lineCap = 'butt'; }
-        mols.forEach(([x, y], k) => { c.beginPath(); c.arc(x, y, R, 0, 7); c.fillStyle = BL.mix(pal.panel, pal.fg, 0.1); c.fill(); c.lineWidth = 2; c.strokeStyle = pal.muted; c.stroke(); c.beginPath(); c.arc(x + R * 0.6, y - R * 0.5, 3.5, 0, 7); c.fillStyle = pal.pos; c.fill(); });
+        mols.forEach(([x, y], k) => BL.mol.water(c, x, y, (k * 2.399) % 6.283, R * 2, pal, { lone: 0.55 }));
         // the wall's pull on the rim molecule
         const pull = (S.grab / 100) * H * 0.5;
         if (pull > 6) { c.strokeStyle = pal.neg; c.fillStyle = pal.neg; c.lineWidth = 5; c.lineCap = 'round'; c.beginPath(); c.moveTo(wallX + 10, mols[0][1] + 2); c.lineTo(wallX + 10, mols[0][1] - pull * 0.5); c.stroke(); c.lineCap = 'butt'; c.beginPath(); c.moveTo(wallX + 10, mols[0][1] - pull * 0.5 - 10); c.lineTo(wallX + 3, mols[0][1] - pull * 0.5 + 1); c.lineTo(wallX + 17, mols[0][1] - pull * 0.5 + 1); c.closePath(); c.fill(); }

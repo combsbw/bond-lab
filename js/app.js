@@ -4,9 +4,19 @@
   const { h } = BL;
 
   const FIELDS = [
-    { id: 'atoms', name: 'Atoms', lede: 'Where the electrons are, why they sit where they sit, and why the outer ones matter most.' },
-    { id: 'bonding', name: 'Bonding', lede: 'What happens when atoms and molecules meet, from sharing to hand-holding.' },
-    { id: 'water', name: 'Water', lede: 'One small molecule, and everything it does because of the way it holds on.' },
+    { id: 'atoms', name: 'Atoms', lede: 'Where the electrons are, why they sit where they sit, and why the outer ones are the only ones that ever meet anybody.' },
+    { id: 'bonding', name: 'Bonding', lede: 'What happens when two atoms meet — and why every kind of bond you have ever been given a name for is one dial at a different setting.' },
+    { id: 'water', name: 'Water', lede: 'One small bent molecule, and everything it does because of the way it holds on.' },
+  ];
+
+  /* The one idea the whole Bonding section hangs off. It sits at the top of the
+     hub as a strip you can walk into, because a learner who has it will see
+     the rest as variations instead of as a list to memorise. */
+  const SPINE = [
+    ['shared evenly', 'covalent'],
+    ['shared unevenly', 'polar covalent'],
+    ['nearly taken', 'very polar'],
+    ['handed over', 'ionic'],
   ];
 
   /* Instruments not built yet. They show on the hub so the shape of the whole lab is visible. */
@@ -41,6 +51,15 @@
       h('h1', {}, 'Bond Lab'),
       h('p', {}, 'Instruments for things too small to see. Poke them and watch what answers.')));
 
+    // the spine: one dial, four names, and a way in
+    view.appendChild(h('a', { class: 'spine', href: '#/spectrum' },
+      h('div', { class: 'spine-head' },
+        h('h2', {}, 'It is all one dial'),
+        h('p', {}, 'Covalent, polar, ionic, hydrogen bonds, van der Waals — not a list of five different things. One question, asked at different settings: how evenly do two atoms share their electrons? Start here.')),
+      h('div', { class: 'spine-band', 'aria-hidden': 'true' },
+        SPINE.map(([word, book]) => h('span', {}, h('b', {}, word), h('i', {}, book)))),
+      h('span', { class: 'spine-go' }, 'Open The Spectrum →')));
+
     FIELDS.forEach((f) => {
       const built = BL.sims.filter((s) => s.field === f.id).sort((a, b) => (a.order || 0) - (b.order || 0));
       const planned = PLANNED.filter((p) => p.field === f.id);
@@ -64,12 +83,29 @@
           h('div', { class: 'tile-foot' }, h('span', { class: 'tag' }, 'In the works'))));
       });
 
-      view.appendChild(h('section', { class: 'field', 'aria-labelledby': 'f-' + f.id },
+      const section = h('section', { class: 'field', 'aria-labelledby': 'f-' + f.id },
         h('div', { class: 'field-head' },
           h('h2', { id: 'f-' + f.id }, f.name),
-          h('span', { class: 'tally' }, built.length ? done + ' of ' + total + ' challenges' : 'Coming')),
+          h('span', { class: 'tally' }, built.length ? done + ' of ' + total + ' things tried' : 'Coming')),
         h('p', { class: 'field-lede' }, f.lede),
-        tiles));
+        tiles);
+
+      // the everyday questions for this field, shut until somebody wants them
+      if (BL.challenges) {
+        const sc = BL.quizScore(f.id);
+        if (sc.total) {
+          const host = h('div', { class: 'ch-host' });
+          BL.challenges(host, {
+            field: f.id,
+            title: 'Why this matters',
+            lede: 'Ordinary things — a burst pipe, a street lamp, a beaded windscreen — that come straight out of this section. Commit to an answer, then go into the instrument named underneath and settle it for yourself.',
+          });
+          section.appendChild(BL.fold(
+            sc.total + ' everyday challenges' + (sc.done ? ' · ' + sc.done + ' answered' : ''),
+            host));
+        }
+      }
+      view.appendChild(section);
     });
   }
 
@@ -83,8 +119,21 @@
       dock: h('aside', { class: 'dock slot-dock', 'aria-label': sim.name + ' controls' }),
       params,
     };
+    // one plain sentence saying what the learner is about to look at, before
+    // any of the instrument's own machinery gets a word in
+    if (sim.lede) slots.stage.appendChild(h('p', { class: 'stage-cap' }, sim.lede));
     view.appendChild(h('div', { class: 'sim' }, slots.stage, slots.aux, slots.dock));
     current = sim.mount(slots);
+    /* Every instrument ends with the everyday questions it can settle. They go
+       last, under the readouts, so the learner meets them having already
+       played — which is the only order in which they are worth anything. */
+    if (BL.challenges) {
+      BL.challenges(slots.aux, {
+        sim: sim.id,
+        title: 'Why this matters',
+        lede: 'Ordinary things that come out of what you have just been poking. Commit to an answer, then go back up and settle it.',
+      });
+    }
   }
 
   function route() {
@@ -121,7 +170,10 @@
         h('span', {}, 'High contrast', h('small', {}, 'Black and white with strong outlines.'))),
       h('label', { class: 'check' },
         h('input', { type: 'checkbox', checked: D.calm ? 'checked' : null, onchange: (e) => { BL.setDisplay({ calm: e.target.checked }); } }),
-        h('span', {}, 'Calm motion', h('small', {}, 'Stops pulsing hints and slows movement.'))));
+        h('span', {}, 'Calm motion', h('small', {}, 'Stops pulsing hints and slows movement.'))),
+      h('label', { class: 'check' },
+        h('input', { type: 'checkbox', checked: D.nums ? 'checked' : null, onchange: (e) => { BL.setDisplay({ nums: e.target.checked }); } }),
+        h('span', {}, 'Show the numbers', h('small', {}, 'Adds the measured values — kilojoules, kelvin, electron volts, ångströms — on top of the plain words. Off is the normal way round.'))));
   }
   const closePop = (focusBtn) => { pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (focusBtn) btn.focus(); };
   btn.addEventListener('click', () => {

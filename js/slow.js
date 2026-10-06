@@ -45,6 +45,7 @@
   BL.register({
     id: 'slow', field: 'water', order: 5, name: 'Slow',
     tagline: 'Takes ages to warm up. And to cool.',
+    lede: 'Three boxes with exactly the same heat going into each one. Watch which of them refuses to get warm, and look at what it is doing with the heat instead.',
     art, goals: GOALS,
 
     mount({ stage: stageHost, aux, dock }) {
@@ -89,7 +90,7 @@
       const statusP = h('p', { class: 'status', 'aria-live': 'polite' });
       const meter = h('div', { class: 'meters' });
       const key = h('div', { class: 'legend' },
-        h('span', {}, h('i', { class: 'k-pos' }), 'a + hand'), h('span', {}, h('i', { class: 'k-neg' }), 'a − hand'), h('span', {}, h('i', { class: 'k-hs' }), 'a handshake'));
+        h('span', {}, h('i', { class: 'k-pos' }), 'a hydrogen, δ+'), h('span', {}, h('i', { class: 'k-neg' }), 'an oxygen, δ−'), h('span', {}, h('i', { class: 'k-hs' }), 'a hydrogen bond'));
       aux.appendChild(h('section', { class: 'panel' }, statusP, meter, key));
       const chart = BL.stage(h('div'), '2.2 / 1', { label: 'Graph of temperature against the heat that has gone in, for the three boxes. A steep line means the box warms quickly for a little heat. A shallow line means it soaks up a lot of heat for each degree.' });
       chart.wrap.classList.add('flat', 'hist');
@@ -158,17 +159,8 @@
       }
 
       /* ---------------- drawing ---------------- */
-      function drawMol(W, i, x0, y0, u, pal, arms) {
-        const x = x0 + W.x[i] * u, y = y0 + W.y[i] * u, R = 0.5 * u;
-        ctx.beginPath(); ctx.arc(x, y, R, 0, 7); ctx.fillStyle = BL.mix(pal.panel, pal.fg, pal.dark ? 0.14 : 0.08); ctx.fill();
-        ctx.lineWidth = Math.max(1.2, u * 0.05); ctx.strokeStyle = pal.muted; ctx.stroke();
-        if (!arms || !W.type.arms) return;
-        const rr = Math.max(2.4, 0.17 * u);
-        for (let k = 0; k < 4; k++) {
-          const a = W.th[i] + M.SITE_ANG[k], sx = x + Math.cos(a) * M.D_ARM * u, sy = y + Math.sin(a) * M.D_ARM * u;
-          ctx.beginPath(); ctx.arc(sx, sy, rr, 0, 7);
-          if (k < 2) { ctx.fillStyle = pal.pos; ctx.fill(); } else { ctx.fillStyle = pal.panel; ctx.fill(); ctx.lineWidth = Math.max(1.6, u * 0.07); ctx.strokeStyle = pal.neg; ctx.stroke(); }
-        }
+      function drawMol(W, i, x0, y0, u, pal) {
+        BL.mol.byType(W.type.id)(ctx, x0 + W.x[i] * u, y0 + W.y[i] * u, W.th[i], u, pal, { label: u > 30, lone: 0.6 });
       }
 
       function draw(pal, cw, ch, colW, gap, boxH, topB, K) {
@@ -184,8 +176,12 @@
           // handshakes, then molecules
           const hs = M.handshakes(W);
           ctx.save(); ctx.beginPath(); ctx.rect(x0, y0, colW, boxH); ctx.clip();
-          hs.list.forEach(([i, a, j, b, gg]) => { ctx.beginPath(); ctx.moveTo(x0 + W.x[i] * u, y0 + W.y[i] * u); ctx.lineTo(x0 + W.x[j] * u, y0 + W.y[j] * u); ctx.lineCap = 'round'; ctx.lineWidth = Math.max(2.5, u * 0.3) * (0.35 + 0.65 * gg); ctx.strokeStyle = BL.alpha(col, 0.35 + 0.5 * gg); ctx.stroke(); ctx.lineCap = 'butt'; });
-          for (let i = 0; i < W.n; i++) drawMol(W, i, x0, y0, u, pal, u > 15);
+          for (let i = 0; i < W.n; i++) drawMol(W, i, x0, y0, u, pal);
+          const sa = [0, 0], sb = [0, 0];
+          hs.list.forEach(([i, a, j, b, gg]) => {
+            M.site(W, i, a, sa); M.site(W, j, b, sb);
+            BL.mol.bridge(ctx, x0 + sa[0] * u, y0 + sa[1] * u, x0 + sb[0] * u, y0 + sb[1] * u, pal, gg, Math.max(2.5, u * 0.26));
+          });
           ctx.restore();
           // heater
           const by = y0 + boxH + 8, heating = S.mode === 1 && S.on[id], cooling = S.mode === -1 && S.on[id];
@@ -196,7 +192,7 @@
           ctx.fillStyle = pal.muted; ctx.font = BL.font(600, 13); ctx.textAlign = 'center';
           ctx.fillText(heating ? 'heating' : cooling ? 'cooling' : S.on[id] ? 'heater off' : 'switched off', x0 + colW / 2, by + 32);
           // temperature
-          BL.label(ctx, Math.round(K[id]) + ' K', x0 + colW / 2, y0 + 20, { font: BL.font(800, 17), border: pal.fg });
+          BL.label(ctx, BL.tempLabel(K[id]), x0 + colW / 2, y0 + 20, { font: BL.font(800, 17), border: pal.fg });
         });
         if (!S.hinted && !BL.reduced) BL.label(ctx, 'press Heat in the side panel', cw / 2, topB + boxH / 2, { font: BL.font(700, 14), border: pal.ui });
       }

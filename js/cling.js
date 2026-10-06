@@ -32,6 +32,7 @@
   BL.register({
     id: 'cling', field: 'water', order: 1, name: 'Cling',
     tagline: 'Water meets glass, then water meets water.',
+    lede: 'A drop of real water molecules resting on a surface, seen from the side. It beads or spreads depending on who grips harder — the surface, or the water holding on to itself.',
     art, goals: GOALS,
 
     mount({ stage: stageHost, aux, dock }) {
@@ -73,7 +74,7 @@
       const statusP = h('p', { class: 'status', 'aria-live': 'polite' });
       const meter = h('div', { class: 'meters' });
       const key = h('div', { class: 'legend' },
-        h('span', {}, h('i', { class: 'k-pos' }), 'a + hand'), h('span', {}, h('i', { class: 'k-neg' }), 'a − hand'), h('span', {}, h('i', { class: 'k-hs' }), 'a handshake'),
+        h('span', {}, h('i', { class: 'k-pos' }), 'a hydrogen, δ+'), h('span', {}, h('i', { class: 'k-neg' }), 'an oxygen, δ−'), h('span', {}, h('i', { class: 'k-hs' }), 'a hydrogen bond'),
         h('span', {}, h('i', { class: 'k-grab' }), 'a place where the surface grabs'));
       aux.appendChild(h('section', { class: 'panel' }, statusP, meter, key));
       const chart = BL.stage(h('div'), '2.6 / 1', { label: 'Graph of the drop’s contact angle against how much the surface grabs, for three levels of how tightly the water grips itself.' });
@@ -185,18 +186,15 @@
         // walls
         ctx.strokeStyle = pal.line2; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(1, 0); ctx.lineTo(1, fy); ctx.moveTo(WW * u - 1, 0); ctx.lineTo(WW * u - 1, fy); ctx.stroke();
         // handshakes
-        const col = pal.tHydrogen || pal.ui;
-        S.bonds.forEach(([i, a, j, b, g]) => { ctx.beginPath(); ctx.moveTo(W.x[i] * u, W.y[i] * u); ctx.lineTo(W.x[j] * u, W.y[j] * u); ctx.lineCap = 'round'; ctx.lineWidth = 7 * (0.35 + 0.65 * g); ctx.strokeStyle = BL.alpha(col, 0.35 + 0.5 * g); ctx.stroke(); ctx.lineCap = 'butt'; });
         for (let i = 0; i < N; i++) {
-          const x = W.x[i] * u, y = W.y[i] * u, R = 0.5 * u;
-          ctx.beginPath(); ctx.arc(x, y, R, 0, 7); ctx.fillStyle = BL.mix(pal.panel, pal.fg, pal.dark ? 0.12 : 0.07); ctx.fill(); ctx.lineWidth = Math.max(1.5, u * 0.05); ctx.strokeStyle = pal.muted; ctx.stroke();
-          const rr = Math.max(3, 0.17 * u);
-          for (let q = 0; q < 4; q++) {
-            const a = W.th[i] + M.SITE_ANG[q], sx = x + Math.cos(a) * M.D_ARM * u, sy = y + Math.sin(a) * M.D_ARM * u;
-            ctx.beginPath(); ctx.arc(sx, sy, rr, 0, 7);
-            if (q < 2) { ctx.fillStyle = pal.pos; ctx.fill(); } else { ctx.fillStyle = pal.panel; ctx.fill(); ctx.lineWidth = Math.max(2, u * 0.08); ctx.strokeStyle = pal.neg; ctx.stroke(); }
-          }
+          BL.mol.water(ctx, W.x[i] * u, W.y[i] * u, W.th[i], u, pal, { label: true, lone: 0.7 });
         }
+        // a hydrogen bond runs from one molecule's hydrogen to another's lone pair, so draw it there
+        const sa = [0, 0], sb = [0, 0];
+        S.bonds.forEach(([i, a, j, b, g]) => {
+          M.site(W, i, a, sa); M.site(W, j, b, sb);
+          BL.mol.bridge(ctx, sa[0] * u, sa[1] * u, sb[0] * u, sb[1] * u, pal, g, Math.max(3, u * 0.2));
+        });
         // contact angle
         if (cur && S.hasAng) {
           const px = cur.x0 * u - 0.1 * u, py = fy, a = S.ang * Math.PI / 180, L = Math.min(3.2 * u, 70);

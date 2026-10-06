@@ -36,6 +36,7 @@
   BL.register({
     id: 'skin', field: 'water', order: 2, name: 'Skin',
     tagline: 'A surface light things can stand on.',
+    lede: 'A molecule on the outside of a drop has neighbours below and beside it but none above, so it gets pulled inwards. That inward pull is what a skin is.',
     art, goals: GOALS,
 
     mount({ stage: stageHost, aux, dock }) {
@@ -81,7 +82,7 @@
       /* ---------------- aux ---------------- */
       const statusP = h('p', { class: 'status', 'aria-live': 'polite' });
       const meter = h('div', { class: 'meters' });
-      const key = h('div', { class: 'legend' }, h('span', {}, h('i', { class: 'k-edge' }), 'on the edge'), h('span', {}, h('i', { class: 'k-soap' }), 'a soap molecule'), h('span', {}, h('i', { class: 'k-arrow' }), 'the pull of the neighbors'));
+      const key = h('div', { class: 'legend' }, h('span', {}, h('i', { class: 'k-hs' }), 'a hydrogen bond'), h('span', {}, h('i', { class: 'k-edge' }), 'on the edge'), h('span', {}, h('i', { class: 'k-soap' }), 'a soap molecule'), h('span', {}, h('i', { class: 'k-arrow' }), 'the pull of the neighbors'));
       aux.appendChild(h('section', { class: 'panel' }, statusP, meter, key));
       function say(t) { statusP.textContent = t; }
 
@@ -91,7 +92,7 @@
         const W = M.create({ n: sc.n, w: sc.w, h: sc.h, type: 'water', K: S.K[S.scene], g: sc.g, gamma: 1.2, seed: S.seed });
         if (S.scene === 'drop') stripLayout(W);
         S.W = W; S.shape = 'strip'; S.shapeT = 0; S.frac = {}; S.edgeMax = 0; S.lastStretch = performance.now() / 1000; S.soap = []; S.minRound = 1; S.pokeFrom = null; S.nb = 0; S.round = 1;
-        kIn.value = String(S.K[S.scene]); kOut.textContent = Math.round(S.K[S.scene]) + ' K'; soapOut.textContent = '0'; say(S.scene === 'pool' ? 'Water in a tank. Mark the edge and show the pull.' : 'A free drop, starting as a long strip.');
+        kIn.value = String(S.K[S.scene]); BL.setKOut(kOut, S.K[S.scene]); soapOut.textContent = '0'; say(S.scene === 'pool' ? 'Water in a tank. Mark the edge and show the pull.' : 'A free drop, starting as a long strip.');
       }
       function stripLayout(W) {
         const n = W.n, cols = 16;
@@ -111,7 +112,7 @@
         document.querySelectorAll('.pool-only').forEach((e) => { e.hidden = id !== 'pool'; }); document.querySelectorAll('.drop-only').forEach((e) => { e.hidden = id !== 'drop'; });
         stage.wrap.style.aspectRatio = '2 / 1'; newWorld();
       }
-      function setK(K) { S.K[S.scene] = K; S.W.setK(K); kOut.textContent = Math.round(K) + ' K'; }
+      function setK(K) { S.K[S.scene] = K; S.W.setK(K); BL.setKOut(kOut, K); }
       function soapMore(d) {
         const W = S.W; if (S.scene !== 'pool') return;
         if (d < 0) { S.soap.forEach((i) => { W.hs[i] = 1; }); S.soap = []; }
@@ -191,19 +192,14 @@
         ctx.save(); ctx.translate(o.x, o.y);
         // tank
         ctx.strokeStyle = pal.line2; ctx.lineWidth = 3; ctx.strokeRect(1, 1, sc.w * u - 2, sc.h * u - 2);
-        const col = pal.tHydrogen || pal.ui;
-        S.bonds.forEach(([i, a, j, b, g]) => { ctx.beginPath(); ctx.moveTo(W.x[i] * u, W.y[i] * u); ctx.lineTo(W.x[j] * u, W.y[j] * u); ctx.lineCap = 'round'; ctx.lineWidth = Math.max(3, u * 0.22) * (0.35 + 0.65 * g); ctx.strokeStyle = BL.alpha(col, 0.3 + 0.45 * g); ctx.stroke(); ctx.lineCap = 'butt'; });
+        const sa = [0, 0], sb = [0, 0];
+        S.bonds.forEach(([i, a, j, b, g]) => {
+          M.site(W, i, a, sa); M.site(W, j, b, sb);
+          BL.mol.bridge(ctx, sa[0] * u, sa[1] * u, sb[0] * u, sb[1] * u, pal, g, Math.max(3, u * 0.2));
+        });
         for (let i = 0; i < W.n; i++) {
           const x = W.x[i] * u, y = W.y[i] * u, R = 0.5 * u, soap = S.soap.includes(i), inf = info(i);
-          ctx.beginPath(); ctx.arc(x, y, R, 0, 7);
-          ctx.fillStyle = soap ? BL.mix(pal.panel, pal.electron, 0.45) : BL.mix(pal.panel, pal.fg, pal.dark ? 0.12 : 0.07); ctx.fill();
-          ctx.lineWidth = Math.max(1.5, u * 0.05); ctx.strokeStyle = soap ? pal.electron : pal.muted; ctx.stroke();
-          const rr = Math.max(3, 0.16 * u), sm = soap ? 0.6 : 1;
-          for (let q = 0; q < 4; q++) {
-            const a = W.th[i] + M.SITE_ANG[q], sx = x + Math.cos(a) * M.D_ARM * u, sy = y + Math.sin(a) * M.D_ARM * u;
-            ctx.beginPath(); ctx.arc(sx, sy, rr * sm, 0, 7);
-            if (q < 2) { ctx.fillStyle = pal.pos; ctx.fill(); } else { ctx.fillStyle = pal.panel; ctx.fill(); ctx.lineWidth = Math.max(2, u * 0.07); ctx.strokeStyle = pal.neg; ctx.stroke(); }
-          }
+          BL.mol.water(ctx, x, y, W.th[i], u, pal, { label: true, lone: soap ? 0.25 : 0.7, soap });
           if (S.showEdge && inf.edge) { ctx.beginPath(); ctx.arc(x, y, R + 3, 0, 7); ctx.lineWidth = 3; ctx.setLineDash([5, 4]); ctx.strokeStyle = pal.fg; ctx.stroke(); ctx.setLineDash([]); }
         }
         if (S.showPull) {
@@ -217,7 +213,7 @@
         }
         if (W.drag) { const i = W.drag.i, x = W.drag.x * u, y = W.drag.y * u; ctx.beginPath(); ctx.moveTo(W.x[i] * u, W.y[i] * u); ctx.lineTo(x, y); ctx.lineWidth = 3; ctx.setLineDash([6, 5]); ctx.strokeStyle = pal.fg; ctx.stroke(); ctx.setLineDash([]); ctx.beginPath(); ctx.arc(x, y, 7, 0, 7); ctx.fillStyle = pal.fg; ctx.fill(); BL.label(ctx, 'pulling with ' + Math.hypot(W.drag.fx || 0, W.drag.fy || 0).toFixed(1), clamp(x, 70, sc.w * u - 70), y < 40 ? y + 30 : y - 24, { font: BL.font(700, 13), border: pal.fg }); }
         ctx.restore();
-        ctx.fillStyle = pal.fg; ctx.font = BL.font(800, 20, true); ctx.textAlign = 'left'; ctx.fillText(Math.round(W.getK()) + ' K', 14, 10 + BL.fs(20));
+        ctx.fillStyle = pal.fg; ctx.font = BL.font(800, 20, true); ctx.textAlign = 'left'; ctx.fillText(BL.tempLabel(W.getK()), 14, 10 + BL.fs(20));
         if (!S.hinted && !BL.reduced) BL.label(ctx, 'drag a molecule up out of the water', cw / 2, ch - 20, { font: BL.font(700, 14), border: pal.ui });
       }
 

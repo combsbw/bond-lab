@@ -38,6 +38,7 @@
   BL.register({
     id: 'handshake', field: 'bonding', order: 3, name: 'Handshake',
     tagline: 'Hands that only grip when they line up.',
+    lede: 'Molecules with a positive end and a negative end only grip when they line up the right way. Drag them around each other until they do.',
     art, goals: GOALS,
 
     mount({ stage: stageHost, aux, dock }) {
@@ -112,9 +113,9 @@
       const statusP = h('p', { class: 'status', 'aria-live': 'polite' });
       const meter = h('div', { class: 'meters' });
       const key = h('div', { class: 'legend' },
-        h('span', {}, h('i', { class: 'k-pos' }), 'a + hand: gives a hydrogen'),
-        h('span', {}, h('i', { class: 'k-neg' }), 'a − hand: receives one'),
-        h('span', {}, h('i', { class: 'k-hs' }), 'a handshake'));
+        h('span', {}, h('i', { class: 'k-pos' }), 'a hydrogen, δ+: offers itself'),
+        h('span', {}, h('i', { class: 'k-neg' }), 'an oxygen, δ−: takes one in'),
+        h('span', {}, h('i', { class: 'k-hs' }), 'a hydrogen bond'));
       aux.appendChild(h('section', { class: 'panel' }, statusP, meter, key));
 
       const chart = BL.stage(h('div'), '2.6 / 1', { label: 'Graph of how many neighbors each molecule holds on to, against temperature, for each kind of molecule you have run.' });
@@ -159,7 +160,7 @@
         typeNote.textContent = M.TYPES[id].note + '.';
         S.sweptTypes = S.sweptTypes || new Set();
       }
-      function setK(K) { S.K[S.scene] = K; S.W.setK(K); kOut.textContent = Math.round(K) + ' K'; kSlider.value = String(K); }
+      function setK(K) { S.K[S.scene] = K; S.W.setK(K); BL.setKOut(kOut, K); kSlider.value = String(K); }
 
       /* ---------------- experiments ---------------- */
       function startSweep() {
@@ -287,22 +288,9 @@
 
       /* ---------------- drawing ---------------- */
       function drawMol(i, pal, u, big) {
-        const W = S.W, x = W.x[i] * u, y = W.y[i] * u, R = 0.5 * u, arms = W.type.arms;
-        ctx.beginPath(); ctx.arc(x, y, R, 0, 7);
-        ctx.fillStyle = BL.mix(pal.panel, pal.fg, pal.dark ? 0.12 : 0.07); ctx.fill();
-        ctx.lineWidth = Math.max(1.5, u * 0.05); ctx.strokeStyle = pal.muted; ctx.stroke();
-        if (!arms) return;
-        const rr = Math.max(4.2, 0.17 * u);
-        for (let k = 0; k < 4; k++) {
-          const a = W.th[i] + M.SITE_ANG[k], sx = x + Math.cos(a) * M.D_ARM * u, sy = y + Math.sin(a) * M.D_ARM * u;
-          const scale = W.type.eHb < 0.5 ? 0.8 : 1;
-          ctx.beginPath(); ctx.arc(sx, sy, rr * scale, 0, 7);
-          if (k < 2) { ctx.fillStyle = pal.pos; ctx.fill(); ctx.lineWidth = 1.5; ctx.strokeStyle = pal.panel; ctx.stroke(); }
-          else { ctx.fillStyle = pal.panel; ctx.fill(); ctx.lineWidth = Math.max(2.5, u * 0.08); ctx.strokeStyle = pal.neg; ctx.stroke(); }
-          if (big) { ctx.fillStyle = k < 2 ? '#fff' : pal.neg; ctx.font = BL.font(800, 13); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(k < 2 ? '+' : '−', sx, sy + 0.5); ctx.textBaseline = 'alphabetic'; }
-        }
-        // the molecule's front, so you can see it turn
-        const fa = W.th[i]; ctx.beginPath(); ctx.moveTo(x + Math.cos(fa) * R * 0.18, y + Math.sin(fa) * R * 0.18); ctx.lineTo(x + Math.cos(fa) * R * 0.6, y + Math.sin(fa) * R * 0.6); ctx.lineWidth = Math.max(2, u * 0.06); ctx.strokeStyle = pal.muted; ctx.lineCap = 'round'; ctx.stroke(); ctx.lineCap = 'butt';
+        const W = S.W;
+        BL.mol.byType(W.type.id)(ctx, W.x[i] * u, W.y[i] * u, W.th[i], u, pal,
+          { label: true, charge: big, lone: W.type.eHb > 0.5 ? 0.85 : W.type.eHb > 0 ? 0.3 : 0 });
       }
 
       function draw(pal, cw, ch, u) {
@@ -314,18 +302,15 @@
         g.addColorStop(0, BL.alpha(BL.mix(pal.neg, pal.electron, warm), pal.dark ? 0.22 : 0.16)); g.addColorStop(1, BL.alpha(pal.panel, 0));
         ctx.fillStyle = g; ctx.fillRect(0, ch * 0.4, cw, ch * 0.6);
 
-        // handshakes first, behind the molecules
         const col = pal.tHydrogen || pal.ui;
-        S.bonds.forEach(([i, a, j, b, gg]) => {
-          const x1 = W.x[i] * u, y1 = W.y[i] * u, x2 = W.x[j] * u, y2 = W.y[j] * u;
-          ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.lineCap = 'round';
-          ctx.lineWidth = (big ? 14 : 7) * (0.35 + 0.65 * gg); ctx.strokeStyle = BL.alpha(col, 0.35 + 0.5 * gg); ctx.stroke(); ctx.lineCap = 'butt';
-        });
         for (let i = 0; i < W.n; i++) drawMol(i, pal, u, big);
-        // glow where hands meet
+        // a hydrogen bond is a bridge from one molecule's hydrogen to another's lone pair,
+        // so it is drawn between those two places and dotted, never solid like a real bond
+        const sa = [0, 0], sb = [0, 0];
         S.bonds.forEach(([i, a, j, b, gg]) => {
+          M.site(W, i, a, sa); M.site(W, j, b, sb);
+          BL.mol.bridge(ctx, sa[0] * u, sa[1] * u, sb[0] * u, sb[1] * u, pal, gg, big ? 11 : 6);
           if (gg < 0.5) return;
-          const sa = [0, 0]; M.site(W, i, a, sa);
           ctx.beginPath(); ctx.arc(sa[0] * u, sa[1] * u, (big ? 12 : 8) * (0.7 + 0.5 * gg), 0, 7); ctx.lineWidth = 3; ctx.strokeStyle = col; ctx.stroke();
         });
 
@@ -339,7 +324,7 @@
         }
         // labels
         const f = BL.fs(14);
-        ctx.fillStyle = pal.fg; ctx.font = BL.font(800, 20, true); ctx.textAlign = 'left'; ctx.fillText(Math.round(K) + ' K', 14, 10 + BL.fs(20));
+        ctx.fillStyle = pal.fg; ctx.font = BL.font(800, 20, true); ctx.textAlign = 'left'; ctx.fillText(BL.tempLabel(K), 14, 10 + BL.fs(20));
         ctx.font = BL.font(400, 14); ctx.fillStyle = pal.muted; ctx.fillText(nameOf(S.type), 14, 10 + BL.fs(20) + f * 1.3);
         if (!S.hinted && !BL.reduced) {
           const w0 = S.scene === 'pair' ? '↔ drag a molecule, or drag a hand to turn it' : '↕ cool it down';

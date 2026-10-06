@@ -40,6 +40,7 @@
   BL.register({
     id: 'flicker', field: 'bonding', order: 4, name: 'Flicker',
     tagline: 'Clouds that slosh, and a pull that comes from nowhere.',
+    lede: 'Nothing in here carries any charge at all. Watch the clouds slosh about anyway, and watch two atoms pull on each other because of it.',
     art, goals: GOALS,
 
     mount({ stage: stageHost, aux, dock }) {
@@ -112,7 +113,11 @@
       /* ---------------- setup ---------------- */
       function setGas(i) {
         S.gi = i; gBtns.forEach((b, k) => b.setAttribute('aria-pressed', String(k === i)));
-        gNote.textContent = G[i].name + ': ' + G[i].alpha.toFixed(2) + ' Å³ squishiness, atom radius ' + G[i].R.toFixed(2) + ' Å.';
+        const sq = G[i].alpha, big = G[i].R;
+        const sw = sq < 0.3 ? 'barely squashes at all' : sq < 1.0 ? 'squashes a little' : sq < 2.5 ? 'squashes easily' : sq < 5 ? 'squashes very easily' : 'squashes like a balloon';
+        gNote.textContent = '';
+        gNote.append(G[i].name + ': a ' + (big < 1.4 ? 'tiny' : big < 1.8 ? 'small' : big < 2.1 ? 'fair-sized' : 'big') + ' cloud that ' + sw + '.',
+          BL.numv(' Squishiness ' + sq.toFixed(2) + ' Å³, radius ' + big.toFixed(2) + ' Å.'));
         S.dwell = 0;
         if (S.scene === 'two') { S.D = D.create(G[i].alpha, G[i].alpha, S.r, S.seed++); S.D.kT = D.KT * S.jig; S.avg = 0; } else newCrowd();
         S.seenGi.add(i); if (S.seenGi.has(0) && S.seenGi.has(4)) goals.done('big');
@@ -137,7 +142,7 @@
         S.W = W; S.K = 60; setK(S.K); S.nb = M.neighbors(W, 1.3);
         for (let k = 0; k < 400; k++) M.step(W, 0.005);
       }
-      function setK(K) { S.K = clamp(K, KMIN, KMAX); if (S.W) S.W.kT = 0.13 * S.K / G[S.gi].epsK; kOut.textContent = (S.K >= 10 ? Math.round(S.K) : S.K.toFixed(1)) + ' K'; kSl.value = String(Math.round(sFromK(S.K))); }
+      function setK(K) { S.K = clamp(K, KMIN, KMAX); if (S.W) S.W.kT = 0.13 * S.K / G[S.gi].epsK; BL.setKOut(kOut, S.K); kSl.value = String(Math.round(sFromK(S.K))); }
       function startSweep() {
         newCrowd(); S.K = KMIN; setK(KMIN); S.W.kT = 0.13 * KMIN / G[S.gi].epsK;
         for (let k = 0; k < 600; k++) M.step(S.W, 0.005);
@@ -190,7 +195,7 @@
         if (S.jig === 0 && performance.now() - (S.offT || 0) > 600) goals.done('off');
         // draw
         ctx.clearRect(0, 0, W, H);
-        const u = q.u, R = g.R * u, xs = [q.x0, q.x1];
+        const u = q.u, R = Math.max(1, g.R * u), xs = [q.x0, q.x1];
         // meet-here marker: contact distance
         const touch = 2 * g.R;
         ctx.setLineDash([5, 6]); ctx.strokeStyle = pal.line2; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(q.x0 + touch * u, q.cy + R * 1.28); ctx.lineTo(q.x0 + touch * u, q.cy + R * 1.5); ctx.stroke(); ctx.setLineDash([]);
@@ -254,7 +259,7 @@
           ctx.beginPath(); ctx.arc(W.x[i] * u, W.y[i] * u, 0.5 * u, 0, 7); ctx.fillStyle = BL.alpha(col, 0.28); ctx.fill(); ctx.lineWidth = Math.max(1.5, u * 0.06); ctx.strokeStyle = col; ctx.stroke();
           ctx.beginPath(); ctx.arc(W.x[i] * u, W.y[i] * u, Math.max(2, u * 0.07), 0, 7); ctx.fillStyle = pal.fg; ctx.fill();
         }
-        ctx.fillStyle = pal.fg; ctx.font = BL.font(800, 20, true); ctx.textAlign = 'left'; ctx.fillText(Math.round(S.K * 10) / 10 + ' K', 14, 10 + BL.fs(20));
+        ctx.fillStyle = pal.fg; ctx.font = BL.font(800, 20, true); ctx.textAlign = 'left'; ctx.fillText(BL.tempLabel(S.K), 14, 10 + BL.fs(20));
         ctx.font = BL.font(400, 14); ctx.fillStyle = pal.muted; ctx.fillText(gI.name + ' (boils at ' + gI.bp + ' K in real life)', 14, 10 + BL.fs(20) + BL.fs(14) * 1.3);
         if (S.sweep) { const pw = cw - 28; ctx.fillStyle = pal.line; ctx.fillRect(14, ch - 12, pw, 5); ctx.fillStyle = pal.electron; ctx.fillRect(14, ch - 12, pw * clamp(S.sweep.t / S.sweep.dur, 0, 1), 5); }
       }

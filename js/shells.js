@@ -18,8 +18,8 @@
   const PMAX = 80;                          // the most you can pull with, in eV
   const GOALS = [
     { id: 'pull', text: 'Pull an electron off an atom.' },
-    { id: 'easy', text: 'Find an atom that lets go of an outer electron very easily (under 6 eV).' },
-    { id: 'tight', text: 'Find an atom that holds on very tight (over 20 eV).' },
+    { id: 'easy', text: 'Find an atom that hands over an outer electron almost without a fight.' },
+    { id: 'tight', text: 'Find an atom that will not let go however hard you pull.' },
     { id: 'pattern', text: 'Measure eight different atoms yourself. Does anything repeat?' },
     { id: 'cliff', text: 'Take two electrons off lithium, sodium or potassium. What happens to the cost?' },
     { id: 'welcome', text: 'Push an extra electron into an atom that welcomes it.' },
@@ -41,6 +41,7 @@
   BL.register({
     id: 'shells', field: 'atoms', order: 3, name: 'Shells',
     tagline: 'Pull on an atom’s outer electron and feel how it holds on.',
+    lede: 'Take hold of an atom\'s outermost electron and pull. How hard it holds on is the single number that decides almost everything about how that atom behaves.',
     art, goals: GOALS,
 
     mount({ stage: stageHost, aux, dock }) {
@@ -109,6 +110,9 @@
         h('p', { class: 'hint' }, 'Tap a bar position on the graph to jump to that atom. Each dot is something you measured.')));
 
       function say(t) { S.status = t; statusP.textContent = t; }
+      /* The measured value, in brackets, only when the numbers are switched on.
+         Every sentence below has to read correctly with it missing. */
+      const ev = (v) => (BL.nums ? ' (' + fmt(v) + ' eV)' : '');
 
       /* ---------------- actions ---------------- */
       function choose(Z) {
@@ -131,7 +135,7 @@
           S.esc = { t: 0, ke: P - c, cost: c };
           S.N -= 1; S.shake = null;
           const word = w === 0 ? 'the extra' : ord[w];
-          say('It let go. Taking the ' + word + ' electron off ' + el().name.toLowerCase() + ' took ' + fmt(c) + ' eV' + (P - c > 0.5 ? ' (the rest, ' + fmt(P - c) + ' eV, sent it flying).' : '.'));
+          say('It let go. Taking the ' + word + ' electron off ' + el().name.toLowerCase() + ' cost ' + BL.words.cost(c) + ev(c) + '.' + (P - c > 0.5 ? ' You were pulling harder than that, and the rest sent it flying' + ev(P - c) + '.' : ''));
           goals.done('pull');
           if (w === 1 && c < 6) goals.done('easy');
           if (w === 1 && c > 20) goals.done('tight');
@@ -141,7 +145,7 @@
           record(); sync();
         } else {
           S.shake = { t: 0, a: clamp(P / c, 0.05, 1) };
-          say('Held on. ' + fmt(P) + ' eV was not enough. It shook and settled back.');
+          say('Held on. You were not pulling hard enough' + ev(P) + '. It shook and settled back.');
         }
       }
       function measure() {
@@ -157,12 +161,12 @@
         if (S.N < S.Z) {
           const back = S.N === S.Z - 1 ? e.ie : e.ie2;
           S.N += 1; S.esc = null;
-          say('It went back in and gave out ' + fmt(S.N === S.Z ? e.ie : e.ie2) + ' eV, the same amount it cost to take it off.');
+          say('It went back in and gave out exactly as much as it cost to take off' + ev(S.N === S.Z ? e.ie : e.ie2) + '.');
           void back; record(); sync(); return;
         }
         if (S.N === S.Z && e.ea > 0) {
           S.N += 1; S.flash = { t: 0, e: e.ea };
-          say('Welcome. ' + e.name + ' took the extra electron and gave out ' + fmt(e.ea) + ' eV.');
+          say('Welcome. ' + e.name + ' took the extra electron, and gave out energy for doing it' + ev(e.ea) + ' — that is what “wanting one” looks like.');
           goals.done('welcome'); record(); sync(); return;
         }
         S.shake = { t: 0, a: 1, bounce: true };
@@ -188,7 +192,7 @@
         pullBtn.disabled = cost() == null || S.N > S.Z && false;
         fillBtn.hidden = S.m1.size >= 20;
       }
-      function syncPull() { pullOut.textContent = fmt(S.pull) + ' eV'; }
+      function syncPull() { pullOut.textContent = ''; pullOut.append(BL.words.pull(S.pull), BL.numv(' · ' + fmt(S.pull) + ' eV')); }
       choose(11);
 
       /* ---------------- geometry ---------------- */
@@ -311,7 +315,7 @@
           BL.label(ctx, 'outer shell: ' + sh[k - 1] + ' of ' + cap, W - 14, 14 + f, { font: BL.font(700, 13), align: 'right', border: pal.electron });
         }
         if (S.pull > 0 && c0) {
-          BL.label(ctx, 'pulling with ' + fmt(S.pull) + ' eV', cx, H - 16 - f * 0.4, { font: BL.font(700, 14), border: pal.ui });
+          BL.label(ctx, 'pulling ' + BL.words.pull(S.pull) + (BL.nums ? ' · ' + fmt(S.pull) + ' eV' : ''), cx, H - 16 - f * 0.4, { font: BL.font(700, 14), border: pal.ui });
         } else if (!S.hinted) {
           BL.label(ctx, 'drag the glowing electron outward', cx, H - 16 - f * 0.4, { font: BL.font(700, 14), border: pal.ui });
         }

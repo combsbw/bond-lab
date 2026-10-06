@@ -52,6 +52,7 @@
   BL.register({
     id: 'well', field: 'bonding', order: 2, name: 'The Well',
     tagline: 'How much does it take to pull a pair apart?',
+    lede: 'Every attraction is a valley, and the pair sits in the bottom of it, jiggling. Pull on them with your hand, or pour heat in, and see which ones let go.',
     art, goals: GOALS,
 
     mount({ stage: stageHost, aux, dock }) {
@@ -114,7 +115,7 @@
       const settling = h('span', { class: 'settling', 'aria-hidden': 'true' }, '▶▶ fast-forward');
       const lapseBtn = h('button', { type: 'button', class: 'chip soft', 'aria-pressed': 'false', onclick: () => { S.lapse = !S.lapse; sync(); } }, 'Fast time');
       const lm = h('div', { class: 'landmarks' }, LANDMARKS.map(([T, name]) =>
-        h('button', { type: 'button', class: 'chip soft', onclick: () => setTemp(T) }, h('b', {}, fmtK(T) + ' K'), name)));
+        h('button', { type: 'button', class: 'chip soft', onclick: () => setTemp(T) }, h('b', {}, name), BL.numv(fmtK(T) + ' K'))));
       dock.appendChild(h('section', {},
         h('div', { class: 'row' }, h('h2', {}, 'Heat'), h('span', {}, heatOut, ' ', heatSub)),
         h('div', { class: 'range-wrap' }, heat, h('div', { class: 'range-ends' }, h('span', {}, 'cold'), h('span', {}, 'hot'))),
@@ -135,12 +136,22 @@
         modeBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(['one', 'four'][i] === S.mode)));
         ALL_ORDER.forEach((id) => typeBtn[id].setAttribute('aria-pressed', String(S.mode === 'one' && S.type === id)));
         const t = TYPES[S.type];
-        exLine.textContent = S.mode === 'one'
-          ? t.ex + ' · valley ' + t.D + ' kJ/mol deep · rests ' + t.r0.toFixed(2) + ' Å apart. A hand can pull ' + FCAP + ' kJ/mol per Å; this pair holds ' + (t.Fmax >= 10 ? Math.round(t.Fmax) : t.Fmax.toFixed(1)) + '.'
-          : 'Same heat for all four. Drag any right-hand particle.';
+        exLine.textContent = '';
+        if (S.mode === 'one') {
+          const w = BL.words.strength(t.D);
+          exLine.append(
+            t.ex + ' · ' + w.word + ' · ' + w.tangible + '. They sit ' + BL.words.gap(t.r0) + '. ',
+            h('b', {}, t.Fmax > FCAP ? 'Too strong to pull apart by hand.' : 'A hand can just about pull this one apart.'),
+            BL.numv(' Valley ' + t.D + ' kJ/mol deep, resting ' + t.r0.toFixed(2) + ' Å apart; a hand manages '
+              + FCAP + ' kJ/mol per Å and this pair holds ' + (t.Fmax >= 10 ? Math.round(t.Fmax) : t.Fmax.toFixed(1)) + '.'));
+        } else {
+          exLine.append('Same heat for all four. Drag any right-hand particle.');
+        }
         heat.value = Math.round(PH.sliderFromTemp(S.Tt) * 1000);
-        heatOut.textContent = fmtK(S.Tt) + ' K';
-        heatSub.textContent = Math.round(S.Tt - 273.15).toLocaleString('en-US') + ' °C';
+        heatOut.textContent = '';
+        heatOut.append(BL.words.tempShort(S.Tt), BL.numv(' · ' + fmtK(S.Tt) + ' K'));
+        heatSub.textContent = '';
+        heatSub.append(BL.numv(Math.round(S.Tt - 273.15).toLocaleString('en-US') + ' °C'));
         lapseBtn.setAttribute('aria-pressed', String(S.lapse));
       }
       sync();
@@ -336,7 +347,9 @@
         ctx.fillStyle = pal.ui; ctx.fillRect(gx0, gy, gw * Math.min(1, Math.abs(S.handF) / gmax), 10);
         ctx.fillStyle = pal.fg; ctx.fillRect(gx0 + gw * (t.Fmax / gmax) - 1.5, gy - 4, 3, 18);
         ctx.font = BL.font(400, 13); ctx.fillStyle = pal.muted; ctx.textAlign = 'right';
-        const cap = g.narrow ? 'pull ' + FCAP + ' · holds ' + holds : 'your pull (max ' + FCAP + ') · bond holds ' + holds;
+        const cap = BL.nums
+          ? (g.narrow ? 'pull ' + FCAP + ' · holds ' + holds : 'your pull (max ' + FCAP + ') · bond holds ' + holds)
+          : (t.Fmax > FCAP ? 'this one holds harder than a hand can pull' : 'a hand can out-pull this one');
         const capY = g.narrow ? statY : gy + 12 + BL.fs(13);
         if (!g.narrow || ctx.measureText(status).width + ctx.measureText(cap).width + 30 < W) ctx.fillText(cap, gx1, capY);
         ctx.textAlign = 'left';
@@ -494,7 +507,7 @@
           if (k.x1 + 8 > leftEdge) continue;
           c.fillStyle = pal.muted; c.textAlign = k.last ? 'right' : 'center';
           const tx = k.last ? W - 6 : k.px;
-          c.fillText(k.nm, tx, H - m.b + f * 1.25); c.fillText(fmtK(k.T) + ' K', tx, H - m.b + f * 2.4);
+          c.fillText(k.nm, tx, H - m.b + f * 1.25); if (BL.nums) c.fillText(fmtK(k.T) + ' K', tx, H - m.b + f * 2.4);
           leftEdge = k.x0;
         }
 

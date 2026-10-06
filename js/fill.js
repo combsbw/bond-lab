@@ -45,6 +45,7 @@
   BL.register({
     id: 'fill', field: 'atoms', order: 4, name: 'Fill',
     tagline: 'Give them away or share them: make every ring full.',
+    lede: 'A puzzle: give electrons away or share them until every outer ring is full. Solve a few — then go to Meet and find out why this works at all.',
     art, goals: GOALS,
 
     mount({ stage: stageHost, aux, dock }) {
