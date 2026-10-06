@@ -53,9 +53,9 @@
     '<circle cx="76" cy="60" r="5" fill="#d9493c"/><circle cx="130" cy="60" r="5" fill="#3b82e0"/></svg>';
 
   BL.register({
-    id: 'tug', field: 'bonding', order: 1, name: 'Tug',
-    tagline: 'Two atoms, one electron cloud. Who holds it?',
-    lede: 'Two atoms and one cloud of electrons between them. Change how hard each one pulls, and watch the cloud lean toward whoever is winning.',
+    id: 'tug', field: 'bonding', order: 2, name: 'Tug',
+    tagline: 'A close-up of one bond, and what a passing charge does to it.',
+    lede: 'A close-up of one stretch of the rail you met in The Spectrum. Change how hard each atom pulls and watch the cloud lean — then bring a charge nearby and watch it lean further, or turn the whole molecule round.',
     art, goals: GOALS,
 
     mount({ stage: stageHost, aux, dock, params }) {

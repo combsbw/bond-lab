@@ -36,7 +36,7 @@
   const nameOf = (id) => M.TYPES[id].name;
 
   BL.register({
-    id: 'handshake', field: 'bonding', order: 3, name: 'Handshake',
+    id: 'handshake', field: 'bonding', order: 4, name: 'Handshake',
     tagline: 'Hands that only grip when they line up.',
     lede: 'Molecules with a positive end and a negative end only grip when they line up the right way. Drag them around each other until they do.',
     art, goals: GOALS,
@@ -320,7 +320,7 @@
           ctx.beginPath(); ctx.moveTo(W.x[i] * u, W.y[i] * u); ctx.lineTo(x, y); ctx.lineWidth = 3; ctx.setLineDash([6, 5]); ctx.strokeStyle = pal.fg; ctx.stroke(); ctx.setLineDash([]);
           ctx.beginPath(); ctx.arc(x, y, 7, 0, 7); ctx.fillStyle = pal.fg; ctx.fill();
           const F = Math.hypot(W.drag.fx || 0, W.drag.fy || 0);
-          BL.label(ctx, 'pulling with ' + F.toFixed(1), clamp(x, 70, cw - 70), y < 40 ? y + 30 : y - 24, { font: BL.font(700, 13), border: pal.fg });
+          BL.label(ctx, 'pulling' + (BL.nums ? ' with ' + F.toFixed(1) : ''), clamp(x, 70, cw - 70), y < 40 ? y + 30 : y - 24, { font: BL.font(700, 13), border: pal.fg });
         }
         // labels
         const f = BL.fs(14);

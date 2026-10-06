@@ -104,6 +104,17 @@
       const note = h('p', { class: 'hint' }, 'Electrons in the space between two atoms count for both of them.');
       const doneBox = h('div', { class: 'wonbox', hidden: true });
       aux.appendChild(h('section', { class: 'panel' }, statusP, ledger, note, doneBox));
+
+      /* This puzzle is a bookkeeping trick that happens to come out right, and
+         saying so is more useful than letting a learner walk away believing
+         atoms are trying to fill their shells. */
+      aux.appendChild(h('section', { class: 'panel' },
+        h('h2', {}, 'A warning about this puzzle'),
+        h('p', { class: 'hint' }, 'Every one of these comes out tidy, and that is suspicious. Atoms do not want anything, and nothing in nature is counting to eight.'),
+        h('p', { class: 'hint' }, 'What actually happens is an accounting question: can one of these atoms afford to hand an electron over, or is sharing cheaper? Work that out from how tightly each atom holds its electrons and you get the same answers — without ever counting a shell.'),
+        h('p', { class: 'hint' }, 'The full rings are the shape those prices happen to make. They are the receipt, not the reason. The puzzle is a quick way to predict what a molecule will look like; it is not why the molecule is like that.'),
+        h('p', {},
+          h('a', { class: 'ch-go', href: '#/meet' }, 'See the same answers without the counting →'))));
       function say(t) { statusP.textContent = t; }
 
       /* where a place is: {t:'a', i} or {t:'z', i} */

@@ -78,7 +78,7 @@
         spun: 0, lastTh: Math.PI, hadBond: false, wandered: false, touched: false,
       };
 
-      const stage = BL.stage(stageHost, '16 / 10', {
+      const stage = BL.stage(stageHost, '16 / 8.6', {
         label: 'A single water molecule with a bent shape, its oxygen marked δ− and its hydrogens δ+, and an arrow below showing the molecule’s overall pull. Drag a hydrogen to change the angle. With the stage focused, the left and right arrow keys open and close the angle.',
         focusable: true,
       });

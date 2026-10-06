@@ -34,6 +34,12 @@
   /* Pauling's own estimate of how ionic a bond is, from the difference in pull. */
   const icOf = (d) => 1 - Math.exp(-0.25 * d * d);
   const DEN_MAX = 3.4;
+  /* Where books draw the line between "very polar" and "ionic": a difference
+     in pull of about 1.9, which on Pauling's own curve is this much unevenness.
+     It is a convention, not a cliff, and the rail shows the curve running
+     straight through it. Sodium chloride lands just the far side of it, which
+     is the answer anyone would expect of table salt. */
+  const IONIC_AT = 0.63;
 
   /* Real pairs, as ticks along the rail. hb: this pair puts a hydrogen on an
      N, O or F, which is the only place a hydrogen bond ever comes from. */
@@ -50,6 +56,7 @@
     { a: 'Mg', b: 'O', name: 'Mg–O', note: 'the grit in a firework', max: 1 },
     { a: 'Na', b: 'Cl', name: 'Na–Cl', note: 'table salt', max: 1 },
     { a: 'K', b: 'Br', name: 'K–Br', note: 'an old photographic salt', max: 1 },
+    { a: 'Li', b: 'F', name: 'Li–F', note: 'as one-sided as a bond gets', max: 1 },
   ];
   PAIRS.forEach((p) => {
     p.d = Math.abs(EL[p.a].en - EL[p.b].en);
@@ -65,10 +72,10 @@
   /* Where the names sit along the rail. The edges are human conventions, not
      cliffs: the drawn picture crosses them without changing. */
   const ZONES = [
-    { lo: 0, hi: 0.06, mid: 0.0, word: 'shared evenly', book: 'covalent', say: 'Both atoms pull the same, so the cloud sits dead centre. Neither end is charged, so this molecule has nothing to offer a neighbour but a flicker.' },
-    { lo: 0.06, hi: 0.5, mid: 0.26, word: 'shared unevenly', book: 'polar covalent', say: 'One atom pulls harder. The cloud leans, and the molecule grows a δ− end and a δ+ end — which is where every between-molecule hold comes from.' },
-    { lo: 0.5, hi: 0.78, mid: 0.62, word: 'nearly taken', book: 'very polar', say: 'The cloud has almost moved in with the stronger atom. The ends are now strongly charged, and a hydrogen sitting on this end is bare enough to make a hydrogen bond.' },
-    { lo: 0.78, hi: 1.001, mid: 0.92, word: 'handed over', book: 'ionic', say: 'The electron is simply gone. Two charged balls are left, pulling on each other — and on every other ion within reach, which is why salt is a lattice and not a pair.' },
+    { lo: 0, hi: 0.05, mid: 0.0, word: 'shared evenly', book: 'covalent', say: 'Both atoms pull the same, so the cloud sits dead centre. Neither end is charged, so this molecule has nothing to offer a neighbour but a flicker.' },
+    { lo: 0.05, hi: 0.45, mid: 0.24, word: 'shared unevenly', book: 'polar covalent', say: 'One atom pulls harder. The cloud leans, and the molecule grows a δ− end and a δ+ end — which is where every between-molecule hold comes from.' },
+    { lo: 0.45, hi: IONIC_AT, mid: 0.54, word: 'nearly taken', book: 'very polar', say: 'The cloud has almost moved in with the stronger atom. The ends are now strongly charged, and a hydrogen sitting on this end is bare enough to make a hydrogen bond.' },
+    { lo: IONIC_AT, hi: 1.001, mid: 0.82, word: 'handed over', book: 'ionic', say: 'The electron is simply gone. Two charged balls are left, pulling on each other — and on every other ion within reach, which is why salt is a lattice and not a pair.' },
   ];
   const zoneOf = (u) => ZONES.find((z) => u < z.hi) || ZONES[ZONES.length - 1];
 
@@ -93,7 +100,7 @@
   function hold(u, neigh, hb, r) {
     if (neigh === 'none') return null;
     const vdw = 1.0;                                  // every pair of anything has this much
-    const ionic = u > 0.78;                           // not molecules any more: ions
+    const ionic = u > IONIC_AT;                       // not molecules any more: ions
     let kind, D, m, why;
     if (neigh === 'plus' || neigh === 'minus') {
       if (ionic) {
@@ -171,7 +178,7 @@
       /* A hydrogen bond needs a hydrogen with nothing left on it, which in practice
          means H bonded to N, O or F. Off the preset pairs there are no elements to
          check, so any strongly uneven bond short of a full handover counts. */
-      const canHB = () => { const p = cur(); return p ? !!p.hb : S.vu >= 0.12 && S.vu <= 0.78; };
+      const canHB = () => { const p = cur(); return p ? !!p.hb : S.vu >= 0.12 && S.vu <= IONIC_AT; };
       const maxOrder = () => { const p = cur(); return S.u > 0.45 ? 1 : p ? p.max : 3; };
 
       /* ---------------- stage ---------------- */
@@ -189,7 +196,7 @@
         zoneBtn.forEach((b, i) => b.setAttribute('aria-pressed', String(ZONES[i] === S.zone)));
         zoneSay.textContent = S.zone ? S.zone.say : '';
       }
-      const stage = BL.stage(stageHost, '16 / 9', {
+      const stage = BL.stage(stageHost, '16 / 7.6', {
         label: 'A rail running from evenly shared electrons to electrons handed over completely, with two atoms drawn below it. Drag the marker along the rail, or focus the stage and use the left and right arrow keys.',
         focusable: true,
       });
@@ -208,7 +215,7 @@
         /* With nobody parked alongside, the molecule gets the whole stage. The
            moment a neighbour arrives it has to share, which matters most on a
            phone, where there is no spare width to be had. */
-        L.unit = clamp(Math.min(W * (S.neigh === 'none' ? 0.13 : 0.075), H * 0.2), 22, 72);
+        L.unit = clamp(Math.min(W * (S.neigh === 'none' ? 0.13 : 0.08), H * 0.26), 22, S.neigh === 'none' ? 96 : 76);
         L.molF = S.neigh === 'none' ? 0.42 : 0.3;
       };
       stage.onresize();
@@ -217,7 +224,7 @@
       const xu = (x) => clamp((x - L.railX0) / L.railW, 0, 1);
 
       /* The molecule sits left of centre so a neighbour has room on the right. */
-      const bondLen = () => (1.05 + 1.35 * S.vu) * ORDER[S.order].len;
+      const bondLen = () => (1.05 + 2.1 * S.vu) * ORDER[S.order].len;
       const molX = () => stage.w * (L.molF == null ? 0.42 : L.molF);
       /* Covalent radii are honest and useless as a picture: hydrogen comes out a
          speck. Compress the range instead, so sizes still rank correctly. */
@@ -432,7 +439,7 @@
         const p = cur();
         const symA = p ? p.lo : 'X', symB = p ? p.hi : 'Y';
         const d = bondLen() * L.unit;
-        const rA = atomPx(p ? EL[p.lo].r : 1.0) * (1 - 0.26 * u);
+        const rA = atomPx(p ? EL[p.lo].r : 1.0) * (1 - 0.45 * u);
         const rB = atomPx(p ? EL[p.hi].r : 0.9) * (1 + 0.34 * u);
         const ax = cx - d / 2, bx = cx + d / 2;
         const t = 0.5 + 0.5 * u;
@@ -440,9 +447,9 @@
         const blend = pal.dark ? 'lighter' : 'source-over';
 
         // the sticks: one line per shared pair, so a triple bond LOOKS tighter
-        if (u < 0.78) {
+        if (u < IONIC_AT) {
           const sep = Math.max(4, L.unit * 0.14);
-          ctx.strokeStyle = BL.alpha(pal.fg, 0.4 * (1 - u / 0.78));
+          ctx.strokeStyle = BL.alpha(pal.fg, 0.4 * (1 - u / IONIC_AT));
           ctx.lineWidth = Math.max(2, L.unit * 0.1); ctx.lineCap = 'round';
           for (let k = 0; k < S.order; k++) {
             const off = (k - (S.order - 1) / 2) * sep;
@@ -492,7 +499,7 @@
           const col = q >= 0 ? BL.mix(pal.fg, pal.pos, Math.min(1, Math.abs(q) * 1.6)) : BL.mix(pal.fg, pal.neg, Math.min(1, Math.abs(q) * 1.6));
           ctx.beginPath(); ctx.arc(x, cy, 6.5, 0, 7); ctx.fillStyle = col; ctx.fill();
           ctx.lineWidth = 2.5; ctx.strokeStyle = pal.panel; ctx.stroke();
-          const full = u > 0.86;
+          const full = u > IONIC_AT + 0.08;
           BL.label(ctx, sym + (full ? (q > 0 ? '⁺' : '⁻') : ''), x, cy + f * 2.2, { font: BL.font(800, 17, true) });
           if (Math.abs(q) >= 0.05) {
             BL.label(ctx, (full ? '' : 'δ') + (q >= 0 ? '+' : '−') + (BL.nums ? ' ' + Math.abs(q).toFixed(2) : ''), x, cy - f * 2.2,
@@ -610,25 +617,25 @@
           holdWhy.textContent = hd.why;
         } else {
           const o = ORDER[S.order];
-          const insideD = S.vu > 0.78 ? 500 : lerp(o.kJ, 500, clamp(S.vu / 0.78, 0, 1) * 0.3);
+          const insideD = S.vu > IONIC_AT ? 500 : lerp(o.kJ, 500, clamp(S.vu / IONIC_AT, 0, 1) * 0.3);
           holdName.textContent = '';
           holdName.append(
-            h('span', { class: 'hold-kind', style: 'color: var(--t-' + (S.vu > 0.78 ? 'ionic' : 'covalent') + ')' }, S.vu > 0.78 ? KIND_NAME.ionic : KIND_NAME.covalent),
+            h('span', { class: 'hold-kind', style: 'color: var(--t-' + (S.vu > IONIC_AT ? 'ionic' : 'covalent') + ')' }, S.vu > IONIC_AT ? KIND_NAME.ionic : KIND_NAME.covalent),
             h('span', { class: 'hold-where' }, 'inside the molecule'));
           const w1 = BL.words.strength(insideD);
           mNow.set(w1.frac, w1.word, Math.round(insideD) + ' kJ/mol');
           mReach.set(1, 'all of it — they are bonded', '100%');
-          holdWhy.textContent = S.vu > 0.78
+          holdWhy.textContent = S.vu > IONIC_AT
             ? 'One atom took the electrons outright. What is left is a + ball and a − ball pulling on each other — and in real salt that pull does not stop at two, it builds a whole lattice.'
             : 'The electrons belong to both atoms at once. Put a neighbour beside it to see what this molecule can do to anything OUTSIDE itself.';
         }
-        drawLadder(hd ? hd.kind : (S.vu > 0.78 ? 'ionic' : 'covalent'));
+        drawLadder(hd ? hd.kind : (S.vu > IONIC_AT ? 'ionic' : 'covalent'));
 
         // ---------- goals ----------
         if (S.touched) {
           if (S.vu < 0.02) goals.done('even');
-          if (S.vu > 0.25 && S.vu < 0.78) goals.done('lean');
-          if (S.vu > 0.9) goals.done('hand');
+          if (S.vu > 0.25 && S.vu < IONIC_AT) goals.done('lean');
+          if (S.vu > IONIC_AT + 0.05) goals.done('hand');
           if (S.order === 3 && S.vu < 0.2) goals.done('tight');
           if (hd) {
             if (hd.kind === 'hydrogen' && hd.reach > 0.5) goals.done('hbond');

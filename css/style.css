@@ -409,7 +409,7 @@ html[data-nums="off"] .numv { display: none; }
 .ch-verdict.yes { color: var(--ui); }
 .ch-verdict.no { color: var(--pos); }
 .ch-try { color: var(--muted); }
-.ch-go { font-weight: 700; color: var(--ui); text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+.ch-go { font-weight: 700; color: var(--ui); text-decoration: underline; text-underline-offset: 3px; }
 .ch-seen { font-size: 0.9rem; color: var(--muted); }
 
 

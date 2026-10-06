@@ -4,6 +4,10 @@ Instruments for things too small to see. Poke atoms, bonds and water molecules a
 
 Built for middle school chemistry. The aim is not memorized facts but an intuition that transfers: learners should come away with a feel for *why* things behave as they do, so a new situation is something they can reason about instead of recall.
 
+Two things shape everything here. **Bonding is one spectrum, not a box of names** — covalent, polar, ionic, hydrogen bonds, ion–dipole, van der Waals are one question (how evenly do two atoms share?) asked at different settings, and the lab is arranged so you can slide between them without anything jumping. And **a bond is a consequence of what electrons cost**, not of atoms wanting full shells; the shells are the receipt.
+
+**Numbers are off by default.** Everything is measured, and the measurements are all still there behind **Display → Show the numbers**. What shows first is a word tied to something a learner has touched — "a hot kettle shakes it loose", "room warm", "sodium hands it over" — and a bar, because *more than / less than* is usually the real question.
+
 No build step, no dependencies. Open `index.html`, or serve the folder.
 
 ```
@@ -17,18 +21,25 @@ python3 -m http.server 8000     # then visit http://localhost:8000
 | Atoms | **Rungs** | Electron energy comes in rungs, not a ramp. Light of the wrong energy passes straight through; light of exactly the right energy is swallowed. White light shows the rungs as dark gaps. |
 | Atoms | **Cloud** | An orbital is a place an electron is likely to be found. One snapshot is scatter; thousands make a shape. Slice it open to find the empty rings. |
 | Atoms | **Shells** | Pull an atom's outer electron and measure the cost, atom by atom. The saw-tooth builds itself, and so does the cliff after a full shell. |
-| Atoms | **Fill** | Give electrons away or share them until every outer ring is full. Which one works depends on the atoms. |
-| Bonding | **Tug** | Covalent, polar and ionic are not three boxes. They are stretches of one dial: how unequal the pull on a shared electron cloud is. A charged probe bends the cloud and turns polar molecules. |
+| Atoms | **Fill** | Give electrons away or share them until every outer ring is full. A quick way to predict a molecule's shape — and the instrument says plainly that it is bookkeeping, not a cause, and points at **Meet**. |
+| Bonding | **The Spectrum** | The spine of the whole lab. One rail from evenly shared to handed over, with nothing jumping at the boundaries; double and triple bonding tighten the sharing end. Park a neighbour alongside and the hold that forms — hydrogen bond, dipole–dipole, ion–dipole, van der Waals — follows from how uneven the bond already was. Drag the neighbour away to see which holds reach and which die touching. |
+| Bonding | **Meet** | Can one of these two afford to hand an electron over? Drag the electron across and find out: the cost of pulling it off, what the taker pays, what the resulting charges pay back. Nothing in the sum counts shells, and it still gets salt, water, magnesium oxide and methane right. A map of every element by how tightly it holds on shows the metal/non-metal split arriving rather than being announced. |
+| Bonding | **Tug** | A close-up of one stretch of the rail. Change how hard each atom pulls and watch the cloud lean; bring a charge nearby and watch it lean further, or turn the whole molecule round. |
 | Bonding | **The Well** | Every attraction is a valley in an energy landscape. Heat fills the valley. A hand is a weak spring. Real depths (kJ/mol), real distances (angstroms) and real temperatures decide what holds. |
 | Bonding | **Handshake** | Hydrogen bonds are hands that only grip when they line up. Turn a molecule and the grip comes and goes; heat a crowd and the handshakes let go, sooner for weaker hands. |
 | Bonding | **Flicker** | Even atoms with no charge stick together, faintly: their electron clouds slosh and the sloshes line up. Switch the jiggle off and the pull vanishes; compare small and big atoms, then cool a crowd of each gas to see which cling. |
+| Water | **The Molecule** | One water molecule, and the two things that make it odd: lopsided bonds, and a bend that stops the two lopsided pulls cancelling. Open the angle and the molecule's pull collapses; bring a second one in and the hydrogen bond goes with it. Carbon dioxide is the control. |
 | Water | **Cling** | A drop on three surfaces. Whether it beads or spreads is a contest between the surface's grab and the water's grip on itself. Tilt the surface and see who lets go first. |
 | Water | **Skin** | Molecules at the edge have neighbors on one side only, so they are pulled inward. Poke the skin, weaken the grip with soap, and see why a drop wants to be round. |
 | Water | **Climb** | Water climbs a thin tube, higher the thinner it is. Change the surface, the grip and gravity (or take it to the Moon) and see what the rise depends on. |
 | Water | **Float** | Cool a sheet of molecules with three hands each and it gets *less* dense: the hands pull it into an open honeycomb. A block of that floats in its own liquid. Molecules with no hands never do this. |
 | Water | **Slow** | The same heat into three boxes, three different temperatures. Water-like molecules spend heat letting go of handshakes, so they warm slowly, and cool slowly, too. |
 
-Each instrument has a short list of quiet challenges (not instructions). They tick off when the learner actually produces the situation, and the hub remembers them in the browser.
+Each instrument has a short list of quiet things to try (not instructions). They tick off when the learner actually produces the situation, and the hub remembers them in the browser.
+
+Separately, each section carries several **challenges**: everyday consequences — a burst pipe, a street lamp, a balloon stuck to a wall, cold sea beside hot sand — with three answers to choose between. Each one names the instrument that settles it and what to do when you get there, so the question is always something the learner can go and test rather than recall. They live on the hub per section and in each instrument under its readouts (`js/quiz.js`).
+
+Every water instrument draws real water molecules: an oxygen, two hydrogens at the real 104.5° bend, a lone-pair lobe on the back, and hydrogen bonds drawn from a hydrogen to somebody's lone pair rather than centre to centre (`js/moldraw.js`). The physics underneath is unchanged — the model always had the hydrogens in those places; it was only ever drawn as a disk with four dots.
 
 ## How the instruments are meant to teach
 
@@ -36,9 +47,10 @@ These are the rules every instrument follows. Use them as a checklist when addin
 
 1. **Perturb, do not present.** Every idea is reached by changing something and watching what answers: pull, heat, charge, swap an atom.
 2. **Labels arrive after the experience.** Words like "polar covalent" appear as names for regions the learner has already explored, and the dial makes clear the boundaries are conventions.
-3. **One quantity, many phenomena.** Tug is about unequal pull. The Well is about depth versus heat. Water's properties are built from those two ideas, and from one more: hands that only grip when aligned.
-4. **True scale where it matters.** In The Well's *All four* view the depth bars are drawn on one linear scale, so van der Waals is a sliver. That is the point.
-5. **Honest about being a model.** See below.
+3. **One quantity, many phenomena.** The Spectrum is about how unevenly electrons are shared, and everything downstream — every between-molecule hold, every property of water — is that same quantity acting outside the molecule instead of inside it. The Well is about depth versus heat.
+4. **Say what the model is not.** Where an instrument teaches a shortcut that is useful but not a cause — Fill's octet puzzle, Meet's round-number payback — it says so on the page, rather than leaving a learner to find out later that they were told a story.
+5. **True scale where it matters.** In The Well's *All four* view the depth bars are drawn on one linear scale, so van der Waals is a sliver. That is the point.
+6. **Honest about being a model.** See below.
 
 ## Deploy to GitHub Pages
 
@@ -56,7 +68,10 @@ Other builds: `node tools/bundle.js` writes a single self-contained `dist/bond-l
 index.html          shell: header, #view, script tags (order matters: core, engines, instruments, app)
 css/style.css       light, dark and high-contrast tokens at the top
 assets/             self-hosted fonts (Atkinson Hyperlegible Next, Bricolage Grotesque)
-js/core.js          helpers: canvas stage, pointer drag, loop, goals, registry, display settings
+js/core.js          helpers: canvas stage, pointer drag, loop, goals, registry, display settings,
+                    plain-language word scales, meters, folds
+js/moldraw.js       how a molecule looks: water, H2S-like, methane-like, ions, hydrogen bonds
+js/quiz.js          the everyday challenges and the card that renders them
 js/physics.js       energy wells and a thermostatted two-particle simulation
 js/atoms.js         hydrogen-like levels, orbital samplers, ionization and electronegativity data
 js/water2d.js       flat rigid-body "handshake" model (four hands per molecule, Langevin thermostat)
@@ -74,7 +89,8 @@ Create `js/<name>.js`, add its `<script>` tag before `js/app.js`, and register i
 ```js
 BL.register({
   id: 'example', field: 'water', order: 9, name: 'Example',
-  tagline: 'One line that makes you curious.',
+  tagline: 'One line that makes you curious.',             // hub tile
+  lede: 'One plain sentence saying what you are looking at and what to do.',   // above the stage
   art: '<svg viewBox="0 0 200 120">…</svg>',         // hub tile art
   goals: [{ id: 'x', text: 'Do the thing.' }],
   mount({ stage, aux, dock }) {                      // three slots: pinned stage, wide readouts, controls
@@ -89,7 +105,9 @@ To show a tile for something not built yet, add it to `PLANNED` in `js/app.js`.
 
 Worth knowing before putting these in front of a class.
 
-- **Tug** uses Pauling electronegativity and Pauling's ionic-character estimate, `1 - exp(-ΔEN²/4)`. No bond comes out as exactly 0% or 100%. The polar/ionic cut-off is set at ΔEN 2.0 (books use 1.7 or 2.0, and 0.4 or 0.5 for nonpolar); the dial shows the curve under them is smooth. Atom sizes shrink for the cation and grow for the anion as an illustration, not a calculation.
+- **The Spectrum** and **Tug** use Pauling electronegativity and Pauling's ionic-character estimate, `1 - exp(-ΔEN²/4)`. No bond comes out as exactly 0% or 100%. The zone edges are conventions (books draw them near ΔEN 0.4–0.5 and 1.7–2.0) and both instruments show the curve running smoothly through them; sodium chloride lands just the ionic side, as anyone would expect of table salt. The Spectrum's between-molecule depths are the same kJ/mol figures The Well simulates, so the two line up, and the distance falloff is a single power law per kind — right in order (ion–dipole reaches furthest, van der Waals dies first), rough in size.
+- **Meet** costs a handover as `payback + electron affinity − ionization energy`. The two measured values are real. The payback is a deliberate round number (5.5 eV per unit of charge each way, four times that for a two-electron handover) standing in for the pull from every ion packed around the pair; the instrument says so on the page. Changing it would move a handful of borderline pairs across the line and would change nothing about how the decision is made. Verdicts come out right for salt, water, methane, carbon dioxide, magnesium oxide, the alkali halides and the calcium salts; aluminium chloride reads ionic when it is really closer to covalent.
+- **The Molecule** adds the two bond tugs as arrows, which is the real reason carbon dioxide has no overall pull and water does. The bend and the difference in pull are both free to move, which real molecules are not.
 - **Atoms** uses hydrogen-like levels for the rungs, cloud shapes and slices, and real measured ionization energies and electronegativities for the atom-by-atom instruments. Many-electron atoms are not solved; the effective charge shown is a textbook estimate.
 - **The Well** simulates only the distance between two particles (a 1D relative coordinate with a 3D entropy term) under a thermostat. Depths and resting distances are textbook values for H–H, an Na⁺Cl⁻ pair, an O–H···O hydrogen bond, HCl···HCl, Na⁺···OH₂ and Ar···Ar. Vibration speeds are compressed so the eye can follow them. The "room" a free pair can wander in is a fixed size, so the temperatures where pairs come apart are right in *order* and rough in *size*. After a big change in heat the simulation runs faster for a moment; the chart shows the long-run answer.
 - **Handshake, Cling, Skin and Slow** are **two-dimensional toy models**: flat molecules, each with two hands that give a hydrogen and two that receive one, plus a general stickiness. The temperature scale is calibrated so the water-like crowd comes apart near 373 K and the other kinds fall where they fall, so the order is right and the exact numbers are not. A flat crowd is not a 3D liquid; surface tension and contact angles come out in the right direction, not the right size.

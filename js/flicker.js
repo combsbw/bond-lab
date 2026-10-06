@@ -38,7 +38,7 @@
   const EREF = Math.abs(D.meanEnergy(G[4].alpha, G[4].alpha, 2 * G[4].R, D.KT));
 
   BL.register({
-    id: 'flicker', field: 'bonding', order: 4, name: 'Flicker',
+    id: 'flicker', field: 'bonding', order: 5, name: 'Flicker',
     tagline: 'Clouds that slosh, and a pull that comes from nowhere.',
     lede: 'Nothing in here carries any charge at all. Watch the clouds slosh about anyway, and watch two atoms pull on each other because of it.',
     art, goals: GOALS,

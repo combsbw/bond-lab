@@ -131,7 +131,7 @@
 
       const B = () => balance(S.a, S.b);
 
-      const stage = BL.stage(stageHost, '16 / 9', {
+      const stage = BL.stage(stageHost, '16 / 7.8', {
         label: 'Two atoms with their outer electrons drawn as dots. Drag an outer electron onto the other atom to attempt a handover. With the stage focused, press Enter to attempt the cheapest handover and Escape to start over.',
         focusable: true,
       });
@@ -142,7 +142,7 @@
       stage.onresize = () => {
         const W = stage.w, H = stage.h;
         L.cy = H * 0.5;
-        L.r = clamp(Math.min(W * 0.14, H * 0.3), 36, 108);
+        L.r = clamp(Math.min(W * 0.155, H * 0.34), 36, 122);
         L.gap = L.r * (3.1 - (S.phase === 'ionic' ? 0.85 * (S.t * S.t * (3 - 2 * S.t)) : 0));
         L.ax = W * 0.5 - L.gap / 2;
         L.bx = W * 0.5 + L.gap / 2;
@@ -232,6 +232,89 @@
           h('p', { class: 'hint' }, 'It is a round figure on purpose. Swapping it for the exact one for every pair would change which side of the line a handful of borderline pairs land on, and would not change a single thing about how the decision is made.'))));
 
       shellFold.addEventListener('toggle', () => { if (shellFold.open) goals.done('shell'); });
+
+      /* One picture that does what no pair-by-pair test can: every element laid
+         out by how tightly it holds its outermost electron. The givers pile up
+         at one end, the takers at the other, and the rule falls out of the
+         picture — one from each end and the handover pays, two from the same
+         end and it never does. That is the metals-and-non-metals split, arrived
+         at rather than announced. */
+      const mapCv = BL.stage(h('div'), '3.4 / 1', {
+        label: 'Every element laid out by how tightly it holds its outermost electron, with the two you have chosen marked. Click an element to load it.',
+      });
+      mapCv.wrap.classList.add('flat', 'dial');
+      aux.appendChild(h('section', { class: 'panel' },
+        h('h2', {}, 'Who gives, who takes'),
+        mapCv.wrap,
+        h('p', { class: 'hint' }, 'Take one from each end and the handover pays for itself: that is an ionic bond, and it is what "a metal plus a non-metal" has always meant. Take two from the same end and it never pays, so they share. Nobody had to tell you which elements are metals — the price did.')));
+
+      const mapHit = [];
+      mapCv.canvas.addEventListener('click', (e) => {
+        const r = mapCv.canvas.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+        let best = null, bd = 26;
+        mapHit.forEach((m) => { const d = Math.hypot(x - m.x, y - m.y); if (d < bd) { bd = d; best = m; } });
+        if (!best) return;
+        // the second click on a different element fills the other slot
+        if (S.a.sym === best.el.sym || S.b.sym === best.el.sym) return;
+        S.b = S.a; S.a = best.el;
+        reset(); stage.onresize(); sync();
+      });
+      mapCv.canvas.addEventListener('pointermove', (e) => {
+        const r = mapCv.canvas.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top;
+        mapCv.canvas.style.cursor = mapHit.some((m) => Math.hypot(x - m.x, y - m.y) < 26) ? 'pointer' : 'default';
+      });
+
+      function drawMap() {
+        const c = mapCv.ctx, W = mapCv.w, H = mapCv.h, pal = BL.pal;
+        if (!W) return;
+        c.clearRect(0, 0, W, H);
+        mapHit.length = 0;
+        const f = BL.fs(13);
+        const lo = 4.0, hi = 18.0;
+        const pad = { l: 14, r: 14, t: f * 2.2, b: f * 2.6 };
+        const X = (ie) => pad.l + ((BL.clamp(ie, lo, hi) - lo) / (hi - lo)) * (W - pad.l - pad.r);
+        const yMid = pad.t + (H - pad.t - pad.b) * 0.52;
+        // the two ends, as bands
+        const GIVE = 8.5, TAKE = 11.5;
+        c.fillStyle = BL.alpha(pal.pos, 0.1);
+        c.fillRect(pad.l, pad.t, X(GIVE) - pad.l, H - pad.t - pad.b);
+        c.fillStyle = BL.alpha(pal.neg, 0.1);
+        c.fillRect(X(TAKE), pad.t, W - pad.r - X(TAKE), H - pad.t - pad.b);
+        c.font = BL.font(700, 13); c.textBaseline = 'alphabetic';
+        c.fillStyle = pal.muted;
+        c.fillStyle = pal.pos; c.textAlign = 'left'; c.fillText('hands electrons over, ends up +', pad.l + 2, f * 1.2);
+        c.fillStyle = pal.neg; c.textAlign = 'right'; c.fillText('takes them, ends up −', W - pad.r - 2, f * 1.2);
+        // the line itself
+        c.strokeStyle = pal.line2; c.lineWidth = 2;
+        c.beginPath(); c.moveTo(pad.l, yMid); c.lineTo(W - pad.r, yMid); c.stroke();
+        // every element, stacked where they collide
+        const rows = [];
+        PICKS.slice().sort((p, q) => p.ie - q.ie).forEach((el) => {
+          const x = X(el.ie);
+          let k = 0;
+          while (rows[k] != null && x - rows[k] < f * 1.9) k++;
+          rows[k] = x;
+          const on = el.sym === S.a.sym || el.sym === S.b.sym;
+          const y = yMid + (k % 2 ? 1 : -1) * Math.ceil((k + 1) / 2) * f * 1.25;
+          mapHit.push({ x, y, el });
+          c.strokeStyle = BL.alpha(pal.line2, 0.6); c.lineWidth = 1;
+          c.beginPath(); c.moveTo(x, yMid); c.lineTo(x, y); c.stroke();
+          BL.label(c, el.sym, x, y, {
+            font: BL.font(on ? 800 : 400, on ? 14 : 13),
+            color: on ? pal.uiInk : pal.fg,
+            bg: on ? pal.ui : BL.alpha(pal.panel, 0.9),
+            border: on ? pal.ui : BL.alpha(pal.line2, 0.5),
+            pad: 5,
+          });
+        });
+        if (BL.nums) {
+          c.fillStyle = pal.muted; c.font = BL.font(400, 12); c.textAlign = 'center';
+          [5, 10, 15].forEach((v) => c.fillText(v + ' eV', X(v), H - 5));
+        } else {
+          c.fillStyle = pal.muted; c.font = BL.font(400, 13); c.textAlign = 'center';
+          c.fillText('how tightly it holds its outermost electron →', W / 2, H - 5);
+        }
+      }
 
       const scaleCv = BL.stage(h('div'), '3.2 / 1', { label: 'A balance: the cost of pulling the electron off against what the handover pays back.' });
       scaleCv.wrap.classList.add('flat', 'dial');
@@ -456,11 +539,12 @@
         }
 
         drawScale();
+        drawMap();
       }
 
       const loop = BL.loop(frame);
       loop.start();
-      return { destroy() { loop.stop(); stage.destroy(); scaleCv.destroy(); } };
+      return { destroy() { loop.stop(); stage.destroy(); scaleCv.destroy(); mapCv.destroy(); } };
     },
   });
 })();

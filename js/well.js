@@ -50,7 +50,7 @@
     '<circle cx="88" cy="90" r="7" fill="var(--panel)" stroke="var(--cloud)" stroke-width="3.5"/></svg>';
 
   BL.register({
-    id: 'well', field: 'bonding', order: 2, name: 'The Well',
+    id: 'well', field: 'bonding', order: 3, name: 'The Well',
     tagline: 'How much does it take to pull a pair apart?',
     lede: 'Every attraction is a valley, and the pair sits in the bottom of it, jiggling. Pull on them with your hand, or pour heat in, and see which ones let go.',
     art, goals: GOALS,
