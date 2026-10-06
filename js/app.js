@@ -11,7 +11,6 @@
 
   /* Instruments not built yet. They show on the hub so the shape of the whole lab is visible. */
   const PLANNED = [
-    { field: 'water', name: 'Cling', tagline: 'Water meets glass, then water meets water.' },
     { field: 'water', name: 'Skin', tagline: 'A surface light things can stand on.' },
     { field: 'water', name: 'Climb', tagline: 'Up a thin tube, against gravity.' },
     { field: 'water', name: 'Float', tagline: 'Ice does something odd.' },

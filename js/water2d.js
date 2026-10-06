@@ -60,6 +60,7 @@
       head: null, next: new Int32Array(n), gcols: 0, grows: 0,
       segs: [],                                // inner walls: {x0,y0,x1,y1, wa}  (wa = how strongly it grabs molecules)
       floorWa: 0,                              // adhesion of the floor
+      floorFric: 0,                            // sideways drag where the floor grabs (grab strength x this x speed)
     };
     // place molecules in a block at the bottom, or spread in the middle for a pair
     if (o.layout === 'pair') {
@@ -168,7 +169,7 @@
       }
       if (W.floorWa) {
         const d = W.h - W.y[i];
-        if (d > R && d < R + 4 * WALL_L) { const e = W.floorWa * Math.exp(-(d - R) / WALL_L); U -= e; W.fy[i] += e / WALL_L; }
+        if (d > R && d < R + 4 * WALL_L) { const e = W.floorWa * Math.exp(-(d - R) / WALL_L); U -= e; W.fy[i] += e / WALL_L; if (W.floorFric) W.fx[i] -= W.floorFric * e * W.vx[i]; }
       }
     }
     return U;
