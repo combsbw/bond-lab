@@ -138,7 +138,7 @@
   fitBar();
 
   window.addEventListener('hashchange', route);
-  document.getElementById('foot-note').textContent = 'v0.2 · work in progress';
+  document.getElementById('foot-note').textContent = 'v1.0';
   // Instruments register themselves when their scripts load, before this file runs.
   route();
 })();

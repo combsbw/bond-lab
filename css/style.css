@@ -283,8 +283,8 @@ html[data-theme="light"] .readout .zone { color: var(--ui); }
 .sub-h { margin-top: 6px; font-size: 1rem; }
 [hidden] { display: none !important; }
 .status { margin: 0 0 14px; padding: 10px 14px; border-left: 5px solid var(--electron); background: var(--panel-2); border-radius: 0 10px 10px 0; font-size: 1.1rem; line-height: 1.4; font-weight: 700; }
-.sel { display: grid; gap: 4px; margin-bottom: 12px; font-weight: 700; font-size: 0.95rem; }
-.sel select { font: inherit; font-weight: 400; font-size: 1.05rem; min-height: 2.75rem; padding: 6px 10px; border-radius: 10px; border: 2px solid var(--line-2); background: var(--panel-2); color: var(--fg); }
+.sel { display: grid; min-width: 0; gap: 4px; margin-bottom: 12px; font-weight: 700; font-size: 0.95rem; }
+.sel select { width: 100%; max-width: 100%; min-width: 0; text-overflow: ellipsis; font: inherit; font-weight: 400; font-size: 1.05rem; min-height: 2.75rem; padding: 6px 10px; border-radius: 10px; border: 2px solid var(--line-2); background: var(--panel-2); color: var(--fg); }
 .sel select:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 .ledger { list-style: none; margin: 0 0 10px; padding: 0; display: grid; gap: 8px; }
 .ledger li { display: grid; grid-template-columns: 1.6rem 1fr; gap: 8px; font-size: 1.05rem; line-height: 1.4; }
