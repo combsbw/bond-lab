@@ -21,7 +21,7 @@ python3 -m http.server 8000     # then visit http://localhost:8000
 | Bonding | **Tug** | Covalent, polar and ionic are not three boxes. They are stretches of one dial: how unequal the pull on a shared electron cloud is. A charged probe bends the cloud and turns polar molecules. |
 | Bonding | **The Well** | Every attraction is a valley in an energy landscape. Heat fills the valley. A hand is a weak spring. Real depths (kJ/mol), real distances (angstroms) and real temperatures decide what holds. |
 | Bonding | **Handshake** | Hydrogen bonds are hands that only grip when they line up. Turn a molecule and the grip comes and goes; heat a crowd and the handshakes let go, sooner for weaker hands. |
-| Bonding | **Flicker** | Even atoms with no hands at all stick together, faintly: their electron clouds slosh in step. Make it stronger and see why bigger atoms stick harder. |
+| Bonding | **Flicker** | Even atoms with no charge stick together, faintly: their electron clouds slosh and the sloshes line up. Switch the jiggle off and the pull vanishes; compare small and big atoms, then cool a crowd of each gas to see which cling. |
 | Water | **Cling** | A drop on three surfaces. Whether it beads or spreads is a contest between the surface's grab and the water's grip on itself. Tilt the surface and see who lets go first. |
 | Water | **Skin** | Molecules at the edge have neighbors on one side only, so they are pulled inward. Poke the skin, weaken the grip with soap, and see why a drop wants to be round. |
 | Water | **Climb** | Water climbs a thin tube, higher the thinner it is. Change the surface, the grip and gravity (or take it to the Moon) and see what the rise depends on. |
