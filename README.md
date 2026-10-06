@@ -48,6 +48,8 @@ These are the rules every instrument follows. Use them as a checklist when addin
 
 `.nojekyll` is included so Pages serves every file as is. All paths are relative, so it works under a repository subpath.
 
+Other builds: `node tools/bundle.js` writes a single self-contained `dist/bond-lab.html` (CSS, JS and fonts inlined), good for emailing or a USB stick.
+
 ## Layout
 
 ```
@@ -105,6 +107,7 @@ node tools/check-water2d.js     # the flat water model (add --sweep for the temp
 node tools/check-drude.js       # dispersion force
 node tools/check-lattice.js     # density peaks mid-range for water-like, never for no-hands
 node tools/check-contrast.js    # WCAG contrast of the tokens in all four themes
+node tools/bundle.js            # one-file build
 node tools/gen-caloric.js       # regenerates Slow's table (--check just verifies the effect)
 
 # needs Playwright: visits every route, reports console errors and horizontal overflow
