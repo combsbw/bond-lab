@@ -11,7 +11,6 @@
 
   /* Instruments not built yet. They show on the hub so the shape of the whole lab is visible. */
   const PLANNED = [
-    { field: 'water', name: 'Climb', tagline: 'Up a thin tube, against gravity.' },
     { field: 'water', name: 'Float', tagline: 'Ice does something odd.' },
     { field: 'water', name: 'Slow', tagline: 'Takes ages to warm up. And to cool.' },
   ];

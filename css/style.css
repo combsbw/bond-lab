@@ -340,6 +340,7 @@ html[data-theme="light"] .readout .zone { color: var(--ui); }
   .stage.fl-stage { aspect-ratio: 1.3 / 1 !important; }
   .stage.cling-stage { aspect-ratio: 1.45 / 1 !important; }
   .stage.skin-stage { aspect-ratio: 1.2 / 1 !important; }
+  .stage.climb-stage { aspect-ratio: 1.1 / 1 !important; }
   .stage.hs-stage { aspect-ratio: 1.2 / 1 !important; }
   .stage.fill-stage { aspect-ratio: 1.3 / 1 !important; }
   .stage.fill-stage.tall { aspect-ratio: 1 / 1.05 !important; }
