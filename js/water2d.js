@@ -53,6 +53,13 @@
       vx: new Float64Array(n), vy: new Float64Array(n), om: new Float64Array(n),
       fx: new Float64Array(n), fy: new Float64Array(n), tq: new Float64Array(n),
       pu: 0, drag: null, randn, rand,
+      gx: o.gx || 0,
+      hs: new Float64Array(n).fill(1),         // each molecule's hand strength multiplier (pairs use the geometric mean)
+      ls: new Float64Array(n).fill(1),         // ... and its stickiness multiplier
+      fixed: new Uint8Array(n),                // 1 = nailed down (part of a wall)
+      head: null, next: new Int32Array(n), gcols: 0, grows: 0,
+      segs: [],                                // inner walls: {x0,y0,x1,y1, wa}  (wa = how strongly it grabs molecules)
+      floorWa: 0,                              // adhesion of the floor
     };
     // place molecules in a block at the bottom, or spread in the middle for a pair
     if (o.layout === 'pair') {
@@ -78,51 +85,109 @@
     out[0] = W.x[i] + D_ARM * Math.cos(a); out[1] = W.y[i] + D_ARM * Math.sin(a);
   }
 
-  /* forces, torques and potential energy. If `bonds` is an array, bonded site pairs are pushed onto it. */
+  /* forces, torques and potential energy. If `bonds` is an array, bonded site pairs are pushed onto it.
+     `acc.like` collects the push between like ends. Pairs are found with a cell grid, so cost grows with N, not N^2. */
   const sA = [0, 0], sB = [0, 0];
   function forces(W, bonds, acc) {
-    const n = W.n, T = W.type, eLJ = T.eLJ, eHb = T.eHb;
+    const n = W.n, T = W.type, eLJ0 = T.eLJ, eHb0 = T.eHb, hs = W.hs, ls = W.ls, fixed = W.fixed;
     W.fx.fill(0); W.fy.fill(0); W.tq.fill(0);
     let U = 0;
-    const rc2 = RC * RC, ucut = 4 * eLJ * (Math.pow(1 / RC, 12) - Math.pow(1 / RC, 6));
-    const cs = new Float64Array(n), sn = new Float64Array(n);
-    if (T.arms) for (let i = 0; i < n; i++) { /* precomputed per-site below */ }
+    const rc2 = RC * RC;
+    // grid
+    const gc = Math.max(1, Math.floor(W.w / RC)), gr = Math.max(1, Math.floor(W.h / RC));
+    if (!W.head || W.gcols !== gc || W.grows !== gr) { W.head = new Int32Array(gc * gr); W.gcols = gc; W.grows = gr; }
+    const head = W.head, next = W.next; head.fill(-1);
+    const cw = W.w / gc, chh = W.h / gr;
     for (let i = 0; i < n; i++) {
-      for (let j = i + 1; j < n; j++) {
-        const dx = W.x[j] - W.x[i], dy = W.y[j] - W.y[i], r2 = dx * dx + dy * dy;
-        if (r2 > rc2) continue;
-        // Lennard-Jones between the disks
-        const ir2 = 1 / r2, ir6 = ir2 * ir2 * ir2, ir12 = ir6 * ir6;
-        U += 4 * eLJ * (ir12 - ir6) - ucut;
-        const f = 24 * eLJ * (2 * ir12 - ir6) * ir2;
-        W.fx[i] -= f * dx; W.fy[i] -= f * dy; W.fx[j] += f * dx; W.fy[j] += f * dy;
-        if (!T.arms || r2 > RC_SITE2) continue;
-        // hands
-        for (let a = 0; a < 4; a++) {
-          site(W, i, a, sA);
-          for (let b = 0; b < 4; b++) {
-            const sameKind = (a < 2) === (b < 2);
-            site(W, j, b, sB);
-            const sx = sA[0] - sB[0], sy = sA[1] - sB[1], s2 = sx * sx + sy * sy;
-            let e, fs;                                   // energy and the force factor on A: F_A = fs * (sx, sy)
-            if (sameKind) {
-              const w2 = W_REP * W_REP; if (s2 > 9 * w2) continue;
-              const g = 0.28 * eHb * Math.exp(-s2 / (2 * w2)); e = g; fs = g / w2; if (acc) acc.like += g;
-            } else {
-              const w2 = W_HB * W_HB; if (s2 > 9 * w2) continue;
-              const g = eHb * Math.exp(-s2 / (2 * w2)); e = -g; fs = -g / w2;
-              if (bonds && g > 0.3 * eHb) bonds.push([i, a, j, b, g / eHb]);
+      const cx = Math.min(gc - 1, Math.max(0, (W.x[i] / cw) | 0)), cy = Math.min(gr - 1, Math.max(0, (W.y[i] / chh) | 0));
+      const c = cy * gc + cx; next[i] = head[c]; head[c] = i;
+    }
+    for (let i = 0; i < n; i++) {
+      const cx = Math.min(gc - 1, Math.max(0, (W.x[i] / cw) | 0)), cy = Math.min(gr - 1, Math.max(0, (W.y[i] / chh) | 0));
+      for (let oy = -1; oy <= 1; oy++) {
+        const yy = cy + oy; if (yy < 0 || yy >= gr) continue;
+        for (let ox = -1; ox <= 1; ox++) {
+          const xx = cx + ox; if (xx < 0 || xx >= gc) continue;
+          for (let j = head[yy * gc + xx]; j !== -1; j = next[j]) {
+            if (j <= i) continue;
+            if (fixed[i] && fixed[j]) continue;
+            const dx = W.x[j] - W.x[i], dy = W.y[j] - W.y[i], r2 = dx * dx + dy * dy;
+            if (r2 > rc2) continue;
+            const eLJ = eLJ0 * Math.sqrt(ls[i] * ls[j]);
+            const ucut = 4 * eLJ * (Math.pow(1 / RC, 12) - Math.pow(1 / RC, 6));
+            const ir2 = 1 / r2, ir6 = ir2 * ir2 * ir2, ir12 = ir6 * ir6;
+            U += 4 * eLJ * (ir12 - ir6) - ucut;
+            const f = 24 * eLJ * (2 * ir12 - ir6) * ir2;
+            W.fx[i] -= f * dx; W.fy[i] -= f * dy; W.fx[j] += f * dx; W.fy[j] += f * dy;
+            const eHb = eHb0 * Math.sqrt(hs[i] * hs[j]);
+            if (!T.arms || eHb === 0 || r2 > RC_SITE2) continue;
+            for (let a = 0; a < 4; a++) {
+              site(W, i, a, sA);
+              for (let b = 0; b < 4; b++) {
+                const sameKind = (a < 2) === (b < 2);
+                site(W, j, b, sB);
+                const sx = sA[0] - sB[0], sy = sA[1] - sB[1], s2 = sx * sx + sy * sy;
+                let e, fs;
+                if (sameKind) {
+                  const w2 = W_REP * W_REP; if (s2 > 9 * w2) continue;
+                  const g = 0.28 * eHb * Math.exp(-s2 / (2 * w2)); e = g; fs = g / w2; if (acc) acc.like += g;
+                } else {
+                  const w2 = W_HB * W_HB; if (s2 > 9 * w2) continue;
+                  const g = eHb * Math.exp(-s2 / (2 * w2)); e = -g; fs = -g / w2;
+                  if (bonds && g > 0.3 * eHb) bonds.push([i, a, j, b, g / eHb0]);
+                }
+                U += e;
+                const fxA = fs * sx, fyA = fs * sy;
+                W.fx[i] += fxA; W.fy[i] += fyA; W.fx[j] -= fxA; W.fy[j] -= fyA;
+                const rax = sA[0] - W.x[i], ray = sA[1] - W.y[i], rbx = sB[0] - W.x[j], rby = sB[1] - W.y[j];
+                W.tq[i] += rax * fyA - ray * fxA; W.tq[j] += rbx * (-fyA) - rby * (-fxA);
+              }
             }
-            U += e;
-            const fxA = fs * sx, fyA = fs * sy;
-            W.fx[i] += fxA; W.fy[i] += fyA; W.fx[j] -= fxA; W.fy[j] -= fyA;
-            const rax = sA[0] - W.x[i], ray = sA[1] - W.y[i], rbx = sB[0] - W.x[j], rby = sB[1] - W.y[j];
-            W.tq[i] += rax * fyA - ray * fxA; W.tq[j] += rbx * (-fyA) - rby * (-fxA);
           }
         }
       }
     }
     return U;
+  }
+
+
+  const WALL_L = 0.45;                       // reach of a wall's grab
+  /* a thin wall segment (or the floor): rounded hard wall plus an exponential grab. Returns potential energy. */
+  function wallForces(W) {
+    let U = 0; const R = 0.5, n = W.n, fixed = W.fixed;
+    for (let i = 0; i < n; i++) {
+      if (fixed[i]) continue;
+      for (let k = 0; k < W.segs.length; k++) {
+        const sg = W.segs[k]; if (!sg.wa) continue;
+        const px = Math.min(Math.max(W.x[i], Math.min(sg.x0, sg.x1)), Math.max(sg.x0, sg.x1)), py = Math.min(Math.max(W.y[i], Math.min(sg.y0, sg.y1)), Math.max(sg.y0, sg.y1));
+        const dx = W.x[i] - px, dy = W.y[i] - py, d = Math.hypot(dx, dy);
+        if (d < R || d > R + 4 * WALL_L) continue;
+        const e = sg.wa * Math.exp(-(d - R) / WALL_L); U -= e;
+        const f = e / WALL_L / d;                       // pulls toward the wall
+        W.fx[i] -= f * dx; W.fy[i] -= f * dy;
+      }
+      if (W.floorWa) {
+        const d = W.h - W.y[i];
+        if (d > R && d < R + 4 * WALL_L) { const e = W.floorWa * Math.exp(-(d - R) / WALL_L); U -= e; W.fy[i] += e / WALL_L; }
+      }
+    }
+    return U;
+  }
+  function wallCollide(W) {
+    const R = 0.5, n = W.n;
+    for (let i = 0; i < n; i++) {
+      if (W.fixed[i]) continue;
+      for (let k = 0; k < W.segs.length; k++) {
+        const sg = W.segs[k];
+        const px = Math.min(Math.max(W.x[i], Math.min(sg.x0, sg.x1)), Math.max(sg.x0, sg.x1)), py = Math.min(Math.max(W.y[i], Math.min(sg.y0, sg.y1)), Math.max(sg.y0, sg.y1));
+        let dx = W.x[i] - px, dy = W.y[i] - py, d = Math.hypot(dx, dy);
+        if (d >= R) continue;
+        if (d < 1e-9) { dx = sg.nx || 1; dy = sg.ny || 0; d = 1; }
+        const nx = dx / d, ny = dy / d;
+        W.x[i] = px + nx * R; W.y[i] = py + ny * R;
+        const vn = W.vx[i] * nx + W.vy[i] * ny; if (vn < 0) { W.vx[i] -= 2 * vn * nx; W.vy[i] -= 2 * vn * ny; }
+      }
+    }
   }
 
   /* the user's hand: a spring from molecule d.i to the point (d.x, d.y) */
@@ -143,22 +208,25 @@
 
   /* one BAOAB step */
   function step(W, dt) {
-    const n = W.n, hd = dt / 2;
-    if (W.fresh !== true) { W.pu = forces(W); pullForce(W); W.fresh = true; }
-    for (let i = 0; i < n; i++) { W.vx[i] += W.fx[i] / MASS * hd; W.vy[i] += (W.fy[i] / MASS + W.g) * hd; W.om[i] += W.tq[i] / INERTIA * hd; }
-    for (let i = 0; i < n; i++) { W.x[i] += W.vx[i] * hd; W.y[i] += W.vy[i] * hd; W.th[i] += W.om[i] * hd; }
-    // thermostat
-    const c = Math.exp(-W.gamma * dt), s0 = Math.sqrt((1 - c * c) * W.kT / MASS), s1 = Math.sqrt((1 - c * c) * W.kT / INERTIA);
-    for (let i = 0; i < n; i++) { W.vx[i] = c * W.vx[i] + s0 * W.randn(); W.vy[i] = c * W.vy[i] + s0 * W.randn(); W.om[i] = c * W.om[i] + s1 * W.randn(); }
-    for (let i = 0; i < n; i++) { W.x[i] += W.vx[i] * hd; W.y[i] += W.vy[i] * hd; W.th[i] += W.om[i] * hd; }
-    // walls
-    const R = 0.5;
-    for (let i = 0; i < n; i++) {
-      if (W.x[i] < R) { W.x[i] = 2 * R - W.x[i]; W.vx[i] = Math.abs(W.vx[i]); } else if (W.x[i] > W.w - R) { W.x[i] = 2 * (W.w - R) - W.x[i]; W.vx[i] = -Math.abs(W.vx[i]); }
-      if (W.y[i] < R) { W.y[i] = 2 * R - W.y[i]; W.vy[i] = Math.abs(W.vy[i]); } else if (W.y[i] > W.h - R) { W.y[i] = 2 * (W.h - R) - W.y[i]; W.vy[i] = -Math.abs(W.vy[i]); }
+    const n = W.n, hd = dt / 2, fixed = W.fixed, gx = W.gx || 0;
+    if (W.fresh !== true) { W.pu = forces(W) + wallForces(W); pullForce(W); W.fresh = true; }
+    for (let i = 0; i < n; i++) { if (fixed[i]) continue; W.vx[i] += (W.fx[i] / MASS + gx) * hd; W.vy[i] += (W.fy[i] / MASS + W.g) * hd; W.om[i] += W.tq[i] / INERTIA * hd; }
+    for (let i = 0; i < n; i++) { if (fixed[i]) continue; W.x[i] += W.vx[i] * hd; W.y[i] += W.vy[i] * hd; W.th[i] += W.om[i] * hd; }
+    if (W.gamma > 0 && !W.nve) {
+      const c = Math.exp(-W.gamma * dt), s0 = Math.sqrt((1 - c * c) * W.kT / MASS), s1 = Math.sqrt((1 - c * c) * W.kT / INERTIA);
+      for (let i = 0; i < n; i++) { if (fixed[i]) continue; W.vx[i] = c * W.vx[i] + s0 * W.randn(); W.vy[i] = c * W.vy[i] + s0 * W.randn(); W.om[i] = c * W.om[i] + s1 * W.randn(); }
     }
-    W.pu = forces(W); pullForce(W);
-    for (let i = 0; i < n; i++) { W.vx[i] += W.fx[i] / MASS * hd; W.vy[i] += (W.fy[i] / MASS + W.g) * hd; W.om[i] += W.tq[i] / INERTIA * hd; }
+    for (let i = 0; i < n; i++) { if (fixed[i]) continue; W.x[i] += W.vx[i] * hd; W.y[i] += W.vy[i] * hd; W.th[i] += W.om[i] * hd; }
+    // walls
+    const R = 0.5, top = W.open ? -1e9 : R;
+    for (let i = 0; i < n; i++) {
+      if (fixed[i]) continue;
+      if (W.x[i] < R) { W.x[i] = 2 * R - W.x[i]; W.vx[i] = Math.abs(W.vx[i]); } else if (W.x[i] > W.w - R) { W.x[i] = 2 * (W.w - R) - W.x[i]; W.vx[i] = -Math.abs(W.vx[i]); }
+      if (W.y[i] < top) { W.y[i] = 2 * top - W.y[i]; W.vy[i] = Math.abs(W.vy[i]); } else if (W.y[i] > W.h - R) { W.y[i] = 2 * (W.h - R) - W.y[i]; W.vy[i] = -Math.abs(W.vy[i]); }
+    }
+    if (W.segs.length) wallCollide(W);
+    W.pu = forces(W) + wallForces(W); pullForce(W);
+    for (let i = 0; i < n; i++) { if (fixed[i]) continue; W.vx[i] += (W.fx[i] / MASS + gx) * hd; W.vy[i] += (W.fy[i] / MASS + W.g) * hd; W.om[i] += W.tq[i] / INERTIA * hd; }
     W.t += dt;
   }
 
@@ -174,7 +242,7 @@
     return { list: b, count: c, perMolecule: (2 * c) / W.n, grip, like: acc.like };
   }
   /* kinetic energy: translation + rotation, and the temperature it implies (should match kT) */
-  function kinetic(W) { let k = 0; for (let i = 0; i < W.n; i++) k += 0.5 * MASS * (W.vx[i] * W.vx[i] + W.vy[i] * W.vy[i]) + 0.5 * INERTIA * W.om[i] * W.om[i]; return k; }
+  function kinetic(W) { let k = 0; for (let i = 0; i < W.n; i++) if (!W.fixed[i]) k += 0.5 * MASS * (W.vx[i] * W.vx[i] + W.vy[i] * W.vy[i]) + 0.5 * INERTIA * W.om[i] * W.om[i]; return k; }
   /* energy of just two molecules held at the given placement, handy for the pair scene */
   function pairEnergy(type, r, thA, thB) {
     const W = create({ n: 2, w: 30, h: 30, type, K: 1, layout: 'pair' });

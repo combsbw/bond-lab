@@ -300,6 +300,16 @@ html[data-theme="light"] .readout .zone { color: var(--ui); }
 .fact dd { margin: 0; font-size: 1.05rem; line-height: 1.35; }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 0.95rem; color: var(--muted); }
 .legend span { display: inline-flex; gap: 8px; align-items: center; }
+.row.sp { margin-top: 14px; }
+.cmp { display: grid; gap: 10px; margin-bottom: 8px; }
+.cmp-row { display: grid; grid-template-columns: 2.2rem 1fr 4rem; gap: 10px; align-items: center; font-size: 1.05rem; padding: 4px 6px; border-radius: 8px; }
+.cmp-row.now { background: var(--panel-2); outline: 2px solid var(--line-2); }
+.cmp-row .mbar { margin-top: 0; height: 0.6rem; }
+.cmp-row .mbar + .mbar { margin-top: 5px; }
+.cmp-row .mbar.b2 > div { background: var(--electron); }
+.cmp-row .muted { color: var(--muted); grid-column: 2 / 4; }
+.cmp-row .nums { color: var(--muted); font-size: 0.95rem; text-align: right; }
+.legend span[data-i]::before { content: ""; width: 1.6rem; height: 0; border-top: 4px solid var(--sw, var(--fg)); display: inline-block; }
 .lab { font-weight: 700; font-size: 0.98rem; }
 .meters { display: grid; gap: 12px; margin-bottom: 14px; }
 .meter-row { display: flex; justify-content: space-between; gap: 12px; font-size: 1.05rem; }
@@ -322,6 +332,7 @@ html[data-theme="light"] .readout .zone { color: var(--ui); }
   .stage.dial { aspect-ratio: 1.55 / 1 !important; }
   .stage.rec { aspect-ratio: 1.7 / 1 !important; }
   .stage.rungs-stage { aspect-ratio: 1 / 1.08 !important; }
+  .stage.fl-stage { aspect-ratio: 1.3 / 1 !important; }
   .stage.hs-stage { aspect-ratio: 1.2 / 1 !important; }
   .stage.fill-stage { aspect-ratio: 1.3 / 1 !important; }
   .stage.fill-stage.tall { aspect-ratio: 1 / 1.05 !important; }

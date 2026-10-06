@@ -172,8 +172,7 @@
       function startTug() {
         if (S.scene !== 'crowd') return;
         const W = S.W; let best = -1, bd = 1e9;
-        const mx = W.w / 2;
-        for (let i = 0; i < W.n; i++) { const d = Math.abs(W.x[i] - mx) + (W.h - W.y[i]) * 0.3; let c = 0; for (let j = 0; j < W.n; j++) if (j !== i && Math.hypot(W.x[i] - W.x[j], W.y[i] - W.y[j]) < 1.4) c++; if (c >= 2 && d < bd) { bd = d; best = i; } }
+        for (let i = 0; i < W.n; i++) { let c = 0; for (let j = 0; j < W.n; j++) if (j !== i && Math.hypot(W.x[i] - W.x[j], W.y[i] - W.y[j]) < 1.4) c++; if (c >= 2 && W.y[i] < bd) { bd = W.y[i]; best = i; } }   // the highest one that is held by at least two neighbors
         if (best < 0) { say('The crowd is not clinging together enough to pull anything out of. Cool it first.'); return; }
         S.auto = { i: best, x: W.x[best], y: W.y[best], t: 0 }; S.hinted = true;
         W.drag = { i: best, x: W.x[best], y: W.y[best], k: 30 };
@@ -219,11 +218,11 @@
           if (f >= 1) { const ty = S.sweep.type; S.sweep = null; S.swept = S.swept || new Set(); S.swept.add(ty); say('Sweep done for ' + nameOf(ty).toLowerCase() + ' molecules. Try another kind to compare.'); if (S.swept.size >= 3) goals.done('compare'); }
         }
         if (S.auto) {
-          const a = S.auto; a.t += dt; a.y -= dt * 1.8;
+          const a = S.auto; a.t += dt; a.y -= dt * 2.2;
           if (W.drag) { W.drag.x = a.x; W.drag.y = a.y; }
           let near = 0; for (let j = 0; j < W.n; j++) if (j !== a.i && Math.hypot(W.x[a.i] - W.x[j], W.y[a.i] - W.y[j]) < 1.5) near++;
           if (a.t > 0.8 && near === 0 && S.nbHi) { goals.done('pull'); say('It came free, after a real fight against its neighbors.'); }
-          if (a.t > 9 || a.y < 0.8) { W.drag = null; S.auto = null; }
+          if (a.t > 12 || a.y < 0.8) { W.drag = null; S.auto = null; }
         }
 
         // physics, as many steps as the frame can afford
