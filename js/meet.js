@@ -29,8 +29,9 @@
   /* Once the electron has gone across you have a + ball and a − ball sitting
      at the distance they settle at. For small atoms that pull is worth about
      this much. One number, stated plainly, rather than a fake precision. */
-  const PAYBACK = 5.5;             // eV, per unit of charge squared
+  const PAYBACK = 6.0;             // eV, per unit of charge squared, at full grip
   const CALL = 1.0;                // eV either side of break-even: too close to call
+  const GRIP = 1.6;                // eV of pull gap for the payback to come good
 
   /* The first twenty, minus the noble gases, which bond with nobody here. */
   const PICKS = A.EL.filter((e) => !['He', 'Ne', 'Ar'].includes(e.sym));
@@ -50,18 +51,34 @@
   const nGive = (el) => { const v = A.valenceN(el.Z); return Math.min(2, v <= 3 ? v : 1); };
   const nTake = (el) => { const v = A.valenceN(el.Z); return Math.min(2, v >= 5 ? 8 - v : 1); };
 
-  /* One direction of the handover, costed out. */
+  /* How hard an atom pulls on electrons overall: the average of what it costs
+     to take one off and what it gains by taking one on. Mulliken's measure,
+     and it is built from the two numbers this instrument already uses. */
+  const pull = (el) => (el.ie + el.ea) / 2;
+
+  /* One direction of the handover, costed out.
+
+     The payback is the pull between the + ball and the − ball you are left
+     with — but you only get two charged balls if the electron actually stays
+     where you put it. Between two atoms that hold electrons equally loosely
+     nothing stays put, there is no + and no −, and there is nothing to pay
+     you back. So the payback is scaled by how much more tightly the taker
+     grips than the giver does. Two sodiums, or a sodium and a potassium, earn
+     almost none of it — which is why no such salt has ever existed. */
   function run(giver, taker) {
     const n = Math.min(nGive(giver), nTake(taker));
     const cost = giver.ie + (n >= 2 && giver.ie2 ? giver.ie2 : 0);
     const take = n * taker.ea;
-    const pay = n * n * PAYBACK;
-    return { giver, taker, n, cost, take, pay, net: pay + take - cost };
+    const gap = Math.max(0, pull(taker) - pull(giver));
+    const grip = 1 - Math.exp(-gap / GRIP);
+    const pay = n * n * PAYBACK * grip;
+    return { giver, taker, n, cost, take, pay, gap, grip, net: pay + take - cost };
   }
 
   /* Which way round, if either, the handover is worth doing. */
   function balance(a, b) {
-    // same element: neither has any reason to take from its own twin
+    // Two of the same element have no pull gap at all, so the model already
+    // gives them nothing. This branch only exists to say so more plainly.
     if (a.sym === b.sym) {
       const one = run(a, b);
       one.twin = true; one.verdict = 'share';
@@ -190,8 +207,11 @@
       function attempt(side, close) {
         if (!close) { S.held = null; S.phase = 'rest'; return; }
         const giver = side === 'a' ? S.a : S.b, taker = side === 'a' ? S.b : S.a;
-        const net = S.a.sym === S.b.sym ? -99 : PAYBACK + taker.ea - giver.ie;
-        S.attempt = { side, net, giver, taker, ok: net > -CALL };
+        /* The same sum the panel shows — not a second copy of it. The electron
+           only stays across if this direction genuinely pays; a near miss
+           springs back, because a near miss is a shared bond, not an ionic one. */
+        const t = S.a.sym === S.b.sym ? { net: -99, gap: 0 } : run(giver, taker);
+        S.attempt = { side, net: t.net, gap: t.gap, giver, taker, ok: t.net > CALL };
         S.tested.add(S.a.sym + S.b.sym);
         S.phase = 'moving'; S.t = 0;
         goals.done('try');
@@ -216,12 +236,13 @@
       const headline = h('p', { class: 'verdict' });
       const mCost = BL.meter('Pulling it off the giver costs');
       const mTake = BL.meter('The taker is glad of it, worth');
+      const mGap = BL.meter('How much harder the taker holds electrons');
       const mPull = BL.meter('The two charged balls pulling, worth');
       const netLine = h('p', { class: 'net-line' });
       const saying = h('p', { class: 'hint' });
       aux.appendChild(h('section', { class: 'panel' },
         h('h2', {}, 'The books, for this handover'),
-        headline, mCost.el, mTake.el, mPull.el, netLine, saying,
+        headline, mCost.el, mTake.el, mGap.el, mPull.el, netLine, saying,
         shellFold = BL.fold('What about full shells?',
           h('p', { class: 'hint' }, 'Look back at what that sum used: how hard the giver holds on, how glad the taker is, and how strongly the two charged balls pull. Not one line of it counted electrons in a shell, and it still got the answer right.'),
           h('p', { class: 'hint' }, 'The reason the arithmetic works out for sodium and chlorine is that sodium’s outermost electron is the only one in its shell, so almost nothing holds it — and chlorine’s outer shell is one short, so an extra electron falls straight into a tight spot. The full shells are the shape of those numbers, not a goal either atom is working toward. The bond is the consequence; the tidy shells are the receipt.'),
@@ -246,7 +267,7 @@
       aux.appendChild(h('section', { class: 'panel' },
         h('h2', {}, 'Who gives, who takes'),
         mapCv.wrap,
-        h('p', { class: 'hint' }, 'Take one from each end and the handover pays for itself: that is an ionic bond, and it is what "a metal plus a non-metal" has always meant. Take two from the same end and it never pays, so they share. Nobody had to tell you which elements are metals — the price did.')));
+        h('p', { class: 'hint' }, 'The distance between two elements on this line is the whole story. Far apart and the handover pays for itself: that is an ionic bond, and it is what "a metal plus a non-metal" has always meant. Close together — two metals, or two non-metals — and there is no reason for an electron to move at all, so they share instead. Nobody had to tell you where the metals are; the measurements put them there.')));
 
       const mapHit = [];
       mapCv.canvas.addEventListener('click', (e) => {
@@ -270,12 +291,12 @@
         c.clearRect(0, 0, W, H);
         mapHit.length = 0;
         const f = BL.fs(13);
-        const lo = 4.0, hi = 18.0;
+        const lo = 2.0, hi = 11.0;
         const pad = { l: 14, r: 14, t: f * 2.2, b: f * 2.6 };
-        const X = (ie) => pad.l + ((BL.clamp(ie, lo, hi) - lo) / (hi - lo)) * (W - pad.l - pad.r);
+        const X = (v) => pad.l + ((BL.clamp(v, lo, hi) - lo) / (hi - lo)) * (W - pad.l - pad.r);
         const yMid = pad.t + (H - pad.t - pad.b) * 0.52;
         // the two ends, as bands
-        const GIVE = 8.5, TAKE = 11.5;
+        const GIVE = 5.0, TAKE = 5.6;
         c.fillStyle = BL.alpha(pal.pos, 0.1);
         c.fillRect(pad.l, pad.t, X(GIVE) - pad.l, H - pad.t - pad.b);
         c.fillStyle = BL.alpha(pal.neg, 0.1);
@@ -289,8 +310,8 @@
         c.beginPath(); c.moveTo(pad.l, yMid); c.lineTo(W - pad.r, yMid); c.stroke();
         // every element, stacked where they collide
         const rows = [];
-        PICKS.slice().sort((p, q) => p.ie - q.ie).forEach((el) => {
-          const x = X(el.ie);
+        PICKS.slice().sort((p, q) => pull(p) - pull(q)).forEach((el) => {
+          const x = X(pull(el));
           let k = 0;
           while (rows[k] != null && x - rows[k] < f * 1.9) k++;
           rows[k] = x;
@@ -309,10 +330,10 @@
         });
         if (BL.nums) {
           c.fillStyle = pal.muted; c.font = BL.font(400, 12); c.textAlign = 'center';
-          [5, 10, 15].forEach((v) => c.fillText(v + ' eV', X(v), H - 5));
+          [3, 5, 7, 9].forEach((v) => c.fillText(v + ' eV', X(v), H - 5));
         } else {
           c.fillStyle = pal.muted; c.font = BL.font(400, 13); c.textAlign = 'center';
-          c.fillText('how tightly it holds its outermost electron →', W / 2, H - 5);
+          c.fillText('how hard it pulls on electrons →', W / 2, H - 5);
         }
       }
 
@@ -386,7 +407,15 @@
         mCost.set(hold.frac, bal.giver.sym + ' ' + hold.word + many, bal.cost.toFixed(2) + ' eV');
         const want = BL.words.want(bal.take / bal.n);
         mTake.set(want.frac, bal.taker.sym + ' ' + want.word, bal.take.toFixed(2) + ' eV');
-        mPull.set(clamp(bal.pay / 24, 0.2, 1), bal.n > 1 ? 'two charges each way, so four times the pull' : 'a strong pull, once they are charged', bal.pay.toFixed(1) + ' eV');
+        const gap = bal.gap || 0, grip = bal.grip == null ? 0 : bal.grip;
+        mGap.set(clamp(gap / 8, 0.03, 1),
+          gap < 0.8 ? 'barely any harder — nothing would stay put'
+            : gap < 2 ? 'a little harder' : gap < 4 ? 'much harder' : 'enormously harder',
+          gap.toFixed(2) + ' eV');
+        mPull.set(clamp(bal.pay / 24, 0.03, 1),
+          grip < 0.3 ? 'almost nothing — no real + and − ever form'
+            : bal.n > 1 ? 'two charges each way, so four times the pull' : 'a strong pull, once they are charged',
+          bal.pay.toFixed(1) + ' eV');
         netLine.textContent = '';
         if (bal.twin) {
           netLine.append(h('span', { class: 'net-word bad' }, 'There is nothing to weigh up.'));
@@ -398,9 +427,14 @@
             BL.numv(' Net ' + (over >= 0 ? '+' : '') + over.toFixed(2) + ' eV'
               + (bal.n > 1 ? ', moving ' + bal.n + ' electrons.' : '.')));
         }
+        /* The commonest wrong answer this instrument could give is an ionic
+           bond between two metals, so when the pull gap is this small it says
+           so outright — and names what really happens instead. */
         saying.textContent = bal.twin
           ? 'Two of the same element. Neither has the slightest reason to take from its own twin, so the only thing on the table is an even share — which is why the elements that come as pairs, like hydrogen and oxygen and nitrogen gas, are held covalently and share perfectly evenly.'
-          : v.say;
+          : (bal.gap != null && bal.gap < 0.8)
+            ? 'Neither of these holds electrons any more tightly than the other, so an electron has no reason to prefer one atom to the other. Nothing stays put, no + and no − ever form, and there is no payback to collect. Two metals in this position do something else entirely: they pool their outer electrons and share them among all the atoms at once. That is what a metal is, and it is why you can mix two of them into an alloy but never into a salt.'
+            : v.say;
       }
       sync();
 
