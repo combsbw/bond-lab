@@ -8,6 +8,8 @@ Two things shape everything here. **Bonding is one spectrum, not a box of names*
 
 **Numbers are off by default.** Everything is measured, and the measurements are all still there behind **Display → Show the numbers**. What shows first is a word tied to something a learner has touched — "a hot kettle shakes it loose", "room warm", "sodium hands it over" — and a bar, because *more than / less than* is usually the real question.
 
+It installs. Served over https it is a progressive web app: add it to a home screen or install it from the browser's address bar and it opens full screen, with its own icon, and keeps working with no network at all — which matters in a classroom on school wifi, or on a tablet in a car.
+
 No build step, no dependencies. Open `index.html`, or serve the folder.
 
 ```
@@ -54,6 +56,21 @@ These are the rules every instrument follows. Use them as a checklist when addin
 5. **True scale where it matters.** In The Well's *All four* view the depth bars are drawn on one linear scale, so van der Waals is a sliver. That is the point.
 6. **Honest about being a model.** See below.
 
+## Installing it, and working offline
+
+`manifest.webmanifest` makes it installable and `sw.js` keeps it working without a network. Both are plain files; there is still nothing to build.
+
+The service worker is **network-first**, which is the opposite of the usual advice and deliberate. Cache-first is faster and means a classroom that opened the page last term keeps seeing last term's page, with no way to tell. Here, if there is a network you get what is on the server, and the cache is only the fallback when there is not. The page itself is fetched with the browser's HTTP cache switched off, so the one file that decides which version of everything else you see can never be a stale copy somebody's proxy held on to. Fonts are the one exception — large, and unchanged since the first commit — so they come from the cache.
+
+Two things worth knowing when an update does not appear:
+
+- **GitHub Pages is a CDN.** It serves assets with `Cache-Control: max-age=600`, so a change can take up to ten minutes to reach a browser that already has the old one, service worker or not. A hard reload skips it.
+- **The site deploys from `main`.** Work sitting on a branch, however thoroughly pushed, changes nothing about what is live until it is merged.
+
+`tools/gen-icons.js` draws the icon and renders every size the web asks for — 192 and 512 for Android, a maskable pair for launchers that crop to a circle, a 180 for iOS, 32 and 16 for the tab, and the scalable `assets/icon.svg`. Chromium does the rasterising, so it needs Playwright, the same as the smoke test. Edit the drawing at the top of that file and re-run it; nothing else references the sizes directly.
+
+The one-file build strips the manifest, the icon links and the service worker registration, and inlines the icon as a data URI, because a single HTML file has no sibling files to point at and no origin to register against.
+
 ## Deploy to GitHub Pages
 
 1. Push this folder to the `main` branch of a repository.
@@ -68,8 +85,11 @@ Other builds: `node tools/bundle.js` writes a single self-contained `dist/bond-l
 
 ```
 index.html          shell: header, #view, script tags (order matters: core, engines, instruments, app)
+manifest.webmanifest  name, icons, colours: what makes it installable
+sw.js               offline, network-first, so an update is never invisible
 css/style.css       light, dark and high-contrast tokens at the top
 assets/             self-hosted fonts (Atkinson Hyperlegible Next, Bricolage Grotesque)
+assets/icons/       the app icon at every size the web asks for (generated)
 js/core.js          helpers: canvas stage, pointer drag, loop, goals, registry, display settings,
                     plain-language word scales, meters, folds, electron spheres, filled clouds
 js/moldraw.js       how a molecule looks: water, H2S-like, methane-like, ions, hydrogen bonds
@@ -129,6 +149,7 @@ node tools/check-drude.js       # dispersion force
 node tools/check-lattice.js     # density peaks mid-range for water-like, never for no-hands
 node tools/check-contrast.js    # WCAG contrast of the tokens in all four themes
 node tools/bundle.js            # one-file build
+node tools/gen-icons.js         # redraws the app icon at every size (needs Playwright)
 node tools/gen-caloric.js       # regenerates Slow's table (--check just verifies the effect)
 
 # needs Playwright: visits every route, reports console errors and horizontal overflow

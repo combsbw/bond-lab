@@ -1,0 +1,41 @@
+{
+  "name": "Bond Lab",
+  "short_name": "Bond Lab",
+  "description": "Instruments for things too small to see. Poke atoms, electrons, bonds and water molecules and watch what answers.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "./",
+  "scope": "./",
+  "id": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#08151a",
+  "theme_color": "#08151a",
+  "categories": ["education", "science"],
+  "icons": [
+    { "src": "assets/icons/favicon-16.png", "sizes": "16x16", "type": "image/png" },
+    { "src": "assets/icons/favicon-32.png", "sizes": "32x32", "type": "image/png" },
+    { "src": "assets/icons/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ],
+  "shortcuts": [
+    {
+      "name": "The Spectrum",
+      "short_name": "Spectrum",
+      "description": "Every kind of bond, as one dial at different settings",
+      "url": "./#/spectrum",
+      "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "The Molecule",
+      "short_name": "Water",
+      "description": "One water molecule, and the two things that make it odd",
+      "url": "./#/h2o",
+      "icons": [{ "src": "assets/icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}
