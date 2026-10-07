@@ -1,211 +1,636 @@
-/* Challenges: questions about things the learner has already seen happen.
+/* Challenges: everyday things that only chemistry explains.
 
-   These are not recall questions. Every one of them is about something
-   ordinary — a burst pipe, a beaded windscreen, a street lamp, a balloon stuck
-   to a wall — and every one of them can be settled by going into an instrument
-   and doing something. So each carries the instrument that settles it and the
-   thing to do when you get there. Getting it wrong costs nothing: the point is
-   to have an opinion before you look, because a prediction you have committed
-   to is the only thing that makes the answer land.
+   Three for every instrument, and all of them about something a learner has
+   already walked past a hundred times without asking — a sparkler, a snowflake,
+   a paperclip floating, a pie filling that burns your mouth when the pastry
+   does not. Nothing here can be answered by remembering a definition. Each one
+   names the instrument that settles it and what to do when you get there, so a
+   guess can always be taken and checked rather than looked up.
 
-   The correct choice is marked `ok`. Order is shuffled per render so the right
-   answer is never in the same place twice. */
+   Every question has four answers and all four are meant to sound reasonable.
+   Three of them are the explanations people actually give — plausible, often
+   half-true, and wrong about the mechanism. Exactly one is right about what is
+   really happening, and it is marked `ok`. A distractor that nobody would pick
+   teaches nothing; the useful ones are the ones a learner has to put down.
+
+   Order is shuffled per render, so the answer is never in the same place. */
 (function () {
   'use strict';
   const { h } = BL;
 
   const BANK = [
-    /* ------------------------------------------------------------ atoms */
+    /* ============================================================ ATOMS */
+
+    /* ---- Rungs: energy comes in steps, and the steps are an element's own ---- */
     {
-      id: 'lamps', field: 'atoms', sim: 'rungs',
-      ask: 'A sodium street lamp glows orange, a neon sign glows red, a mercury lamp glows cold blue-white. Each is a sealed tube of one gas with electricity running through it. Why does each gas have its own colour?',
+      id: 'sunburn', field: 'atoms', sim: 'rungs',
+      ask: 'You can sit under a bright red heat lamp all afternoon and never burn. Twenty minutes outside on a cloudy summer day and you are pink. The red lamp is far brighter. Why does the weaker light do the damage?',
       choices: [
-        { t: 'The glass of each tube is tinted a different colour.', ok: false },
-        { t: 'Each gas is already that colour before you switch it on.', ok: false },
-        { t: 'An electron in each kind of atom can only stand on certain rungs, so only certain jumps are possible — and each jump gives out one particular colour.', ok: true },
+        { t: 'Burning needs one single packet of light carrying enough energy to knock an electron loose. Red packets are too small no matter how many arrive; ultraviolet packets are big enough.', ok: true },
+        { t: 'Red light is cooler than ultraviolet, so it cannot heat your skin enough to damage it.', ok: false },
+        { t: 'Clouds act like a lens and focus the sunlight into a stronger beam.', ok: false },
+        { t: 'There is simply more ultraviolet light on a cloudy day than there is red light from the lamp.', ok: false },
       ],
-      after: 'The ladder of rungs is different for every element, so the set of colours it can give out is different too. It is a fingerprint, and it is how we know what stars are made of without going there.',
-      tryIt: 'In Rungs, give the nucleus more charge and watch the whole ladder stretch — then watch which colours come out.',
+      after: 'Brightness is how many packets arrive. Energy per packet is something else entirely, and it is the only thing that matters for whether a jump can happen at all. A million packets that are each too small still do nothing — which is why a red lamp is safe and a thin layer of cloud is not.',
+      tryIt: 'In Rungs, set the photon energy low and fire as many as you like. Then raise it past the top of the ladder and fire one.',
     },
     {
-      id: 'sodium-oil', field: 'atoms', sim: 'shells',
-      ask: 'Sodium metal has to be stored under oil or it reacts with the air almost at once. A gold ring sits on a finger for fifty years and stays gold. Both are metals. What is different?',
+      id: 'fireworks', field: 'atoms', sim: 'rungs',
+      ask: 'Firework makers get red from strontium, green from barium and yellow from sodium. They cannot get green out of sodium however they build the shell. Why is each metal stuck with its own colour?',
       choices: [
-        { t: 'Sodium’s outermost electron is barely held on to, so it goes to the first thing that asks for it. Gold holds on to its own far more tightly.', ok: true },
-        { t: 'Sodium is softer, and soft things react faster.', ok: false },
-        { t: 'Gold is heavier, so the air cannot get at it.', ok: false },
+        { t: 'The colour comes from how hot each metal burns, and hotter metals glow bluer.', ok: false },
+        { t: 'Every element has its own ladder of rungs at its own spacings, so the gaps — and the colours those gaps give out — are fixed for that element.', ok: true },
+        { t: 'Each metal is already that colour, and the heat just makes you able to see it.', ok: false },
+        { t: 'Dyes are mixed in with the metal, and they survive the explosion long enough to colour the flame.', ok: false },
       ],
-      after: 'Reactivity is not a personality. It is the price of an electron. Measure that price and you can predict the behaviour before you ever see the metal.',
-      tryIt: 'In Shells, pull an electron off sodium, then off chlorine, and compare what each one cost.',
+      after: 'The set of colours an element can give out is a fingerprint nobody can edit. It is also how we know what stars are made of without going to one: the light arrives carrying the ladder it came from.',
+      tryIt: 'In Rungs, give the nucleus more charge and watch the whole ladder stretch. Every gap moves, and so does every colour it can make.',
     },
     {
-      id: 'tube-led', field: 'atoms', sim: 'rungs',
-      ask: 'A fluorescent tube and a warm LED can look like the same white. Split each one with a prism and the tube gives a few bright lines while the LED gives a smooth band. Why?',
+      id: 'glowstars', field: 'atoms', sim: 'rungs',
+      ask: 'Glow-in-the-dark stars on a bedroom ceiling have to be left under the light first. Then the light goes off and they glow for hours. Where was that glow being kept?',
       choices: [
-        { t: 'The prism is the wrong shape for LED light.', ok: false },
-        { t: 'The tube’s light is made by atoms dropping between rungs, and only certain drops exist — so only certain colours come out.', ok: true },
-        { t: 'LEDs are brighter, and brightness washes out the lines.', ok: false },
+        { t: 'The plastic soaked up heat from the lamp and is letting it back out as a faint glow.', ok: false },
+        { t: 'A little of the lamp light is trapped inside the plastic, bouncing around until it leaks back out.', ok: false },
+        { t: 'Light pushed electrons up onto higher rungs, and they drop back down slowly, handing the energy back out as light as they go.', ok: true },
+        { t: 'The paint soaks light up the way a sponge soaks up water, and then squeezes it out again.', ok: false },
       ],
-      after: 'Anything that makes light one atom at a time gives you lines. Anything that makes light out of a hot solid or a packed crystal gives you a smear. The lines are the ladder showing through.',
-      tryIt: 'In Rungs, shine white light at the atom and watch the dark gaps appear exactly where the jumps are.',
-    },
-    {
-      id: 'photo', field: 'atoms', sim: 'cloud',
-      ask: 'Almost every poster of an atom shows electrons going round the nucleus like tiny planets. What is wrong with that picture?',
-      choices: [
-        { t: 'Nothing — it is just drawn too small to see properly.', ok: false },
-        { t: 'The electrons go round the other way.', ok: false },
-        { t: 'An electron has no path. You can only ever catch it somewhere, and the cloud is the pile-up of thousands of catches — a map of where it is likely to be.', ok: true },
-      ],
-      after: 'That is why the shapes matter. The cloud is not a blur of something moving fast; it is the shape of where the thing can be found at all, and it is that shape that decides how an atom bonds.',
-      tryIt: 'In Cloud, take one snapshot, then a hundred, then thousands, and watch the shape arrive out of nothing but scatter.',
-    },
-    {
-      id: 'salt-way', field: 'atoms', sim: 'shells',
-      ask: 'Every grain of table salt is sodium with a + charge and chlorine with a −. You never find it the other way round. Why not?',
-      choices: [
-        { t: 'Taking sodium’s outer electron costs almost nothing and chlorine is glad of it. Going the other way costs far more than it could ever pay back.', ok: true },
-        { t: 'Sodium is written first in the name, so it goes first.', ok: false },
-        { t: 'Chlorine is a gas, and gases always end up negative.', ok: false },
-      ],
-      after: 'The direction of a handover is set by the prices, not by a rule you have to remember. Measure both prices and the direction tells you itself.',
-      tryIt: 'In Meet, put sodium and chlorine together, then try dragging the electron the other way round.',
+      after: 'Nothing is stored as light — light cannot sit still. What is stored is electrons parked somewhere they would rather not stay. The slow glow is them coming down, one at a time, over hours instead of instantly.',
+      tryIt: 'In Rungs, lift the electron with a photon and watch it come back down — sometimes in two steps rather than one.',
     },
 
-    /* ---------------------------------------------------------- bonding */
+    /* ---- Cloud: an orbital is a region, not a racetrack ---- */
     {
-      id: 'salt-wax', field: 'bonding', sim: 'spectrum',
-      ask: 'Table salt melts at 801 °C. Candle wax melts in your hand. Both are solids. Why such an enormous gap?',
+      id: 'solidtable', field: 'atoms', sim: 'cloud',
+      ask: 'An atom is almost entirely empty space — the nucleus is a speck in the middle of nothing. So why can you not push your hand through a table?',
       choices: [
-        { t: 'Wax is made of lighter atoms, and light things melt sooner.', ok: false },
-        { t: 'To melt salt you have to overcome charges pulling on each other in every direction. To melt wax you only have to shake whole molecules loose from the feeble flicker that holds them side by side.', ok: true },
-        { t: 'Salt is a crystal and crystals are always stronger.', ok: false },
+        { t: 'The atoms in a table are packed so tightly that there are no gaps left between them.', ok: false },
+        { t: 'The electron cloud is the atom’s real size, and the table’s clouds and your hand’s clouds push each other away long before any nucleus gets near.', ok: true },
+        { t: 'The nuclei are so heavy that nothing can push past them.', ok: false },
+        { t: 'The atoms are bonded to each other, and the bonds are what stops your hand.', ok: false },
       ],
-      after: 'Melting never breaks the bonds inside a molecule — it only undoes the hold between one lump and the next. Salt has no "inside": the ionic pull IS the hold between neighbours, so melting it means fighting the strongest thing on the ladder.',
-      tryIt: 'In The Spectrum, slide to the ionic end and put another one beside it. Then slide back to the even end and do the same.',
+      after: '"Empty space" is misleading. The space is not empty, it is occupied — by a cloud that has a definite size and will not share it. Everything you have ever touched, you touched cloud to cloud. The nuclei never meet.',
+      tryIt: 'In Cloud, pile up catches until the region fills in. That filled region is how big the atom actually is.',
     },
     {
-      id: 'oil-sugar', field: 'bonding', sim: 'spectrum',
-      ask: 'Stir sugar into water and it vanishes. Pour oil into water and it sits there in a slick. Both are made mostly of carbon, hydrogen and oxygen. Why the difference?',
+      id: 'neonsign', field: 'atoms', sim: 'cloud',
+      ask: 'A neon sign runs for years. The neon inside never gets used up, never reacts with the glass, never turns into anything else. What makes it so unwilling?',
       choices: [
-        { t: 'Sugar is a powder and powders dissolve.', ok: false },
-        { t: 'Oil is lighter than water, and light things float instead of dissolving.', ok: false },
-        { t: 'Sugar is covered in δ+ and δ− ends that can hydrogen-bond to water. Oil has almost no charged ends, so water molecules would rather hold on to each other than make room for it.', ok: true },
+        { t: 'Neon atoms are too small to bond with anything.', ok: false },
+        { t: 'The sealed glass tube keeps anything away that it could react with.', ok: false },
+        { t: 'Its outer clouds are completely full, and a full set of clouds adds up to a perfect sphere — no lopsided place for another atom to take hold of.', ok: true },
+        { t: 'The electricity running through it protects the atoms from reacting.', ok: false },
       ],
-      after: '"Like dissolves like" is not a rule, it is a consequence. Something only dissolves if the holds it can make with the liquid are worth as much as the holds the liquid already has with itself.',
-      tryIt: 'In The Spectrum, pick O–H and park another one of these beside it. Then slide to the even end and watch the hold collapse.',
+      after: 'Shape is the thing. A half-filled set of clouds sticks out in a direction, and a direction is something another atom can grab. Fill the set and the lumps cancel exactly, leaving a smooth ball with no handle on it anywhere.',
+      tryIt: 'In Cloud, stack all three p clouds together and look at what shape they add up to.',
     },
     {
-      id: 'helium-petrol', field: 'bonding', sim: 'flicker',
-      ask: 'Helium has to be chilled to −269 °C before it will turn liquid. Petrol is a liquid on a summer day. Neither has any charge on it at all. So what holds petrol together?',
+      id: 'noorbit', field: 'atoms', sim: 'cloud',
+      ask: 'Every poster of an atom shows electrons circling the nucleus like planets. No photograph of that has ever been taken, of anything, ever. Why not?',
       choices: [
-        { t: 'Petrol molecules are big and floppy, so their clouds slosh more — and a bigger slosh makes a stronger flicker between neighbours. Helium’s cloud is tiny and barely sloshes.', ok: true },
-        { t: 'Petrol has a smell, and smells are sticky.', ok: false },
-        { t: 'Helium is a noble gas and noble gases cannot be liquids.', ok: false },
+        { t: 'The electron moves far too fast for any camera to follow.', ok: false },
+        { t: 'Electrons are too small to see even with the most powerful microscope.', ok: false },
+        { t: 'The orbit is there, but it keeps changing shape too quickly to photograph.', ok: false },
+        { t: 'There is no orbit to photograph. You can only ever catch the electron somewhere, and the cloud is the pile-up of thousands of separate catches.', ok: true },
       ],
-      after: 'Even the weakest hold on the ladder is never zero. Make a molecule big enough and the flicker alone is enough to make it a liquid, or a wax, or the grip that lets a gecko walk up glass.',
-      tryIt: 'In Flicker, put the smallest atom and the biggest atom at the same distance and compare the pull.',
+      after: 'This is the one that catches nearly everybody, because "too fast for a camera" sounds so reasonable. But the problem is not speed. There is no path being travelled, so there is nothing a faster camera would reveal. What there is, is a map of where it turns up — and that map has a shape, and the shape is what does the chemistry.',
+      tryIt: 'In Cloud, take one catch. Then a hundred. Then thousands, and watch a shape arrive out of pure scatter.',
+    },
+
+    /* ---- Shells: what an electron costs ---- */
+    {
+      id: 'saltsafe', field: 'atoms', sim: 'shells',
+      ask: 'Sodium metal has to be kept under oil, and a lump of it thrown in water explodes. You sprinkle sodium on your chips every day. Same element. What changed?',
+      choices: [
+        { t: 'In salt the sodium has already given its loose outer electron away. The metal still has it, and hands it to the first thing that asks.', ok: true },
+        { t: 'In salt the sodium is mixed with chlorine, which dilutes it enough to be safe.', ok: false },
+        { t: 'The sodium in salt is a different, heavier kind of sodium atom.', ok: false },
+        { t: 'Table salt has been treated at the factory to make it safe to eat.', ok: false },
+      ],
+      after: 'An atom and its ion are not the same thing wearing a different hat. The whole of sodium’s violence is one electron it is desperate to be rid of. Once it has gone, there is nothing left to give, and what is left is seasoning.',
+      tryIt: 'In Shells, pull sodium’s outer electron off and see how little it costs.',
     },
     {
-      id: 'balloon', field: 'bonding', sim: 'spectrum',
-      ask: 'Rub a balloon on your hair and it sticks to the wall. The wall is not charged. What is holding it there?',
+      id: 'lithiumbattery', field: 'atoms', sim: 'shells',
+      ask: 'Your phone has a lithium battery. There is no such thing as a neon battery, and there never will be. Both are small, light atoms. Why lithium?',
       choices: [
-        { t: 'Static makes the air push it against the wall.', ok: false },
-        { t: 'The charge on the balloon squashes the clouds in the wall out of shape, and then holds on to the dent it made.', ok: true },
-        { t: 'Tiny hairs on the balloon hook into the paint.', ok: false },
+        { t: 'Lithium is lighter, so electrons can move through it faster.', ok: false },
+        { t: 'Neon is a gas, and gases cannot carry electricity.', ok: false },
+        { t: 'Lithium is a metal, and only metals can store energy.', ok: false },
+        { t: 'A battery works by moving electrons from one place to another. Lithium gives one up for almost nothing. Neon will not give one up at any price.', ok: true },
       ],
-      after: 'A charge can make a dipole where there was not one before. That borrowed unevenness is the same thing an ion does to a water molecule when salt dissolves, only weaker — and it stops the moment you take the charge away.',
-      tryIt: 'In The Spectrum, slide to the even end so there are no charged ends at all, then park a + ion beside it and watch the cloud dent.',
+      after: 'A battery is a controlled electron handover, and it is only worth building out of something that parts with electrons cheaply. The price is a measurable number, it is different for every element, and it decides what gets used for what.',
+      tryIt: 'In Shells, measure what it costs to pull an electron off lithium. Then try neon.',
     },
     {
-      id: 'boil-split', field: 'bonding', sim: 'well',
-      ask: 'Boiling a kettle dry takes a few minutes on a hob. Splitting that same water into hydrogen and oxygen gas needs a current run through it for hours. Both "break water apart". Why the gulf?',
+      id: 'nacl2', field: 'atoms', sim: 'shells',
+      ask: 'Table salt is always one sodium to one chlorine. Never two chlorines to a sodium. Sodium has plenty more electrons in it, so why does it only ever give up one?',
       choices: [
-        { t: 'Boiling only pulls the molecules away from each other. Splitting has to break the bonds inside each molecule, and those are ten to twenty times deeper.', ok: true },
-        { t: 'Electricity is simply a slower way of heating things.', ok: false },
-        { t: 'Steam is still water, so boiling does not break anything at all.', ok: false },
+        { t: 'Sodium only has one electron in total to give away.', ok: false },
+        { t: 'The first electron is loose and cheap. The second one has to come out of a full inner shell, and costs about ten times as much — more than anything could pay back.', ok: true },
+        { t: 'Chlorine can only ever accept one electron from any one atom.', ok: false },
+        { t: 'An atom carrying two charges would be unstable and tear itself apart.', ok: false },
       ],
-      after: 'Steam is still H₂O — every molecule comes through boiling intact. That is the whole difference between a change of state and a chemical reaction, and on the energy ladder it is the difference between the bottom rungs and the top.',
+      after: 'There is a cliff in the price, and formulas sit on the edge of it. Sodium stops at one because the second one is unaffordable; magnesium goes to two because for magnesium the cliff comes one electron later. The formula is the shape of the price list.',
+      tryIt: 'In Shells, take one electron off sodium, then try to take a second, and watch the price jump.',
+    },
+
+    /* ---- Fill: the counting trick that happens to work ---- */
+    {
+      id: 'whyh2o', field: 'atoms', sim: 'fill',
+      ask: 'Water is always two hydrogens to one oxygen. Never one, never three. Nobody decided this. Why does it come out that way every single time?',
+      choices: [
+        { t: 'Two hydrogen atoms weigh about the right amount to balance one oxygen.', ok: false },
+        { t: 'Hydrogen atoms are small enough that exactly two fit against an oxygen.', ok: false },
+        { t: 'Oxygen is two electrons short of a full outer ring, so it shares with exactly two hydrogens. One fewer leaves a gap; one more has nothing left to share with.', ok: true },
+        { t: 'It was named H₂O, and chemists have followed that recipe ever since.', ok: false },
+      ],
+      after: 'Counting to a full ring predicts the formula correctly nearly every time, which is why it is taught. It is worth knowing it is a scoring system rather than a cause — nothing in nature is counting. Meet shows you the same answer arrived at from what electrons actually cost.',
+      tryIt: 'In Fill, build water, then try to attach a third hydrogen and see what happens to the rings.',
+    },
+    {
+      id: 'carbonlife', field: 'atoms', sim: 'fill',
+      ask: 'Every living thing is built on carbon. Not one living thing is built on neon. Both are small, ordinary atoms sitting a few places apart on the same row.',
+      choices: [
+        { t: 'Carbon is far more common on Earth than neon is.', ok: false },
+        { t: 'Carbon is four short of a full ring, so it can share with four neighbours at once and build chains and rings that go on forever. Neon is already full and shares with nobody.', ok: true },
+        { t: 'Carbon is heavier, so it holds big molecules together better.', ok: false },
+        { t: 'Carbon is black, and living things need pigment to work.', ok: false },
+      ],
+      after: 'Four is the magic number: enough connections to branch, ring and chain without limit. Being common would not help if an atom could only ever make one bond — and neon, which makes none, is just as available and built nothing.',
+      tryIt: 'In Fill, solve a carbon puzzle and count how many sharing partners it needs. It is four, every time.',
+    },
+    {
+      id: 'nitrogenbreath', field: 'atoms', sim: 'fill',
+      ask: 'Four out of every five breaths you take is nitrogen. It goes in and comes straight back out, completely unchanged, your whole life. Your body does need nitrogen — it is in every protein. So why can it not use any of that?',
+      choices: [
+        { t: 'Nitrogen molecules are too small for your lungs to absorb.', ok: false },
+        { t: 'Nitrogen is lighter than oxygen, so it passes straight through.', ok: false },
+        { t: 'Your body has no use for nitrogen, so it ignores it.', ok: false },
+        { t: 'The two nitrogen atoms share three pairs of electrons — the tightest bond there is — and almost nothing can prise that apart.', ok: true },
+      ],
+      after: 'You are surrounded by the nitrogen you need and cannot touch a molecule of it. Bacteria in soil can, barely, and the entire food chain depends on them doing it. One very tight bond stands between an ocean of free nitrogen and everything that eats.',
+      tryIt: 'In Fill, make two atoms share three pairs and see how much has to line up for it to work.',
+    },
+
+    /* ========================================================== BONDING */
+
+    /* ---- The Spectrum: one dial, every kind of hold ---- */
+    {
+      id: 'saltsand', field: 'bonding', sim: 'spectrum',
+      ask: 'Stir salt into a glass of water and it vanishes in seconds. Stir sand in and it sits there forever. Both are hard, dry crystals that look much the same ground up.',
+      choices: [
+        { t: 'Salt grains are smaller than sand grains, so water gets round them more easily.', ok: false },
+        { t: 'Salt is softer, so the water grinds it away.', ok: false },
+        { t: 'Water’s charged ends can get in between salt’s ions and hold each one on its own. Sand’s atoms are locked together by shared electrons, and water has nothing to offer that.', ok: true },
+        { t: 'Salt is lighter, so it floats apart in the water.', ok: false },
+      ],
+      after: 'Dissolving is not breaking something up by force. It is water making each piece a better offer than the piece was already getting. Salt’s ions can take that offer; sand’s shared bonds cannot, at any grain size.',
+      tryIt: 'In The Spectrum, slide to the ionic end and park an ion beside a molecule with strong ends.',
+    },
+    {
+      id: 'oilwater', field: 'bonding', sim: 'spectrum',
+      ask: 'Oil poured into water sits in a layer and will not mix no matter how hard you stir. Within a minute of stopping, it has gathered itself back into a layer. What is pushing them apart?',
+      choices: [
+        { t: 'Oil is lighter than water, so it always rises to the top.', ok: false },
+        { t: 'Water and oil carry opposite charges, and that difference keeps them separate.', ok: false },
+        { t: 'Nothing pushes them apart. Oil has almost no charged ends, so water molecules would rather hold on to each other’s δ+ and δ− than make room for it.', ok: true },
+        { t: 'Oil is greasy, and grease repels water.', ok: false },
+      ],
+      after: 'Oil really is lighter, and that really is why it ends up on top — but it is not why it refuses to mix. Alcohol is lighter than water too, and mixes perfectly. The separation is water choosing itself, not oil being pushed.',
+      tryIt: 'In The Spectrum, slide to the even end and try to get a neighbour to hold on at all.',
+    },
+    {
+      id: 'gluetape', field: 'bonding', sim: 'spectrum',
+      ask: 'Superglue sticks your fingers together in seconds and will not let go. Sticky tape holds a poster up for a year and then peels off clean. Both are sticky. Why is one of them so much more serious?',
+      choices: [
+        { t: 'Superglue sets hard while tape’s glue stays soft and can be pulled away.', ok: false },
+        { t: 'Superglue soaks into skin, where tape only sits on the surface.', ok: false },
+        { t: 'Your skin is slightly damp, and tape does not stick well to damp things.', ok: false },
+        { t: 'Superglue forms real shared-electron bonds with your skin. Tape only has the faint, everywhere stickiness between clouds that happen to be touching.', ok: true },
+        ],
+      after: 'They are not the same thing at different strengths. They are different rungs of the ladder: one is a bond inside a molecule, the other is the weakest hold there is between molecules. Peeling tape costs almost nothing. Peeling superglue costs skin.',
+      tryIt: 'In The Spectrum, compare where a covalent bond sits on the ladder and where van der Waals sits.',
+    },
+
+    /* ---- Meet: can one of them afford the handover ---- */
+    {
+      id: 'metalnonmetal', field: 'bonding', sim: 'meet',
+      ask: 'Sodium and chlorine make salt. Magnesium and oxygen make a white powder. But sodium and magnesium together make nothing in particular, and neither do oxygen and chlorine. Why does it take one of each?',
+      choices: [
+        { t: 'Metals and non-metals start out with opposite charges and attract each other.', ok: false },
+        { t: 'A handover only pays off when one side lets go cheaply and the other is glad to receive. Two cheap givers have nobody to give to; two eager takers have nothing to take.', ok: true },
+        { t: 'Two metals are both solid, so they cannot react with each other.', ok: false },
+        { t: 'Metals are too heavy to accept electrons from one another.', ok: false },
+      ],
+      after: 'This is the whole metal-and-non-metal rule, arrived at rather than announced. Nobody has to remember which side of the table is which: line the elements up by what an electron costs them and the rule falls out of the prices.',
+      tryIt: 'In Meet, take one element from each end of the givers-and-takers map, then take two from the same end.',
+    },
+    {
+      id: 'sparkler', field: 'bonding', sim: 'meet',
+      ask: 'A sparkler burns with a white flare bright enough to hurt your eyes. The argon sealed inside a double-glazed window sits there doing nothing for thirty years. Both are just atoms meeting air.',
+      choices: [
+        { t: 'Sparklers use metal powder, and powders catch fire more easily than lumps.', ok: false },
+        { t: 'The argon is sealed in glass where no oxygen can get to it.', ok: false },
+        { t: 'Magnesium’s two outer electrons are cheap to hand over and oxygen pays handsomely for them. Argon holds its own so tightly that nothing can afford the price.', ok: true },
+        { t: 'Magnesium is lighter, so its atoms move faster and catch fire more easily.', ok: false },
+      ],
+      after: 'That flare is the payback — the energy let go when a handover turns out to be a very good deal. The brightness of the flame is the size of the bargain. Argon is offered the same deal and it is simply not worth taking.',
+      tryIt: 'In Meet, put magnesium with oxygen and watch it move two electrons at once.',
+    },
+    {
+      id: 'whichway', field: 'bonding', sim: 'meet',
+      ask: 'In salt it is always the sodium that ends up positive and the chlorine negative. Never the other way round, in any salt, anywhere. What fixes the direction?',
+      choices: [
+        { t: 'Sodium is written first in the formula, so it takes the first charge.', ok: false },
+        { t: 'Sodium is a metal, and metals are positive by nature.', ok: false },
+        { t: 'Chlorine is a gas, and gases always end up negative.', ok: false },
+        { t: 'Pulling an electron off sodium is cheap and chlorine is glad of it. The other way round costs far more than the result could ever pay back.', ok: true },
+      ],
+      after: '"Metals are positive" is a description of the answer dressed up as the reason for it. The actual reason is two measured prices, and you can check them both. Try the handover in the wrong direction and the sum comes out hopeless.',
+      tryIt: 'In Meet, put sodium with chlorine, then try dragging the electron the other way.',
+    },
+
+    /* ---- Tug: one bond, and what a passing charge does to it ---- */
+    {
+      id: 'microwave', field: 'bonding', sim: 'tug',
+      ask: 'A microwave heats your soup in two minutes and the ceramic bowl comes out barely warm. Both were in there the same length of time, in the same box.',
+      choices: [
+        { t: 'Microwaves pass straight through ceramic and are absorbed by liquids.', ok: false },
+        { t: 'The microwaves are tuned to the same frequency as water, so the water resonates.', ok: false },
+        { t: 'A microwave is an electric field flipping back and forth billions of times a second. Water molecules have a δ+ end and a δ− end, so they get twisted round and round, and that twisting is heat. The bowl has no ends to grab.', ok: true },
+        { t: 'The soup is darker than the bowl, so it soaks up more energy.', ok: false },
+      ],
+      after: 'Resonance is the explanation almost everyone gives and it is not right — if it were, the frequency would have to be exact, and microwaves deliberately are not tuned to water’s resonance at all. What happens is simpler and more interesting: a lopsided molecule in a flipping field gets wrenched round, and molecules being wrenched round is what heat is.',
+      tryIt: 'In Tug, build a bond with strong δ+ and δ− ends, then move the charge probe around and watch the whole molecule swing to follow it.',
+    },
+    {
+      id: 'waterstream', field: 'bonding', sim: 'tug',
+      ask: 'Run a thin stream of water from a tap, rub a plastic comb on your sleeve and hold it close. The whole stream bends towards the comb without touching it.',
+      choices: [
+        { t: 'The comb’s charge rubs off onto the water, and opposite charges then attract.', ok: false },
+        { t: 'The comb pushes the air aside and the stream falls into the gap.', ok: false },
+        { t: 'Static electricity makes the water lighter, so it is easier to deflect.', ok: false },
+        { t: 'Water molecules already have a δ+ end and a δ− end. The comb’s charge turns them all to face it, and then pulls hardest on the end that is nearer.', ok: true },
+      ],
+      after: 'The water never becomes charged — pour it into a cup afterwards and it is perfectly ordinary. The trick is that it did not need to be. The ends were already there, built into the shape of the molecule. The comb only had to line them up.',
+      tryIt: 'In Tug, switch on the charge probe and bring it near a bond that already leans. Watch the molecule turn to face it.',
+    },
+    {
+      id: 'combpaper', field: 'bonding', sim: 'tug',
+      ask: 'The same charged comb will pick up tiny scraps of paper. The paper has not been rubbed on anything and carries no charge of its own.',
+      choices: [
+        { t: 'The comb’s charge pushes the electron clouds inside the paper over to one side, so the near side of the paper turns slightly opposite — a lean it did not have until the comb arrived.', ok: true },
+        { t: 'Paper comes out of the factory with a slight charge already on it.', ok: false },
+        { t: 'The scraps are so light that any force at all is enough to lift them.', ok: false },
+        { t: 'The comb and the paper touch and swap some charge between them.', ok: false },
+      ],
+      after: 'A charge can create a lean where there was none, in something completely neutral, just by being nearby. Take the comb away and the paper goes back to having no ends at all. The same borrowed lean is what sticks a balloon to a wall and what lets a gecko hold on to glass.',
+      tryIt: 'In Tug, make the sharing perfectly even so nothing is charged, then bring the probe close and watch the cloud lean anyway.',
+    },
+
+    /* ---- The Well: how deep the valley is ---- */
+    {
+      id: 'boilsplit', field: 'bonding', sim: 'well',
+      ask: 'Boiling a kettle dry takes a few minutes. Splitting that same water into hydrogen and oxygen gas needs a current run through it for hours. Both are described as breaking water apart.',
+      choices: [
+        { t: 'Boiling only pulls whole molecules away from each other. Splitting has to break the bonds inside each molecule, and those are ten to twenty times deeper.', ok: true },
+        { t: 'Electricity is simply a slower way of putting heat in.', ok: false },
+        { t: 'Boiling happens at 100 °C and splitting needs a far higher temperature than a kettle can reach.', ok: false },
+        { t: 'A kettle puts its heat into one spot, while a current spreads out through the whole tank.', ok: false },
+      ],
+      after: 'Every molecule comes through boiling completely intact — steam is still H₂O. That is the whole difference between a change of state and a chemical reaction, and on the energy ladder it is the difference between the bottom rungs and the top.',
       tryIt: 'In The Well, break a hydrogen bond with heat, then try to break a covalent one the same way.',
     },
     {
-      id: 'magnesium', field: 'bonding', sim: 'meet',
-      ask: 'A magnesium ribbon burns with a white flare bright enough to hurt your eyes. Neon, right next to it on the shelf, does nothing whatever. Why?',
+      id: 'steamburn', field: 'bonding', sim: 'well',
+      ask: 'Steam from a kettle burns far worse than the boiling water in it. Measure them both and they are the same temperature — 100 °C. So where does the extra damage come from?',
       choices: [
-        { t: 'Neon is a gas, and gases do not burn.', ok: false },
-        { t: 'Magnesium’s two outer electrons are cheap to part with and oxygen pays handsomely for them. Neon holds its own so tightly that nothing can afford the price.', ok: true },
-        { t: 'Magnesium is a metal and all metals burn.', ok: false },
+        { t: 'Steam is hotter than boiling water.', ok: false },
+        { t: 'Steam moves fast, so it hits your skin harder.', ok: false },
+        { t: 'Turning back into water releases all the energy it took to break the holds between the molecules — straight into your skin, on top of the heat.', ok: true },
+        { t: 'Steam spreads over a much larger area of skin at once.', ok: false },
       ],
-      after: 'That flare is the payback: the energy released when the handover turns out to be a very good deal indeed. The size of the flame is the size of the bargain.',
-      tryIt: 'In Meet, put magnesium with oxygen and watch it move two electrons at once — then try neon’s neighbours and see what the sum does.',
+      after: 'Pulling molecules apart costs energy, and the bill is paid back in full the instant they snap together again. Steam is carrying a loaded spring that water is not, and it unloads on the first cold thing it meets.',
+      tryIt: 'In The Well, see how much heat it takes to pull a pair apart. All of that comes back when they fall together again.',
+    },
+    {
+      id: 'buttersalt', field: 'bonding', sim: 'well',
+      ask: 'Butter melts in a warm pan in seconds. Sprinkle salt into the same pan, leave the hob on full all afternoon, and the grains are still grains.',
+      choices: [
+        { t: 'Salt is a mineral, and minerals do not melt.', ok: false },
+        { t: 'Salt grains are too small to hold enough heat to melt.', ok: false },
+        { t: 'Melting butter only has to shake whole molecules loose from each other. Melting salt means fighting the pull between charges, which is far deeper than a hob can reach.', ok: true },
+        { t: 'The pan is not actually hot enough to melt butter either — it only softens it.', ok: false },
+      ],
+      after: 'Salt does melt, at about 800 °C, which is red heat. Melting point is a direct readout of how deep the hold is, which is why a list of melting points tells you what kind of hold a substance uses before you know anything else about it.',
+      tryIt: 'In The Well, set the heat to about a kitchen hob and see which kinds of hold let go and which do not budge.',
     },
 
-    /* ------------------------------------------------------------ water */
+    /* ---- Handshake: a grip that only works lined up ---- */
     {
-      id: 'pipes', field: 'water', sim: 'float',
-      ask: 'A hard frost bursts water pipes, and ice cubes float in a glass. Almost everything else in the world shrinks and sinks when it freezes. What is water doing?',
+      id: 'sanitiser', field: 'bonding', sim: 'handshake',
+      ask: 'Hand sanitiser is dry in fifteen seconds. The same amount of water takes several minutes and feels much less cold. Both are clear liquids at room temperature.',
       choices: [
-        { t: 'Ice traps air bubbles, and the bubbles make it lighter.', ok: false },
-        { t: 'Freezing water lines its molecules up so that every hydrogen bond gets made — and the only pattern that does that is full of holes. So ice takes up more room than the water it came from.', ok: true },
-        { t: 'Cold makes water heavier, and heavy things push outwards.', ok: false },
+        { t: 'Alcohol is lighter than water, so it lifts off more easily.', ok: false },
+        { t: 'Water molecules grip each other at both ends with hydrogen bonds. Alcohol has far fewer places to grip, so its molecules get away much more easily.', ok: true },
+        { t: 'Alcohol is thinner, so it spreads into a wider layer and dries faster.', ok: false },
+        { t: 'Alcohol is warmer than water at room temperature.', ok: false },
       ],
-      after: 'That is not a quirk. Because ice floats, a frozen pond keeps a lid of ice over liquid water instead of freezing solid from the bottom up, and everything in it lives through the winter.',
-      tryIt: 'In Float, cool the water-like sheet slowly and watch the holes open up as the hands find each other.',
+      after: 'How fast something evaporates is a direct measure of how firmly its molecules hold each other. The cold feeling is the other half of the same fact: the ones that escape take their energy with them, and the ones left behind are slower.',
+      tryIt: 'In Handshake, heat a crowd with strong hands and a crowd with weak hands side by side and see which flies apart first.',
     },
     {
-      id: 'skater', field: 'water', sim: 'skin',
-      ask: 'A pond skater walks on water. Drop the same insect into a dish of alcohol and it sinks. Why does water have a skin and alcohol barely one at all?',
+      id: 'snowflake', field: 'bonding', sim: 'handshake',
+      ask: 'Every snowflake has six sides. Not five, not seven, and it does not depend on where it formed or what it formed around.',
       choices: [
-        { t: 'Water is thicker than alcohol.', ok: false },
-        { t: 'A molecule at the water’s surface has neighbours below and beside it but none above, so it gets pulled inwards hard — and water molecules pull on each other far harder than alcohol molecules do.', ok: true },
-        { t: 'The insect’s legs are waterproof but not alcohol-proof.', ok: false },
+        { t: 'Falling through the air rounds them into six points, the way a river rounds a pebble.', ok: false },
+        { t: 'A water molecule can only shake hands in particular directions, and the only pattern where every molecule grips every neighbour is six-sided.', ok: true },
+        { t: 'Six sides is the shape that falls most slowly, so those are the ones that survive.', ok: false },
+        { t: 'Each flake copies the shape of the dust speck it formed around.', ok: false },
       ],
-      after: 'Surface tension is just the inward pull on the molecules unlucky enough to be on the outside. Anything that weakens the grip between molecules — soap, heat, alcohol — flattens the skin.',
-      tryIt: 'In Skin, drop a soap molecule into the surface and watch the pull arrows go slack.',
+      after: 'A hydrogen bond is picky about direction in a way that ordinary stickiness is not — it only grips when a hydrogen is pointing straight at a lone pair. Billions of molecules each insisting on that at once leaves exactly one pattern, and you can see it from across the room.',
+      tryIt: 'In Handshake, turn one molecule slowly and watch the grip appear only at certain angles.',
     },
     {
-      id: 'towel-wax', field: 'water', sim: 'cling',
-      ask: 'A paper towel soaks a spill straight up out of the table. The bonnet of a freshly waxed car makes the same water sit up in beads. Same water. What changed?',
+      id: 'methaneboil', field: 'bonding', sim: 'handshake',
+      ask: 'Water boils at 100 °C. Methane — the gas in a cooker — is a molecule of almost exactly the same size and weight, and it is still a gas inside a freezer at −160 °C.',
       choices: [
-        { t: 'Whether the surface grabs the water harder than the water grabs itself. Paper does; wax does not, so the water holds on to itself instead and pulls into a ball.', ok: true },
-        { t: 'Wax is warmer than paper, and warm things repel water.', ok: false },
-        { t: 'Paper is rough, and rough surfaces are always wetter.', ok: false },
+        { t: 'Water is considerably heavier than methane.', ok: false },
+        { t: 'Methane is flammable, and flammable things boil at lower temperatures.', ok: false },
+        { t: 'Water is naturally a liquid and methane is naturally a gas.', ok: false },
+        { t: 'Water molecules hold on to each other with hydrogen bonds. Methane has no charged ends at all, so there is almost nothing holding its molecules together.', ok: true },
       ],
-      after: 'It is always a contest between two holds — water to surface, and water to water. Everything from a raincoat to a non-stick pan to the lining of your lungs is someone deciding which side should win.',
+      after: 'By size alone water should boil somewhere near −80 °C. It boils 180 degrees higher than it has any right to, and that gap is hydrogen bonding, and the fact that there are oceans instead of an atmosphere of steam is the direct consequence.',
+      tryIt: 'In Handshake, cool a crowd with hands and a crowd with no hands to the same temperature and see which sticks together.',
+    },
+
+    /* ---- Flicker: the weakest hold there is, and it is never zero ---- */
+    {
+      id: 'gecko', field: 'bonding', sim: 'flicker',
+      ask: 'A gecko runs up a pane of glass and across the ceiling. Its feet are dry — no glue, no slime, and it leaves no mark behind.',
+      choices: [
+        { t: 'Tiny suction cups on its toes grip the glass.', ok: false },
+        { t: 'Its feet carry a static charge that sticks to the glass.', ok: false },
+        { t: 'Its toes are covered in a natural glue that dries instantly.', ok: false },
+        { t: 'Millions of microscopic hairs get close enough to the glass for the flicker between electron clouds to take hold. Each one is pitiful; there are a billion of them.', ok: true },
+      ],
+      after: 'The weakest force in this whole lab, scaled up by sheer number, carries an animal up a window. It also explains why a gecko cannot hold on to a dusty surface: the hairs cannot get close enough, and this hold dies the instant there is any distance at all.',
+      tryIt: 'In Flicker, push two atoms close together and watch how sharply the pull grows as they nearly touch.',
+    },
+    {
+      id: 'oilwax', field: 'bonding', sim: 'flicker',
+      ask: 'Cooking oil pours. Candle wax is a solid you could hit with a hammer. Chemically they are close cousins — long chains of carbon and hydrogen with no charged ends on either.',
+      choices: [
+        { t: 'Wax molecules are much longer, so there is far more cloud to slosh and far more of it pressed against the next molecule.', ok: true },
+        { t: 'The wax has been cooled and set, while the oil has not.', ok: false },
+        { t: 'Oil is wet and wax is dry.', ok: false },
+        { t: 'Wax has had a hardener added to it so it will hold a shape.', ok: false },
+      ],
+      after: 'Same kind of hold, more of it. Lengthen the chain and the flicker between neighbours adds up along the whole molecule — which is why the same family runs from gas, to petrol, to oil, to wax, to candle, as the chains get longer and nothing else changes.',
+      tryIt: 'In Flicker, put the smallest atom and the biggest atom at the same distance and compare the pull.',
+    },
+    {
+      id: 'airpuddle', field: 'bonding', sim: 'flicker',
+      ask: 'The air in this room is molecules flying about with space between them. They do attract each other — every molecule does. So why has the air not long since collected into a puddle on the floor?',
+      choices: [
+        { t: 'Air molecules are too light to fall.', ok: false },
+        { t: 'Air molecules repel one another.', ok: false },
+        { t: 'Nitrogen and oxygen are small molecules with very little cloud to slosh, so the flicker between them is far too feeble to hold them together against room-temperature jostling.', ok: true },
+        { t: 'There is too much space between them for them ever to meet.', ok: false },
+      ],
+      after: 'They do attract, and it is not nothing — chill the air to −196 °C and it does collect into a puddle, which is how liquid nitrogen is made. At room temperature the molecules simply have far more energy than that faint hold can contain.',
+      tryIt: 'In Flicker, cool a crowd of atoms down and find the temperature where they finally cling together.',
+    },
+
+    /* ============================================================ WATER */
+
+    /* ---- The Molecule: bent, and lopsided, and both matter ---- */
+    {
+      id: 'co2water', field: 'water', sim: 'h2o',
+      ask: 'Carbon dioxide and water are both tiny molecules, and in both of them oxygen pulls the shared electrons hard. One you breathe out as a gas. The other you are mostly made of.',
+      choices: [
+        { t: 'Carbon dioxide is lighter than water.', ok: false },
+        { t: 'Carbon dioxide is straight, so its two lopsided bonds pull in exactly opposite directions and cancel. Water is bent, so its two pulls add up and leave the molecule with a charged side.', ok: true },
+        { t: 'Carbon dioxide has no hydrogen in it, and only hydrogen makes liquids.', ok: false },
+        { t: 'Our bodies produce carbon dioxide as a gas, so that is the form it takes.', ok: false },
+      ],
+      after: 'Carbon dioxide is actually two and a half times heavier than water, which makes it a gas in spite of its weight, not because of it. Lopsided bonds are not enough on their own — the shape has to stop them cancelling. Bend carbon dioxide and it would be a liquid. Straighten water and the oceans would be steam.',
+      tryIt: 'In The Molecule, straighten water out and watch its pull collapse to nothing. Then bend it back.',
+    },
+    {
+      id: 'universal', field: 'water', sim: 'h2o',
+      ask: 'Almost everything that happens inside you happens dissolved in water. Blood, sap, tears, the inside of every cell. Why is water the liquid life ended up running on?',
+      choices: [
+        { t: 'Water is a liquid, and liquids mix with nearly everything.', ok: false },
+        { t: 'Water is the most common liquid on Earth, so living things adapted to use it.', ok: false },
+        { t: 'Its bent shape leaves it with a δ− side and a δ+ side, so it can take hold of almost anything that carries a charge or has a charged end.', ok: true },
+        { t: 'Water molecules are very small, so they slip in between other molecules easily.', ok: false },
+      ],
+      after: 'Being common would not have helped if water had no grip. Carbon dioxide is common too, and dissolves almost nothing. The usefulness comes from the two charged sides — and those come from the bend.',
+      tryIt: 'In The Molecule, turn the lopsidedness down to nothing and ask what that molecule could still dissolve.',
+    },
+    {
+      id: 'dressing', field: 'water', sim: 'h2o',
+      ask: 'Salad dressing separates within minutes of being shaken. Vinegar is mostly water and mixes with water perfectly. Olive oil never does. All three are clear liquids.',
+      choices: [
+        { t: 'Oil is thicker than vinegar, so it cannot mix in properly.', ok: false },
+        { t: 'Oil is lighter and floats, and things that float cannot mix.', ok: false },
+        { t: 'Vinegar is an acid, and acids dissolve in water.', ok: false },
+        { t: 'Vinegar’s molecules have charged ends just like water’s, so the two can swap grips. Oil’s molecules have almost none, so water holds on to itself instead.', ok: true },
+      ],
+      after: 'Whether two liquids mix is a question about ends, not about thickness or weight. Honey is far thicker than oil and dissolves in water instantly, because it is covered in charged ends.',
+      tryIt: 'In The Molecule, turn the lopsidedness down to nothing and watch the second molecule lose its grip.',
+    },
+
+    /* ---- Cling: who grips harder, the surface or the water ---- */
+    {
+      id: 'waxedcar', field: 'water', sim: 'cling',
+      ask: 'Rain stands up in round beads on a freshly waxed car and runs off in a flat sheet on the car next to it. Same rain, same afternoon.',
+      choices: [
+        { t: 'Wax is waterproof, so it repels the water.', ok: false },
+        { t: 'Wax is smoother, so there is less for the water to hold on to.', ok: false },
+        { t: 'It is a contest: whether the surface grips the water harder than the water grips itself. Wax does not, so the water holds on to itself and pulls into a ball.', ok: true },
+        { t: 'The waxed panel is slightly warmer, and water pulls away from warm surfaces.', ok: false },
+      ],
+      after: 'Nothing is repelling anything. Both surfaces attract water; wax just attracts it less than water attracts itself. Everything from a raincoat to a non-stick pan to the lining of your lungs is somebody deciding which side of that contest should win.',
       tryIt: 'In Cling, keep the surface exactly as it is and change only how tightly the water grips itself.',
     },
     {
-      id: 'sea-sand', field: 'water', sim: 'slow',
-      ask: 'On a hot afternoon the sand burns your feet and the sea is still freezing. The sun has been shining on both of them all day. Why has the water hardly warmed?',
+      id: 'meniscus', field: 'water', sim: 'cling',
+      ask: 'Water in a glass curves up where it meets the sides. Mercury in an old thermometer curves down. Both are liquids in glass tubes, sitting still.',
       choices: [
-        { t: 'The sea is deeper, so the sun cannot reach the bottom.', ok: false },
-        { t: 'Heat going into water mostly goes into shaking hydrogen bonds loose instead of speeding the molecules up — and it is the speed, not the heat, that a thermometer reads.', ok: true },
-        { t: 'Water reflects sunlight and sand absorbs it.', ok: false },
+        { t: 'Mercury is much heavier, so gravity drags its edges down.', ok: false },
+        { t: 'Air pressure pushes down harder on the middle of the liquid than on the edges.', ok: false },
+        { t: 'Water grips glass harder than it grips itself, so the edge climbs. Mercury grips itself harder than it grips glass, so the edge pulls down.', ok: true },
+        { t: 'The inside of the glass is slightly curved where it was moulded.', ok: false },
       ],
-      after: 'The same stubbornness runs your body, the weather and the ocean. It is why a coastal town has milder winters than one inland, and why your temperature stays put while a great deal is going on inside you.',
+      after: 'The same contest as the waxed car, seen edge-on. Which way a liquid curves at the wall tells you, at a glance, which of the two grips is winning — and it is the reason you are taught to read a measuring cylinder at the bottom of the curve.',
+      tryIt: 'In Cling, turn the surface’s grab right down and watch the drop’s edge tip past upright.',
+    },
+    {
+      id: 'ducksback', field: 'water', sim: 'cling',
+      ask: 'Water runs off a duck’s back — it is such a common saying that nobody asks why. A duck swims all day and climbs out dry.',
+      choices: [
+        { t: 'Feathers are too smooth for water to stay on.', ok: false },
+        { t: 'The duck’s body heat evaporates the water as fast as it lands.', ok: false },
+        { t: 'Feathers trap a layer of air that pushes the water away.', ok: false },
+        { t: 'The duck combs an oily coating through its feathers, and that oil barely grips water — so the water holds itself together and rolls off in beads.', ok: true },
+        ],
+      after: 'A duck that cannot reach its oil gland gets waterlogged and can drown, which is the same chemistry run the other way. It is also exactly why oil on seabirds is so deadly: it ruins the surface that was keeping the water out.',
+      tryIt: 'In Cling, set the surface to wax and tilt it until the drop slides straight off.',
+    },
+
+    /* ---- Skin: the molecules unlucky enough to be on the outside ---- */
+    {
+      id: 'paperclip', field: 'water', sim: 'skin',
+      ask: 'Lay a steel paperclip gently on still water and it sits there. Steel is eight times denser than water. Touch the surface with a drop of washing-up liquid and the clip drops like a stone.',
+      choices: [
+        { t: 'The paperclip is light enough to float like a little boat.', ok: false },
+        { t: 'Air trapped underneath the clip holds it up until the soap releases it.', ok: false },
+        { t: 'Molecules at the surface have neighbours below and beside but none above, so they are pulled inwards hard, making a skin. Soap gets in between them and weakens that pull.', ok: true },
+        { t: 'Soap makes the water heavier, so the clip can no longer stay on top.', ok: false },
+      ],
+      after: 'It is not floating. It is being held up by a skin, and the skin is nothing more than the inward pull on the molecules that ended up on the outside. Weaken that pull and the clip goes straight through, which is why the soap works instantly.',
+      tryIt: 'In Skin, add soap and watch where it ends up and what happens to the pull arrows.',
+    },
+    {
+      id: 'rounddrop', field: 'water', sim: 'skin',
+      ask: 'A drip hanging off a tap is round. A raindrop is round. Spilled mercury balls up. Why is a ball the shape a liquid goes to when nothing else is acting on it?',
+      choices: [
+        { t: 'Falling through the air wears the drop round, the way a river rounds a pebble.', ok: false },
+        { t: 'Air presses in evenly from every side and squeezes it into a ball.', ok: false },
+        { t: 'Water is made of round molecules, so it makes round drops.', ok: false },
+        { t: 'Every molecule at the edge is being pulled inwards, and a ball is the shape with the least edge for a given amount of liquid.', ok: true },
+        ],
+      after: 'The drip is round before it falls, so the air cannot be doing it. It is round for the same reason a crowd pushing inwards from all sides ends up a circle: that shape leaves the fewest molecules stuck out on the surface.',
+      tryIt: 'In Skin, compare the edge of a long strip of water with the edge of the same water bunched up.',
+    },
+    {
+      id: 'bubbles', field: 'water', sim: 'skin',
+      ask: 'You cannot blow a bubble with plain water. Everyone has tried. Add a drop of washing-up liquid and suddenly you can blow one the size of your head.',
+      choices: [
+        { t: 'Soap makes the water thicker, so the bubble wall is stronger.', ok: false },
+        { t: 'Soap adds tiny amounts of air into the water.', ok: false },
+        { t: 'Plain water pulls its surface together so hard that a thin film snaps shut at once. Soap weakens that pull enough for a film to stretch out and hold.', ok: true },
+        { t: 'Soap makes the water slippery, so it stretches more easily.', ok: false },
+      ],
+      after: 'The surprise is that soap makes bubbles possible by making water weaker, not stronger. Plain water’s surface tension is too high — it tears any film shut before it can grow. Bubbles live in the gap soap opens up.',
+      tryIt: 'In Skin, add soap and watch the inward pull on the edge molecules go slack.',
+    },
+
+    /* ---- Climb: water dragging itself uphill ---- */
+    {
+      id: 'tallTree', field: 'water', sim: 'climb',
+      ask: 'A tall tree lifts water from its roots to leaves a hundred metres up, all day, every day, with no pump and no moving parts anywhere in it.',
+      choices: [
+        { t: 'The roots push the water up under pressure from below.', ok: false },
+        { t: 'The leaves suck the water up, the way you suck on a straw.', ok: false },
+        { t: 'Water grips the walls of extremely narrow tubes and drags the rest of itself up behind it — and the narrower the tube, the higher it goes.', ok: true },
+        { t: 'The sun warms the water, and warm things rise.', ok: false },
+      ],
+      after: 'Sucking cannot do it: a perfect vacuum can only lift water about ten metres before the column breaks. The tubes in wood are so fine that the grip on the walls carries the column far past that, which is the only reason tall trees are possible at all.',
+      tryIt: 'In Climb, make the tube narrower and narrower and watch how much higher the water goes.',
+    },
+    {
+      id: 'papertowel', field: 'water', sim: 'climb',
+      ask: 'Touch the corner of a paper towel to a spill and the water climbs up into it, against gravity, on its own. Touch a plastic bag to the same spill and nothing happens at all.',
+      choices: [
+        { t: 'Paper is absorbent and plastic is not.', ok: false },
+        { t: 'Paper soaks up water the way a sponge soaks up air.', ok: false },
+        { t: 'Paper is lighter, so water can rise into it more easily.', ok: false },
+        { t: 'Paper is a mesh of tiny channels whose walls grip water hard enough to haul it upwards. Plastic barely grips water at all, so there is nothing to climb.', ok: true },
+      ],
+      after: '"Absorbent" names the behaviour without explaining it. It takes two things: channels narrow enough, and walls that grip water harder than water grips itself. Take either away — wax the paper, or widen the gaps — and the climbing stops.',
+      tryIt: 'In Climb, switch between a surface that grips water and one that does not, and watch what the water does in the tube.',
+    },
+    {
+      id: 'candlewick', field: 'water', sim: 'climb',
+      ask: 'A candle burns for hours and the wick never runs dry, even though the flame is at the top and the melted wax is in a pool at the bottom.',
+      choices: [
+        { t: 'The heat of the flame sucks the wax up towards it.', ok: false },
+        { t: 'The wick is hollow and the wax runs up through the middle.', ok: false },
+        { t: 'The wick’s narrow fibres grip the melted wax and pull it up to the flame as fast as the flame burns it away.', ok: true },
+        { t: 'The wax turns to gas in the pool and rises up to the flame.', ok: false },
+      ],
+      after: 'The wick is not fuel, it is plumbing — which is why a candle with its wick pulled out goes out, and a wick with no wax burns away in seconds. The same effect lifts water up a tree and a spill into a paper towel.',
+      tryIt: 'In Climb, find which tube lifts the water highest. That is the same thing a wick is doing.',
+    },
+
+    /* ---- Float: the one that gets it backwards, and why that matters ---- */
+    {
+      id: 'frozencan', field: 'water', sim: 'float',
+      ask: 'A can of fizzy drink left in the freezer splits itself open. Almost every other substance shrinks when it freezes.',
+      choices: [
+        { t: 'The gas dissolved in the drink expands as it gets cold.', ok: false },
+        { t: 'Freezing lines the water molecules up so that every hydrogen bond gets made — and the only pattern that manages that is full of holes. So ice takes up more room than the water it came from.', ok: true },
+        { t: 'The metal can shrinks in the cold and squeezes the drink until something gives.', ok: false },
+        { t: 'Cold makes water heavier, and the can cannot take the extra weight.', ok: false },
+      ],
+      after: 'Water is doing the opposite of what nearly everything else does, and it is doing it because its grips are fussy about direction. Satisfying all of them at once forces an open, roomy pattern — and open means bigger.',
+      tryIt: 'In Float, cool the water-like sheet slowly and watch the holes open up as the hands find each other.',
+    },
+    {
+      id: 'frozenpond', field: 'water', sim: 'float',
+      ask: 'A pond freezes over in winter and the fish are still alive in spring. If ice behaved like almost any other solid, they would not be.',
+      choices: [
+        { t: 'The fish make enough body heat to keep the water around them liquid.', ok: false },
+        { t: 'Ponds only freeze at the shallow edges, never in the middle.', ok: false },
+        { t: 'Moving water cannot freeze, and the fish keep it moving.', ok: false },
+        { t: 'Ice is less dense than water, so it floats and forms a lid — leaving liquid water underneath it all winter.', ok: true },
+      ],
+      after: 'If ice sank, ponds and lakes would freeze from the bottom up and freeze solid, every winter, killing everything in them. A single odd fact about one molecule’s shape is why fresh water has anything living in it at all.',
+      tryIt: 'In Float, cool the sheet until the block floats, then switch to the no-hands kind and watch it sink.',
+    },
+    {
+      id: 'oilfreezer', field: 'water', sim: 'float',
+      ask: 'A bottle of water left in the freezer cracks. A bottle of cooking oil in the same freezer goes thick and cloudy and comes out in one piece.',
+      choices: [
+        { t: 'Oil does not freeze.', ok: false },
+        { t: 'Oil molecules have no hands to lock into an open pattern, so as they cool they only ever pack in tighter — and tighter means smaller.', ok: true },
+        { t: 'Oil is lighter than water, so it does not push outwards as hard.', ok: false },
+        { t: 'Oil is slippery and slides out of the way rather than pressing on the bottle.', ok: false },
+      ],
+      after: 'Oil does freeze — it just shrinks doing it, like nearly everything else. Water is the odd one out, and it is odd for a reason you can point at: directional grips that only all fit in a roomy arrangement.',
+      tryIt: 'In Float, switch to the kind with no hands and cool it. Does it open up, or close down?',
+    },
+
+    /* ---- Slow: where the heat goes ---- */
+    {
+      id: 'sandsea', field: 'water', sim: 'slow',
+      ask: 'On a hot afternoon the sand burns your feet and the sea is still freezing. The sun has been on both of them all day, side by side.',
+      choices: [
+        { t: 'The sea is deep, so the sunlight cannot reach the bottom.', ok: false },
+        { t: 'Water reflects sunlight away and sand absorbs it.', ok: false },
+        { t: 'Heat going into water mostly goes into shaking hydrogen bonds loose rather than speeding molecules up — and it is the speed, not the heat, that a thermometer reads.', ok: true },
+        { t: 'Sand is darker, so it takes in more of the sun’s energy.', ok: false },
+      ],
+      after: 'The water is absorbing plenty of energy. It just spends it on something a thermometer cannot see — pulling grips apart instead of making molecules move faster. The energy is in there; it is simply not showing up as temperature.',
       tryIt: 'In Slow, put exactly the same heat into all three boxes and watch which one refuses to warm up.',
     },
     {
-      id: 'sweat', field: 'water', sim: 'slow',
-      ask: 'Sweating cools you down even when the air around you is hotter than you are. How can losing water make you colder?',
+      id: 'piefilling', field: 'water', sim: 'slow',
+      ask: 'A hot pie comes out of the oven. The pastry you can hold. The filling takes the skin off the roof of your mouth. They have been at the same temperature for the last half hour.',
       choices: [
-        { t: 'Sweat is colder than the body that made it.', ok: false },
-        { t: 'The wet skin blocks the heat of the air.', ok: false },
-        { t: 'Only the fastest molecules have enough in them to break every hydrogen bond at once and get away. What is left behind is the slower ones — and slower is exactly what colder means.', ok: true },
+        { t: 'The filling is hotter than the pastry.', ok: false },
+        { t: 'The watery filling holds far more heat than dry pastry does at the same temperature, so it has much more to unload into your mouth.', ok: true },
+        { t: 'The filling is wet, and wet things conduct heat faster.', ok: false },
+        { t: 'The pastry is on the outside, so it has had longer to cool.', ok: false },
       ],
-      after: 'Evaporation always skims the fastest off the top. It is why a wet towel on a window cools a room, why dogs pant, and why you shiver getting out of a pool on a warm day.',
-      tryIt: 'In Slow, watch how much heat the water-like box swallows before its temperature will move at all.',
+      after: 'Temperature and heat are not the same thing, and this is where it bites. Same temperature, wildly different amount of energy stored, because water can soak up enormous quantities without its temperature moving much. Getting it back out of there is your problem.',
+      tryIt: 'In Slow, heat all three boxes to the same temperature and see which one needed the most heat to get there.',
     },
     {
-      id: 'co2-water', field: 'water', sim: 'h2o',
-      ask: 'Carbon dioxide and water are both tiny molecules, and in both of them the oxygen pulls the shared electrons hard. One you breathe out as a gas. The other you are mostly made of. Why?',
+      id: 'coastal', field: 'water', sim: 'slow',
+      ask: 'Two towns at the same latitude: one on the coast, one two hundred miles inland. The coastal one has milder winters and cooler summers, every year, without fail.',
       choices: [
-        { t: 'Carbon dioxide is lighter than water.', ok: false },
-        { t: 'Carbon dioxide is straight, so its two lopsided bonds pull in exactly opposite directions and cancel out. Water is bent, so its two pulls add up and the molecule ends up with a charged side.', ok: true },
-        { t: 'Carbon dioxide has no hydrogen, and only hydrogen makes liquids.', ok: false },
+        { t: 'Sea air is damper, and damp air holds on to heat better.', ok: false },
+        { t: 'The coast is lower down, and low places are always warmer.', ok: false },
+        { t: 'Sea water is salty, and salt keeps it from getting too cold.', ok: false },
+        { t: 'The sea takes an enormous amount of heat to warm up and gives it back just as slowly, so it holds the whole coast steady against whatever the season does.', ok: true },
       ],
-      after: 'Lopsided bonds are not enough on their own: the shape has to stop them cancelling. Bend carbon dioxide and it would be a liquid; straighten water and oceans would be steam.',
-      tryIt: 'In The Molecule, straighten water out and watch its pull collapse to nothing — then bend it back.',
+      after: 'An ocean is a flywheel for temperature. The same stubbornness that keeps the sea cold in June keeps it warm in December, and it is why Britain is habitable and places at the same latitude in Canada are not.',
+      tryIt: 'In Slow, heat all three boxes and then cool them. Which is the last one to let go of its heat?',
     },
   ];
 
