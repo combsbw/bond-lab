@@ -261,8 +261,31 @@
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         ctx.fillText(o.base || 'A', x + s * 0.81, y);
         ctx.restore();
-        return { left: [x - s * 1.15, y], right: [x + s * 0.5, y + s * 0.55] };
+        // the link runs sugar-to-phosphate, so the right site is on the
+        // sugar's lower corner rather than anywhere near the base
+        return { left: [x - s * 1.15, y], right: [x + s * 0.3, y + s * 0.52] };
       },
+    },
+  };
+
+  /* Glycerol is not a monomer of anything — it is the three-hydroxyl stub a
+     fat gets built on. It only ever appears as the left-hand partner of a
+     fatty acid, so it lives here rather than in UNITS proper. */
+  UNITS.glycerol = {
+    id: 'glycerol', name: 'glycerol', short: 'glycerol', bond: 'ester bond', poly: 'triglyceride',
+    family: 'lipid', leftTag: 'O—H', rightTag: 'O—H', made: 'a fat', bodyColor: () => BL.pal.tDipole,
+    says: 'Three carbons, each carrying a hydroxyl. It is the little stub that holds a fat’s tails together.',
+    draw(ctx, x, y, s, o) {
+      o = o || {};
+      const pal = BL.pal, w = s * 0.5, hh = s * 1.4;
+      ctx.save();
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(x - w / 2, y - hh / 2, w, hh, s * 0.22); else ctx.rect(x - w / 2, y - hh / 2, w, hh);
+      ctx.fillStyle = BL.alpha(o.tint || pal.tDipole, pal.dark ? 0.26 : 0.17); ctx.fill();
+      ctx.lineWidth = 2.4; ctx.strokeStyle = BL.alpha(o.tint || pal.tDipole, 0.9); ctx.stroke();
+      ctx.restore();
+      for (let k = -1; k <= 1; k++) atom(ctx, x, y + k * s * 0.44, s * 0.2, 'C');
+      return { left: [x - w / 2, y], right: [x + w / 2, y] };
     },
   };
 
