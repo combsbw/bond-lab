@@ -160,7 +160,10 @@
         const W = stage.w, H = stage.h;
         L.cy = H * 0.5;
         L.r = clamp(Math.min(W * 0.155, H * 0.34), 36, 122);
-        L.gap = L.r * (3.1 - (S.phase === 'ionic' ? 0.85 * (S.t * S.t * (3 - 2 * S.t)) : 0));
+        // clamped because a resize can land mid-animation, and a smoothstep fed
+        // a t outside 0..1 can hand back a negative gap, which a radius cannot be
+        const close = S.phase === 'ionic' ? 0.85 * BL.clamp(S.t * S.t * (3 - 2 * S.t), 0, 1) : 0;
+        L.gap = L.r * (3.1 - close);
         L.ax = W * 0.5 - L.gap / 2;
         L.bx = W * 0.5 + L.gap / 2;
       };

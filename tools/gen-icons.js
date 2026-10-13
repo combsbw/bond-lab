@@ -1,10 +1,16 @@
-/* Draws Bond Lab's icon and renders every size the web asks for.
+/* Draws both labs' icons and renders every size the web asks for.
    Run: NODE_PATH=<playwright> node tools/gen-icons.js
 
-   The mark is the lab's one idea, at icon size: two atoms, one cloud of
-   electrons between them, and the cloud is not in the middle. The atom on the
-   right is bigger and pulls harder, so the shared cloud leans its way. That is
-   the whole of The Spectrum in three shapes, and it still reads at 32 pixels.
+   Each mark is its lab's one idea, at icon size.
+
+   Bond Lab: two atoms, one cloud of electrons between them, and the cloud is
+   not in the middle. The atom on the right is bigger and pulls harder, so the
+   shared cloud leans its way. That is the whole of The Spectrum in three
+   shapes, and it still reads at 32 pixels.
+
+   Life Lab: two units joined by a bond, and one drop of water lifting off.
+   That is the whole of The Template, and it reads at 32 pixels too. The two
+   marks share a background and a weight so they look like one pair of apps.
 
    Chromium does the rasterising, because it is the renderer the icons will
    actually be seen in and it is already here for the smoke test. */
@@ -20,6 +26,10 @@ const EDGE = '#ecf5f2';         // the atoms' outlines
 const CLOUD = '#ffb84d';        // the shared electrons
 const CLOUD_DEEP = '#e8870f';
 const CLOUD_LIT = '#ffd79a';   // the light side, so the cloud reads as a body
+const UNIT = '#8ee28b';         // a monomer
+const UNIT_DEEP = '#3f9b48';
+const DROP = '#7ebaff';         // the water that leaves when the bond forms
+const DROP_DEEP = '#2d6fc4';
 
 /* One drawing, in a 512 box.
    o.round  : rounded corners (a normal app icon)
@@ -55,6 +65,41 @@ function svg(o) {
 </svg>`;
 }
 
+/* The Life Lab's mark: two units, one bond, one water leaving. */
+function lifeSvg(o) {
+  o = o || {};
+  const S = 512;
+  const k = o.bleed ? 0.84 : 1;
+  const T = (v) => (256 + (v - 256) * k).toFixed(1);
+  const L = (v) => (v * k).toFixed(1);
+
+  const cy = 320, aCx = 150, bCx = 362, r = 78, bar = 34;
+  const dCx = 256, dCy = 136, dR = 56;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${S}" height="${S}" viewBox="0 0 ${S} ${S}">
+<defs>
+<radialGradient id="u" cx="34%" cy="30%" r="80%">
+<stop offset="0" stop-color="#d4f5cf"/>
+<stop offset="0.4" stop-color="${UNIT}"/>
+<stop offset="1" stop-color="${UNIT_DEEP}"/>
+</radialGradient>
+<radialGradient id="d" cx="34%" cy="28%" r="82%">
+<stop offset="0" stop-color="#d6e9ff"/>
+<stop offset="0.4" stop-color="${DROP}"/>
+<stop offset="1" stop-color="${DROP_DEEP}"/>
+</radialGradient>
+</defs>
+<rect width="${S}" height="${S}"${o.round ? ' rx="112"' : ''} fill="${INK}"/>
+<rect x="${T(aCx)}" y="${T(cy - bar / 2)}" width="${L(bCx - aCx)}" height="${L(bar)}" rx="${L(bar / 2)}" fill="${EDGE}"/>
+<circle cx="${T(aCx)}" cy="${T(cy)}" r="${L(r)}" fill="url(#u)"/>
+<circle cx="${T(bCx)}" cy="${T(cy)}" r="${L(r)}" fill="url(#u)"/>
+<path d="M ${T(dCx)} ${T(dCy - dR * 1.5)}
+         C ${T(dCx + dR * 0.95)} ${T(dCy - dR * 0.3)}, ${T(dCx + dR)} ${T(dCy + dR * 0.75)}, ${T(dCx)} ${T(dCy + dR)}
+         C ${T(dCx - dR)} ${T(dCy + dR * 0.75)}, ${T(dCx - dR * 0.95)} ${T(dCy - dR * 0.3)}, ${T(dCx)} ${T(dCy - dR * 1.5)} Z"
+      fill="url(#d)"/>
+</svg>`;
+}
+
 /* Every size, and why each one exists. */
 const SIZES = [
   { file: 'icon-192.png', px: 192, opts: { round: true } },
@@ -66,23 +111,31 @@ const SIZES = [
   { file: 'favicon-16.png', px: 16, opts: { round: true } },
 ];
 
+/* The two labs, each with its own mark and its own file prefix. */
+const MARKS = [
+  { draw: svg, prefix: '', scalable: 'icon.svg' },
+  { draw: lifeSvg, prefix: 'life-', scalable: 'life-icon.svg' },
+];
+
 (async () => {
   const { chromium } = require('playwright');
   fs.mkdirSync(OUT, { recursive: true });
 
-  // the scalable one, used as the page's favicon and as the source of truth
-  fs.writeFileSync(path.join(ROOT, 'assets', 'icon.svg'), svg({ round: true }) + '\n');
-
   const b = await chromium.launch();
-  for (const s of SIZES) {
-    const page = await b.newPage({ viewport: { width: s.px, height: s.px }, deviceScaleFactor: 1 });
-    await page.setContent(
-      '<style>html,body{margin:0;padding:0;background:transparent}svg{display:block;width:100vw;height:100vh}</style>'
-      + svg(s.opts), { waitUntil: 'load' });
-    await page.screenshot({ path: path.join(OUT, s.file), omitBackground: true });
-    await page.close();
-    console.log('wrote', path.relative(ROOT, path.join(OUT, s.file)), s.px + 'px');
+  for (const m of MARKS) {
+    // the scalable one, used as the page's favicon and as the source of truth
+    fs.writeFileSync(path.join(ROOT, 'assets', m.scalable), m.draw({ round: true }) + '\n');
+    for (const s of SIZES) {
+      const file = m.prefix + s.file;
+      const page = await b.newPage({ viewport: { width: s.px, height: s.px }, deviceScaleFactor: 1 });
+      await page.setContent(
+        '<style>html,body{margin:0;padding:0;background:transparent}svg{display:block;width:100vw;height:100vh}</style>'
+        + m.draw(s.opts), { waitUntil: 'load' });
+      await page.screenshot({ path: path.join(OUT, file), omitBackground: true });
+      await page.close();
+      console.log('wrote', path.relative(ROOT, path.join(OUT, file)), s.px + 'px');
+    }
+    console.log('wrote', 'assets/' + m.scalable);
   }
   await b.close();
-  console.log('wrote', 'assets/icon.svg');
 })();

@@ -1,27 +1,18 @@
-/* Bond Lab app shell: hash router, hub page, Display menu. */
+/* The app shell both labs run on: hash router, hub page, Display menu.
+
+   Bond Lab (index.html) and the Life Lab (life.html) are the same machine with
+   different instruments loaded. Each entry point loads a config file —
+   js/lab-bond.js or js/lab-life.js — that sets BL.lab before this runs, and
+   everything on the hub comes from there. Instruments register themselves into
+   BL.sims as their own scripts load, so BL.sims only ever holds the ones that
+   entry point asked for. */
 (function () {
   'use strict';
   const { h } = BL;
 
-  const FIELDS = [
-    { id: 'atoms', name: 'Atoms', lede: 'Where the electrons are, why they sit where they sit, and why the outer ones are the only ones that ever meet anybody.' },
-    { id: 'bonding', name: 'Bonding', lede: 'What happens when two atoms meet — and why every kind of bond you have ever been given a name for is one dial at a different setting.' },
-    { id: 'water', name: 'Water', lede: 'One small bent molecule, and everything it does because of the way it holds on.' },
-  ];
-
-  /* The one idea the whole Bonding section hangs off. It sits at the top of the
-     hub as a strip you can walk into, because a learner who has it will see
-     the rest as variations instead of as a list to memorise. */
-  const SPINE = [
-    ['shared evenly', 'covalent'],
-    ['shared unevenly', 'polar covalent'],
-    ['nearly taken', 'very polar'],
-    ['handed over', 'ionic'],
-  ];
-
-  /* Instruments not built yet. They show on the hub so the shape of the whole lab is visible. */
-  const PLANNED = [
-  ];
+  const L = BL.lab || { name: 'Lab', tagline: '', fields: [] };
+  const FIELDS = L.fields || [];
+  const PLANNED = L.planned || [];
 
   const plannedArt = '<svg viewBox="0 0 200 120" aria-hidden="true"><circle cx="100" cy="60" r="24" fill="none" stroke="currentColor" stroke-opacity=".5" stroke-width="2" stroke-dasharray="4 6"/></svg>';
 
@@ -45,20 +36,23 @@
   }
 
   function showHub() {
-    document.title = 'Bond Lab';
+    document.title = L.name;
     setCrumb([]);
     view.appendChild(h('div', { class: 'hub-head' },
-      h('h1', {}, 'Bond Lab'),
-      h('p', {}, 'Instruments for things too small to see. Poke them and watch what answers.')));
+      h('h1', {}, L.name),
+      h('p', {}, L.tagline)));
 
-    // the spine: one dial, four names, and a way in
-    view.appendChild(h('a', { class: 'spine', href: '#/spectrum' },
-      h('div', { class: 'spine-head' },
-        h('h2', {}, 'It is all one dial'),
-        h('p', {}, 'Covalent, polar, ionic, hydrogen bonds, van der Waals — not a list of five different things. One question, asked at different settings: how evenly do two atoms share their electrons? Start here.')),
-      h('div', { class: 'spine-band', 'aria-hidden': 'true' },
-        SPINE.map(([word, book]) => h('span', {}, h('b', {}, word), h('i', {}, book)))),
-      h('span', { class: 'spine-go' }, 'Open The Spectrum →')));
+    /* The spine: the one idea the whole lab hangs off, as a strip you can walk
+       into. A learner who has it sees the rest as variations instead of as a
+       list to memorise, which is the difference between this and a textbook. */
+    const sp = L.spine;
+    if (sp) {
+      view.appendChild(h('a', { class: 'spine', href: sp.href },
+        h('div', { class: 'spine-head' }, h('h2', {}, sp.title), h('p', {}, sp.blurb)),
+        h('div', { class: 'spine-band' + (sp.tone ? ' tone-' + sp.tone : ''), 'aria-hidden': 'true' },
+          sp.rows.map(([word, book]) => h('span', {}, h('b', {}, word), h('i', {}, book)))),
+        h('span', { class: 'spine-go' }, sp.go)));
+    }
 
     FIELDS.forEach((f) => {
       const built = BL.sims.filter((s) => s.field === f.id).sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -107,10 +101,21 @@
       }
       view.appendChild(section);
     });
+
+    /* The other lab. The two cover consecutive chapters and the second one
+       leans on the first, so each hub says where the other is. */
+    if (L.sibling) {
+      view.appendChild(h('a', { class: 'spine sibling', href: L.sibling.href },
+        h('div', { class: 'spine-head' },
+          h('span', { class: 'tag' }, L.sibling.kicker),
+          h('h2', {}, L.sibling.title),
+          h('p', {}, L.sibling.blurb)),
+        h('span', { class: 'spine-go' }, L.sibling.go)));
+    }
   }
 
   function showSim(sim, params) {
-    document.title = sim.name + ' · Bond Lab';
+    document.title = sim.name + ' · ' + L.name;
     const field = FIELDS.find((f) => f.id === sim.field);
     setCrumb([{ text: 'Lab', href: '#/' }, { text: field ? field.name : '' }, { text: sim.name }]);
     const slots = {
@@ -190,7 +195,7 @@
   fitBar();
 
   window.addEventListener('hashchange', route);
-  document.getElementById('foot-note').textContent = 'v1.0';
+  document.getElementById('foot-note').textContent = L.version || 'v1.0';
   // Instruments register themselves when their scripts load, before this file runs.
   route();
 })();

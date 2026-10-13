@@ -41,6 +41,15 @@
   --t-dipole: #2a7a2e;
   --t-iondipole: #2a58cc;
   --t-vdw: #876f00;
+  /* The elements organic chemistry actually uses. Oxygen and hydrogen keep the
+     charge colours they had in Bond Lab (O is the delta-minus end of water,
+     H the delta-plus one) so a learner coming from Chapter 2 sees the same
+     molecule in the same colours. */
+  --e-c: #3a4a52;            /* carbon: the backbone */
+  --e-n: #6a3fc0;            /* nitrogen */
+  --e-p: #9a5a00;            /* phosphorus */
+  --e-s: #6b6200;            /* sulfur */
+  --e-tail: #8a6410;         /* a hydrocarbon tail: greasy, water-hating */
   --focus: #0a58ca;
   --shadow: 0 1px 2px rgba(16, 32, 31, .08), 0 6px 20px rgba(16, 32, 31, .06);
 
@@ -72,6 +81,7 @@ html[data-theme="dark"] {
   --t-dipole: #8ee28b;
   --t-iondipole: #86a9ff;
   --t-vdw: #dde76f;
+  --e-c: #b9cdd6; --e-n: #c0a8ff; --e-p: #ffc166; --e-s: #d8d268; --e-tail: #e0bd77;
   --focus: #9cc9ff;
   --shadow: 0 1px 2px rgba(0, 0, 0, .4), 0 8px 24px rgba(0, 0, 0, .25);
 }
@@ -81,12 +91,14 @@ html[data-contrast="high"] {
   --fg: #000000; --muted: #1f1f1f; --ui: #004f45; --ui-ink: #ffffff; --ui-soft: #d4ece7;
   --electron: #8a3300; --pos: #9c1a12; --neg: #0a3f96; --cloud: #8a3300; --wash: #ffe9cf; --focus: #0036a3;
   --t-covalent: #4b2bb3; --t-ionic: #9d1241; --t-hydrogen: #045a70; --t-dipole: #1b5c1f; --t-iondipole: #123fa8; --t-vdw: #675300;
+  --e-c: #000000; --e-n: #4b2bb3; --e-p: #6f4000; --e-s: #4a4300; --e-tail: #5f4200;
 }
 html[data-theme="dark"][data-contrast="high"] {
   --bg: #000000; --panel: #000000; --panel-2: #141414; --line: #ffffff; --line-2: #ffffff;
   --fg: #ffffff; --muted: #e6e6e6; --ui: #8ff5de; --ui-ink: #000000; --ui-soft: #0d3d37;
   --electron: #ffc766; --pos: #ffa595; --neg: #9cc9ff; --cloud: #ffd08a; --wash: #3b2a08; --focus: #ffe066;
   --t-covalent: #cdbcff; --t-ionic: #ffb0c1; --t-hydrogen: #7fe6f7; --t-dipole: #a8f0a5; --t-iondipole: #a9c2ff; --t-vdw: #eaf28f;
+  --e-c: #ffffff; --e-n: #cdbcff; --e-p: #ffcf8a; --e-s: #eaf28f; --e-tail: #f0cf90;
 }
 html[data-ts="1"] { --ts: 1.15; }
 html[data-ts="2"] { --ts: 1.3; }
@@ -273,6 +285,42 @@ html[data-nums="off"] .landmarks .chip .numv { display: none; }
 .goal.just .goal-mark { animation: pop 1.2s ease-out; }
 @keyframes pop { 0% { box-shadow: 0 0 0 0 var(--ui); } 100% { box-shadow: 0 0 0 14px transparent; } }
 
+/* Guided pokes (BL.protocol): numbered, each with the exact move to make and
+   a call to commit to before making it. */
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; counter-reset: none; }
+.step { display: grid; grid-template-columns: 1.7rem 1fr; gap: 12px; align-items: start;
+  padding: 12px; border: 1.5px solid var(--line); border-radius: 12px; background: var(--panel); }
+.step-mark { width: 1.65rem; height: 1.65rem; border-radius: 50%; border: 2.5px solid var(--line-2);
+  display: grid; place-items: center; font: 700 0.8rem/1 var(--font-body); color: var(--muted);
+  transition: background .25s, border-color .25s, color .25s; }
+.step.done { border-color: var(--ui); background: var(--ui-soft); }
+.step.done .step-mark { background: var(--ui); border-color: var(--ui); color: transparent; }
+.step.done .step-mark::after { content: ''; position: absolute; width: 0.34rem; height: 0.7rem;
+  border: solid var(--ui-ink); border-width: 0 3px 3px 0; transform: translateY(-0.1rem) rotate(40deg); }
+.step-mark { position: relative; }
+.step.just .step-mark { animation: pop 1.2s ease-out; }
+.step-main { display: grid; gap: 8px; min-width: 0; }
+.step-text { margin: 0; font-size: 1rem; line-height: 1.4; font-weight: 700; }
+.step-how { margin: 0; font-size: 0.92rem; line-height: 1.45; color: var(--muted); }
+.step.done .step-how { color: var(--fg); opacity: .75; }
+.step-ask { margin: 2px 0 0; padding-top: 8px; border-top: 1.5px dashed var(--line); }
+.step-q { margin: 0 0 8px; font-size: 0.95rem; line-height: 1.4; }
+.step-opts { display: flex; flex-wrap: wrap; gap: 8px; }
+.step-opt { min-height: 44px; padding: 8px 14px; border: 2px solid var(--line-2); border-radius: 999px;
+  background: var(--panel); color: var(--fg); font: 600 0.92rem/1.3 var(--font-body); cursor: pointer; }
+.step-opt:hover:not(:disabled) { border-color: var(--ui); background: var(--ui-soft); }
+.step-opt[aria-pressed="true"] { border-color: var(--ui); background: var(--ui); color: var(--ui-ink); }
+.step-opt:disabled { cursor: default; opacity: .9; }
+.step-opt:disabled:not([aria-pressed="true"]) { opacity: .5; }
+.step-said { margin: 0; font-size: 0.92rem; line-height: 1.45; color: var(--muted); }
+.step-said.held { color: var(--ui); font-weight: 700; }
+.step-said.broke { color: var(--pos); font-weight: 700; }
+
+/* A control that cannot do anything right now says so. */
+.action:disabled, .chip:disabled { opacity: .42; cursor: default; }
+.action:disabled:hover, .chip:disabled:hover { border-color: var(--line); background: var(--panel); }
+input[type="range"]:disabled { opacity: .45; cursor: default; }
+
 .readout { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 16px; font-size: 1.05rem; line-height: 1.3; }
 .readout .name { font-family: var(--font-display); font-weight: 800; font-size: 1.4rem; }
 .readout .zone { color: var(--ui); font-weight: 700; }
@@ -439,6 +487,16 @@ html[data-nums="off"] .numv { display: none; }
 .spine-band i { font-style: normal; font-size: 0.85rem; opacity: .9; }
 .spine-go { font-weight: 700; color: var(--ui); }
 html[data-theme="dark"] .spine-band span { color: #08151a; }
+/* The Life Lab's band is four families rather than one gradient, so each
+   panel gets its own colour instead of a step along a rail. */
+.spine-band.tone-families span:nth-child(1) { background: var(--e-n); }
+.spine-band.tone-families span:nth-child(2) { background: var(--t-dipole); }
+.spine-band.tone-families span:nth-child(3) { background: var(--electron); }
+.spine-band.tone-families span:nth-child(4) { background: var(--t-iondipole); }
+/* The other lab, at the foot of the hub: the same card, quieter, no band. */
+.spine.sibling { margin: 30px 0 4px; border-style: dashed; background: var(--panel-2); box-shadow: none; }
+.spine.sibling .spine-head h2 { font-size: 1.35rem; }
+.spine.sibling .tag { justify-self: start; }
 .ch-host { display: grid; gap: 14px; }
 .ch-host .panel { border: 0; background: transparent; box-shadow: none; padding: 0; }
 .field .fold { margin-top: 18px; }

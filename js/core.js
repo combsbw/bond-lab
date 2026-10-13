@@ -56,7 +56,8 @@
   Object.defineProperty(BL, 'nums', { get: () => !!D.nums });
 
   const VARS = ['bg', 'panel', 'panel-2', 'line', 'line-2', 'fg', 'muted', 'ui', 'ui-ink', 'electron', 'pos', 'neg', 'cloud', 'wash',
-    't-covalent', 't-ionic', 't-hydrogen', 't-dipole', 't-iondipole', 't-vdw'];
+    't-covalent', 't-ionic', 't-hydrogen', 't-dipole', 't-iondipole', 't-vdw',
+    'e-c', 'e-n', 'e-p', 'e-s', 'e-tail'];
   const camel = (s) => s.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase());   // 'line-2' -> 'line2'
 
   BL.readPalette = function () {
@@ -65,6 +66,10 @@
     VARS.forEach((v) => { p[camel(v)] = cs.getPropertyValue('--' + v).trim(); });
     p.dark = document.documentElement.dataset.theme === 'dark';
     p.types = { covalent: p.tCovalent, ionic: p.tIonic, hydrogen: p.tHydrogen, dipole: p.tDipole, iondipole: p.tIondipole, vdw: p.tVdw };
+    /* Organic chemistry needs more than two colours. Oxygen and hydrogen keep
+       the ones they had as water's two ends, so the same molecule looks the
+       same in both labs. */
+    p.el = { C: p.eC, H: p.pos, O: p.neg, N: p.eN, P: p.eP, S: p.eS };
     BL.pal = p;
     return p;
   };
@@ -379,6 +384,105 @@
 
   /* How many goals has this browser completed for an instrument? */
   BL.goalsDone = (simId) => (BL.store.get('goals.' + simId, []) || []).length;
+
+  /* -------------------------------------------------------------------
+     A guided poke: predict, then poke, then find out.
+
+     BL.goals is a list of things to try. That is enough when the instrument
+     is small. But watching something happen is not the same as having
+     expected it, and the difference is the whole point: a learner who
+     commits to an answer first finds out whether they understood, while a
+     learner who only watches finds out nothing and feels like they did.
+
+     So each step here does three things in order. It says exactly what to
+     poke and how. It asks for a call before you poke it — two or three
+     options, one click, no going back. Then the instrument ticks the step
+     off when it actually sees the thing happen, and only then does the step
+     say whether the call held.
+
+     Ticks share storage with BL.goals, so the hub's progress pips need no
+     special case. defs: {id, text, how, ask, opts:[...], right}.
+     ------------------------------------------------------------------- */
+  BL.protocol = function (host, simId, defs) {
+    const key = 'goals.' + simId, pkey = 'predicts.' + simId;
+    const done = new Set(BL.store.get(key, []));
+    const picks = Object.assign({}, BL.store.get(pkey, {}));
+    const rows = {};
+    const list = BL.h('ol', { class: 'steps', 'aria-label': 'Things to try, and what to predict first' });
+    const say = BL.h('div', { class: 'sr-only', 'aria-live': 'polite' });
+
+    defs.forEach((g, n) => {
+      const verdict = BL.h('p', { class: 'step-said', hidden: true });
+      const main = BL.h('div', { class: 'step-main' },
+        BL.h('p', { class: 'step-text' }, g.text),
+        g.how ? BL.h('p', { class: 'step-how' }, g.how) : null);
+
+      let opts = null;
+      if (g.ask && g.opts) {
+        const btns = g.opts.map((t, i) => BL.h('button', {
+          type: 'button', class: 'step-opt', 'aria-pressed': String(picks[g.id] === i),
+          onclick: () => { picks[g.id] = i; BL.store.set(pkey, picks); settle(g, true); },
+        }, t));
+        opts = BL.h('div', { class: 'step-ask' },
+          BL.h('p', { class: 'step-q' }, BL.h('b', {}, 'Call it first: '), g.ask),
+          BL.h('div', { class: 'step-opts', role: 'group', 'aria-label': 'Your prediction' }, btns));
+        main.appendChild(opts);
+        rows[g.id] = { btns };
+      }
+      main.appendChild(verdict);
+
+      const li = BL.h('li', { class: 'step' + (done.has(g.id) ? ' done' : '') },
+        BL.h('span', { class: 'step-mark', 'aria-hidden': 'true' }, String(n + 1)),
+        main,
+        BL.h('span', { class: 'sr-only' }, done.has(g.id) ? ' (done)' : ''));
+      rows[g.id] = Object.assign(rows[g.id] || {}, { li, verdict, opts, def: g });
+      list.appendChild(li);
+    });
+    host.appendChild(list);
+    host.appendChild(say);
+
+    /* Says as much as it is allowed to: once a call is in, that the call is
+       in; once the thing has happened, whether the call held. */
+    function settle(g, fresh) {
+      const r = rows[g.id], has = picks[g.id] != null, is = done.has(g.id);
+      if (r.btns) r.btns.forEach((b, i) => { b.setAttribute('aria-pressed', String(picks[g.id] === i)); b.disabled = has; });
+      if (!has && !is) { r.verdict.hidden = true; return; }
+      r.verdict.hidden = false;
+      r.verdict.className = 'step-said';
+      if (has && !is) {
+        r.verdict.textContent = 'You said: ' + g.opts[picks[g.id]] + '. Now go and find out.';
+        if (fresh) say.textContent = 'Prediction saved. Now poke it.';
+        return;
+      }
+      if (!has) { r.verdict.textContent = 'Done — but you never called it. Guessing first is the only way to find out whether you understood it or just watched it.'; return; }
+      const held = picks[g.id] === g.right;
+      r.verdict.className = 'step-said ' + (held ? 'held' : 'broke');
+      r.verdict.textContent = held
+        ? 'You said ' + lower(g.opts[g.right]) + ', and that is what happened.'
+        : 'You said ' + lower(g.opts[picks[g.id]]) + '. It went the other way: ' + lower(g.opts[g.right]) + '.';
+    }
+    const lower = (t) => (t && t[0] === t[0].toUpperCase() && t[1] === (t[1] || '').toLowerCase() ? t[0].toLowerCase() + t.slice(1) : t);
+
+    defs.forEach((g) => settle(g, false));
+
+    return {
+      el: list,
+      done(id) {
+        const r = rows[id];
+        if (!r || done.has(id)) return;
+        done.add(id);
+        BL.store.set(key, [...done]);
+        r.li.classList.add('done', 'just');
+        r.li.lastChild.textContent = ' (done)';
+        settle(r.def, false);
+        say.textContent = 'Done: ' + r.def.text;
+        setTimeout(() => r.li.classList.remove('just'), 1600);
+      },
+      has: (id) => done.has(id),
+      /* What the learner committed to, for instruments that want to react. */
+      pick: (id) => picks[id],
+    };
+  };
 
 
   /* -------------------------------------------------------------------

@@ -18,11 +18,16 @@ const CACHE = 'bond-lab-v1';
 const CORE = [
   './',
   './index.html',
+  './life.html',
   './css/style.css',
   './manifest.webmanifest',
+  './manifest-life.webmanifest',
   './assets/icon.svg',
+  './assets/life-icon.svg',
   './assets/icons/icon-192.png',
   './assets/icons/icon-512.png',
+  './assets/icons/life-icon-192.png',
+  './assets/icons/life-icon-512.png',
 ];
 
 self.addEventListener('install', (e) => {

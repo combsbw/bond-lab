@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en" data-theme="light" data-ts="0" data-contrast="normal">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Life Lab</title>
+<meta name="description" content="Chapter 3 as a set of instruments. One reaction builds everything alive and one takes it apart again — poke both, then build a protein, a starch, a membrane and a strand of DNA out of them.">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f3f6f5" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#08151a" media="(prefers-color-scheme: dark)">
+<link rel="icon" href="assets/life-icon.svg" type="image/svg+xml">
+<link rel="icon" href="assets/icons/life-favicon-32.png" sizes="32x32" type="image/png">
+<link rel="icon" href="assets/icons/life-favicon-16.png" sizes="16x16" type="image/png">
+<link rel="apple-touch-icon" href="assets/icons/life-apple-touch-icon.png">
+<link rel="manifest" href="manifest-life.webmanifest">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Life Lab">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
+<script>
+/* Set the look before first paint so there is no flash. Both labs read the
+   same saved display settings, so a learner sets them once. */
+(function () {
+  try {
+    var d = JSON.parse(localStorage.getItem('bondlab.display') || '{}'), r = document.documentElement;
+    var dark = d.theme === 'dark' || ((!d.theme || d.theme === 'auto') && window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches);
+    r.setAttribute('data-theme', dark ? 'dark' : 'light');
+    r.setAttribute('data-ts', String(d.size || 0));
+    r.setAttribute('data-contrast', d.contrast ? 'high' : 'normal');
+  } catch (e) { /* ignore */ }
+})();
+</script>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<a class="skip" href="#view">Skip to the page</a>
+
+<header class="bar" id="bar">
+  <a class="brand" href="#/" aria-label="Life Lab, home">
+    <svg class="brand-mark" viewBox="0 0 32 24" width="34" height="26" aria-hidden="true">
+      <g stroke-width="2.6" stroke-linecap="round" fill="none">
+        <path d="M16 12 H27"/><path d="M16 12 H5"/><path d="M16 12 V3"/><path d="M16 12 V21"/>
+      </g>
+      <circle cx="16" cy="12" r="5" stroke="none" opacity=".95"/>
+    </svg>
+    <span class="brand-name">Life Lab</span>
+  </a>
+  <nav class="crumb" id="crumb" aria-label="Where you are"></nav>
+  <button class="display-btn" id="display-btn" type="button" aria-expanded="false" aria-controls="display-pop">
+    <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 3a9 9 0 0 0 0 18z" fill="currentColor"/></svg>
+    <span>Display</span>
+  </button>
+  <div class="display-pop" id="display-pop" role="group" aria-label="Display settings" hidden></div>
+</header>
+
+<main id="view" tabindex="-1"></main>
+
+<footer class="foot">
+  <span>The Life Lab is a set of instruments, not a textbook. Predict first, then poke.</span>
+  <span id="foot-note"></span>
+</footer>
+
+<script src="js/core.js"></script>
+<script src="js/lab-life.js"></script>
+<script src="js/water2d.js"></script>
+<script src="js/moldraw.js"></script>
+<script src="js/life/draw.js"></script>
+<script src="js/life/backbone.js"></script>
+<script src="js/life/handles.js"></script>
+<script src="js/life/twins.js"></script>
+<script src="js/quizkit.js"></script>
+<script src="js/app.js"></script>
+<script>
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  addEventListener('load', function () {
+    navigator.serviceWorker.register('sw.js').catch(function () { /* fine without it */ });
+  });
+}
+</script>
+</body>
+</html>

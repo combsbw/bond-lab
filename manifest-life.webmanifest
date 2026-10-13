@@ -1,0 +1,41 @@
+{
+  "name": "Life Lab",
+  "short_name": "Life Lab",
+  "description": "Chapter 3 as a set of instruments. One reaction builds everything alive and one takes it apart again — poke both, then build a protein, a starch, a membrane and a strand of DNA out of them.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "./life.html",
+  "scope": "./",
+  "id": "./life.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#08151a",
+  "theme_color": "#08151a",
+  "categories": ["education", "science"],
+  "icons": [
+    { "src": "assets/icons/life-favicon-16.png", "sizes": "16x16", "type": "image/png" },
+    { "src": "assets/icons/life-favicon-32.png", "sizes": "32x32", "type": "image/png" },
+    { "src": "assets/icons/life-apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "assets/icons/life-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/life-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/life-icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/icons/life-icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/life-icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ],
+  "shortcuts": [
+    {
+      "name": "The Template",
+      "short_name": "Template",
+      "description": "The one reaction that builds everything alive, and the one that takes it apart",
+      "url": "./life.html#/template",
+      "icons": [{ "src": "assets/icons/life-icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Fold",
+      "short_name": "Fold",
+      "description": "Where a protein's shape comes from, and what cooking does to it",
+      "url": "./life.html#/fold",
+      "icons": [{ "src": "assets/icons/life-icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ]
+}
