@@ -36,7 +36,7 @@
 
   /* The three numbers that decide what shape a crowd settles into. Tuned
      against tools/check-lipid.js, which is the only reason they are these. */
-  const P = { grease: 1.1, headTail: 6, headHead: 8, headHeadR: 3.0, greaseR: 2.6, align: 0.75 };
+  const P = { grease: 1.6, headTail: 6, headHead: 8, headHeadR: 3.0, greaseR: 2.6, align: 0.8 };
 
   function create(opts) {
     const o = Object.assign({ n: 40, tails: 2, head: true, w: 28, h: 17, T: 300, kink: 0, seed: 5 }, opts || {});
@@ -68,6 +68,47 @@
       W.mol.push(mol);
     }
     return W;
+  }
+
+  /* Half the neighbouring cells, so every pair is visited exactly once. */
+  const NB = [[1, 0], [-1, 1], [0, 1], [1, 1]];
+  const RC = 3;
+
+  function bin(W) {
+    const p = W.p, n = p.length;
+    let g = W.grid;
+    if (!g) {
+      const cols = Math.max(1, Math.floor(W.w / RC)), rows = Math.max(1, Math.floor(W.h / RC));
+      g = W.grid = { cols, rows, cw: W.w / cols, ch: W.h / rows, head: new Int32Array(cols * rows), next: new Int32Array(n) };
+    }
+    g.head.fill(-1);
+    for (let i = 0; i < n; i++) {
+      const cx2 = Math.min(g.cols - 1, Math.max(0, (p[i].x / g.cw) | 0));
+      const cy2 = Math.min(g.rows - 1, Math.max(0, (p[i].y / g.ch) | 0));
+      const c = cy2 * g.cols + cx2;
+      g.next[i] = g.head[c];
+      g.head[c] = i;
+    }
+  }
+
+  /* One pair of particles, in whatever way those two kinds relate. */
+  function pair(W, a, b) {
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const d2 = dx * dx + dy * dy;
+    if (d2 > RC * RC) return;
+    const d = Math.sqrt(d2) || 1e-6;
+    const touch = a.r + b.r;
+    let f = 0;
+    if (d < touch) f = -60 * (touch - d);
+    else if (a.m === b.m) return;
+    else if (a.grease && b.grease) {
+      const cosang = Math.abs(a.dx * b.dx + a.dy * b.dy);
+      f = d < P.greaseR ? P.grease * (1 - P.align + P.align * cosang) : 0;
+    } else if (a.grease !== b.grease) f = d < 1.9 ? -P.headTail * (1.9 - d) : 0;
+    else if (a.head && b.head) f = d < P.headHeadR ? (-P.headHead * (P.headHeadR - d) * 2) / P.headHeadR : 0;
+    if (!f) return;
+    const fx = (f * dx) / d, fy = (f * dy) / d;
+    a.fx += fx; a.fy += fy; b.fx -= fx; b.fy -= fy;
   }
 
   function step(W, dt) {
@@ -103,27 +144,24 @@
       });
       for (let t = 1; t < m.tails.length; t++) spr(m.tails[t - 1][0], m.tails[t][0], 0.66, 30);
     });
-    for (let i = 0; i < n; i++) {
-      const a = p[i];
-      for (let j = i + 1; j < n; j++) {
-        const b = p[j];
-        const dx = b.x - a.x, dy = b.y - a.y;
-        const d2 = dx * dx + dy * dy;
-        if (d2 > 9) continue;
-        const d = Math.sqrt(d2) || 1e-6;
-        const touch = a.r + b.r;
-        let f = 0;
-        if (d < touch) f = -60 * (touch - d);
-        else if (a.m === b.m) f = 0;
-        else if (a.grease && b.grease) {
-          const cosang = Math.abs(a.dx * b.dx + a.dy * b.dy);
-          f = d < P.greaseR ? P.grease * (1 - P.align + P.align * cosang) : 0;
+    /* Pairs, through a cell grid rather than every particle against every
+       other. Nothing reaches further than RC, so a particle only ever has to
+       look in its own cell and half of the ones touching it — which turns the
+       cost from n² into something close to n and is the difference between
+       this settling while you watch and this taking all afternoon. */
+    bin(W);
+    const { cols, rows, head, next, cw } = W.grid;
+    for (let cy2 = 0; cy2 < rows; cy2++) {
+      for (let cx2 = 0; cx2 < cols; cx2++) {
+        const c0 = cy2 * cols + cx2;
+        for (let i = head[c0]; i >= 0; i = next[i]) {
+          for (let j = next[i]; j >= 0; j = next[j]) pair(W, p[i], p[j]);
+          for (let k = 0; k < 4; k++) {
+            const nx = cx2 + NB[k][0], ny = cy2 + NB[k][1];
+            if (nx < 0 || nx >= cols || ny < 0 || ny >= rows) continue;
+            for (let j = head[ny * cols + nx]; j >= 0; j = next[j]) pair(W, p[i], p[j]);
+          }
         }
-        else if (a.grease !== b.grease) f = d < 1.9 ? -P.headTail * (1.9 - d) : 0;
-        else if (a.head && b.head) f = d < P.headHeadR ? -P.headHead * (P.headHeadR - d) / P.headHeadR * 2 : 0;
-        if (!f) continue;
-        const fx = (f * dx) / d, fy = (f * dy) / d;
-        a.fx += fx; a.fy += fy; b.fx -= fx; b.fy -= fy;
       }
     }
     const g = 4.0, c0 = Math.exp(-g * dt), sg = Math.sqrt((1 - c0 * c0) * kT);
@@ -164,13 +202,39 @@
       tot += Math.min(c, 12);
     });
     const mixed = tot / W.mol.length;
-    return Math.min(1, Math.max(0, 1 - mixed / 7));
+    return Math.min(1, Math.max(0, 1 - mixed / 9));
+  }
+
+  /* How tightly the tails are packed: how many other molecules' tail beads
+     each tail bead is actually touching. Straight tails lie against each other
+     all the way down and this is high. A kink means a tail cannot lie flat
+     against its neighbour anywhere along its length, and this drops — which is
+     the real reason olive oil is liquid in a fridge and butter is not. */
+  function packing(W) {
+    const t = W.p.filter((a) => a.grease);
+    if (!t.length) return 0;
+    let tot = 0;
+    for (const a of t) {
+      let c = 0;
+      for (const b of t) { if (a === b || a.m === b.m) continue; if ((a.x - b.x) ** 2 + (a.y - b.y) ** 2 < 1.44) c++; }
+      tot += Math.min(c, 7);
+    }
+    return tot / t.length;
   }
 
   /* What the molecules actually made, worked out from where they are rather
-     than from what they were supposed to make. Clusters are found over the
-     greasy beads; the biggest one's two principal spreads say whether it is a
-     strip or a blob. */
+     than from what they were supposed to make.
+
+     Clusters are found over the greasy beads. What tells a sheet from a ball
+     is the shape of each cluster, not how many there are: a crowd that has
+     settled into two separate strips has made a bilayer twice over, and
+     calling that "micelles" because there are two of them would be wrong. So
+     every cluster big enough to count gets its spread measured along its two
+     axes, and the answer is weighted by how many molecules are in each.
+
+     A ball of tails with heads all round the outside is a micelle. The same
+     thing with heads on the inside as well is a closed bag — a vesicle, which
+     is what a real bilayer does when its ends meet, and what a cell is. */
   function shape(W) {
     const t = W.p.filter((a) => a.grease);
     const seen = new Set(), groups = [];
@@ -186,30 +250,52 @@
       groups.push(g);
     });
     groups.sort((a, b) => b.length - a.length);
-    const big = groups[0] || [];
-    const mols = new Set(big.map((a) => a.m));
-    let cx = 0, cy = 0;
-    big.forEach((a) => { cx += a.x; cy += a.y; });
-    cx /= Math.max(1, big.length); cy /= Math.max(1, big.length);
-    let sxx = 0, syy = 0, sxy = 0;
-    big.forEach((a) => { const dx = a.x - cx, dy = a.y - cy; sxx += dx * dx; syy += dy * dy; sxy += dx * dy; });
-    const nb = Math.max(1, big.length);
-    sxx /= nb; syy /= nb; sxy /= nb;
-    const tr = sxx + syy, det = sxx * syy - sxy * sxy;
-    const d = Math.sqrt(Math.max(0, (tr * tr) / 4 - det));
-    const l1 = tr / 2 + d, l2 = Math.max(1e-6, tr / 2 - d);
-    const aspect = Math.sqrt(l1 / l2);
-    const frac = mols.size / W.mol.length;
+
+    const stat = (g) => {
+      let cx = 0, cy = 0;
+      g.forEach((a) => { cx += a.x; cy += a.y; });
+      cx /= g.length; cy /= g.length;
+      let sxx = 0, syy = 0, sxy = 0;
+      g.forEach((a) => { const dx = a.x - cx, dy = a.y - cy; sxx += dx * dx; syy += dy * dy; sxy += dx * dy; });
+      sxx /= g.length; syy /= g.length; sxy /= g.length;
+      const tr = sxx + syy, det = sxx * syy - sxy * sxy;
+      const d = Math.sqrt(Math.max(0, (tr * tr) / 4 - det));
+      const l2 = Math.max(1e-6, tr / 2 - d);
+      return { cx, cy, aspect: Math.sqrt((tr / 2 + d) / l2), mols: new Set(g.map((a) => a.m)) };
+    };
+
+    const big = groups.filter((g) => new Set(g.map((a) => a.m)).size >= 4).map(stat);
+    const biggest = big[0] || { aspect: 1, mols: new Set(), cx: 0, cy: 0 };
+    let wsum = 0, asum = 0;
+    big.forEach((g) => { wsum += g.mols.size; asum += g.aspect * g.mols.size; });
+    const aspect = wsum ? asum / wsum : 1;
+    const frac = wsum / W.mol.length;
+
+    /* Are any heads tucked inside the biggest cluster rather than all round
+       its rim? If so its ends have met and it has closed into a bag. */
+    let inside = 0;
+    if (W.head && biggest.mols.size) {
+      let rmax = 0;
+      W.mol.forEach((m) => {
+        if (!biggest.mols.has(m.head === undefined ? -1 : W.p[m.head].m)) return;
+        rmax = Math.max(rmax, Math.hypot(W.p[m.head].x - biggest.cx, W.p[m.head].y - biggest.cy));
+      });
+      W.mol.forEach((m) => {
+        const a = W.p[m.head];
+        if (!biggest.mols.has(a.m)) return;
+        if (Math.hypot(a.x - biggest.cx, a.y - biggest.cy) < rmax * 0.45) inside++;
+      });
+    }
+
     let kind;
     if (!W.head) kind = 'droplet';
-    else if (groups.length >= 3 && frac < 0.55) kind = 'micelles';
-    else if (aspect >= 1.9) kind = 'sheet';
-    else if (frac > 0.7) kind = 'vesicle';
+    else if (aspect >= 1.75) kind = 'sheet';
+    else if (inside >= 3 && frac > 0.6) kind = 'vesicle';
     else kind = 'micelles';
-    return { kind, groups: groups.length, biggest: mols.size, aspect, frac };
+    return { kind, groups: big.length, biggest: biggest.mols.size, aspect, frac, inside };
   }
 
-  const api = { create, step, hidden, shape, HEAD_R, TAIL_R, P };
+  const api = { create, step, hidden, shape, packing, HEAD_R, TAIL_R, P };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else (root.BL = root.BL || {}).lipid = api;
 })(typeof window !== 'undefined' ? window : globalThis);

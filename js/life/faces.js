@@ -46,10 +46,10 @@
       how: 'Press “Triglyceride”, which is three tails and no head.',
       ask: 'with no water-loving end left, will it make a membrane?',
       opts: ['Yes', 'No — there is nothing left to face the water'], right: 1 },
-    { id: 'cold', text: 'Cool a straight-tailed membrane, then a kinked one.',
-      how: 'On phospholipids, drag the temperature cold with the kinks off, then put the kinks back on.',
-      ask: 'which one goes stiff first as it cools?',
-      opts: ['The straight-tailed one', 'The kinked one'], right: 0 },
+    { id: 'cold', text: 'Compare a straight-tailed sheet with a kinked one.',
+      how: 'Let a sheet settle with the kinks off and read the packing bar, then drag the kinks all the way up and read it again.',
+      ask: 'one of them packs tighter than the other. Which?',
+      opts: ['The straight-tailed one', 'The kinked one', 'Neither — they pack the same'], right: 0 },
     { id: 'holds', text: 'Ask what is actually holding the membrane together.',
       how: 'Read the “what is holding it together” line while the sheet sits there.',
       ask: 'what holds a membrane in one piece?',
@@ -98,11 +98,10 @@
       }
       const hidden = () => LP.hidden(S.W);
       const shapeOf = () => LP.shape(S.W);
-      const fluid = () => {
-        let v = 0;
-        S.W.mol.forEach((m) => { const a = S.W.p[m.head]; v += Math.hypot(a.vx, a.vy); });
-        return clamp(v / Math.max(1, S.W.mol.length) / 1.6, 0, 1);
-      };
+      /* Not how fast they are moving — this flat model does not get the
+         freezing right — but how tightly the tails have managed to pack, which
+         is the thing that actually decides it. */
+      const packed = () => clamp(LP.packing(S.W) / 4.2, 0, 1);
 
       /* ---------------- dock ---------------- */
       const kBtns = KINDS.map((k, i) => h('button', {
@@ -132,6 +131,7 @@
           h('div', { class: 'range-wrap' }, tIn, h('div', { class: 'range-ends' }, h('span', {}, 'freezer'), h('span', {}, 'hot')))),
         h('div', { class: 'ctl' }, h('div', { class: 'row' }, h('h2', {}, 'Kinks in the tails'), kOut),
           h('div', { class: 'range-wrap' }, kIn, h('div', { class: 'range-ends' }, h('span', {}, 'straight — butter'), h('span', {}, 'kinked — olive oil')))),
+        h('p', { class: 'hint' }, 'A double bond puts a bend in a tail that will not straighten out. Bent tails cannot lie flat against their neighbours, so a membrane full of them never packs tight — which is why olive oil is still liquid in a fridge and butter is not, and why a fish living in cold water builds its membranes out of kinked ones.'),
         h('div', { class: 'actions' },
           h('button', { type: 'button', class: 'action ghost', onclick: () => { scatter(); S.hint = false; } }, 'Scatter them again'))));
 
@@ -144,8 +144,8 @@
       const statusP = h('p', { class: 'status', 'aria-live': 'polite' });
       const meters = h('div', { class: 'meters' });
       const hidM = BL.meter('How well the tails are hidden from the water');
-      const fluM = BL.meter('How freely the lipids are moving');
-      meters.append(hidM.el, fluM.el);
+      const packM = BL.meter('How tightly the tails are packed against each other');
+      meters.append(hidM.el, packM.el);
       aux.appendChild(h('section', { class: 'panel' }, readout, statusP, meters));
 
       const holdP = h('p', {});
@@ -161,7 +161,7 @@
         micelles: 'balls — micelles', droplet: 'one droplet of fat',
       };
       function say() {
-        const k = kind(), hd = hidden(), fl = fluid();
+        const k = kind(), hd = hidden(), pk = packed();
         const sh = shapeOf();
         readout.textContent = '';
         readout.append(
@@ -169,13 +169,13 @@
           /* what it actually made, measured off the screen — not what it was
              supposed to make. Sometimes they settle differently, and saying so
              is the honest half of "nothing is arranging them". */
-          h('span', { class: 'zone' }, hd > 0.35 ? WORD[sh.kind] : 'still scattered'),
+          h('span', { class: 'zone' }, hd > 0.3 ? WORD[sh.kind] : 'still scattered'),
           h('span', { class: 'dim' }, k.n + ' molecules · ' + k.tails + (k.tails === 1 ? ' tail' : ' tails') + ' each'));
         statusP.textContent = k.is;
-        hidM.set(hd, hd > 0.75 ? 'tucked right away' : hd > 0.45 ? 'mostly out of the water' : hd > 0.2 ? 'starting to gather' : 'still out in the open', '');
-        hidM.tone(hd > 0.5 ? BL.pal.eTail : BL.pal.muted);
-        fluM.set(fl, fl < 0.12 ? 'barely moving — it has gone stiff' : fl < 0.35 ? 'slow' : fl < 0.7 ? 'freely' : 'fast', '');
-        fluM.tone(fl < 0.12 ? BL.pal.neg : BL.pal.ui);
+        hidM.set(hd, hd > 0.62 ? 'tucked right away' : hd > 0.4 ? 'mostly out of the water' : hd > 0.18 ? 'starting to gather' : 'still out in the open', '');
+        hidM.tone(hd > 0.4 ? BL.pal.eTail : BL.pal.muted);
+        packM.set(pk, pk > 0.78 ? 'packed solid — nothing can slide' : pk > 0.5 ? 'packed close' : pk > 0.28 ? 'loosely' : 'hardly at all', '');
+        packM.tone(pk > 0.7 ? BL.pal.pos : BL.pal.ui);
         holdP.textContent = k.head
           ? 'Nothing. There is no bond between one lipid and the next — you could slide one out sideways and the rest would close up behind it. What holds the sheet together is the water on both sides refusing to let the tails out.'
           : 'Nothing, and there is no sheet either. With no water-loving end the molecule has no reason to sit at a surface, so it just hides in the middle of the heap with the rest.';
@@ -186,16 +186,17 @@
             h('div', {}, h('b', {}, name), h('div', { class: 'mbar' }, h('div', { style: 'width:' + frac * 100 + '%' }))),
             h('span', { class: 'nums' }, BL.numv(num))));
         });
-        check(hd, fl);
+        check(hd, pk);
       }
 
-      function check(hd, fl) {
-        if (S.kind === 0 && hd > 0.5) steps.done('self');
+      function check(hd, pk) {
+        if (S.kind === 0 && hd > 0.4) steps.done('self');
         if (S.kind === 1 && hd > 0.45) steps.done('wedge');
         if (S.kind === 2 && hd > 0.45) steps.done('nohead');
-        if (S.T < 278) S.triedCold.add(S.kink < 0.2 ? 'straight' : 'kinked');
+        if (hd > 0.4) steps.done('holds');
+        if (hd > 0.3) S.triedCold.add(S.kink < 0.2 ? 'straight' : S.kink > 0.6 ? 'kinked' : null);
+        S.triedCold.delete(null);
         if (S.triedCold.size >= 2) steps.done('cold');
-        if (hd > 0.5) steps.done('holds');
         if (S.seenEnergy) steps.done('energy');
       }
       // the energy panel is the last thing on the page, so seeing it counts
@@ -207,7 +208,12 @@
       function frame(dt) {
         const pal = BL.pal, cw = stage.w, ch = stage.h;
         S.t += dt;
-        for (let i = 0; i < 5; i++) LP.step(S.W, 0.008);
+        /* As many steps as fit in a slice of the frame. Sorting themselves out
+           takes a few thousand, and a learner should not have to wait a minute
+           to watch it happen. */
+        const t0 = performance.now();
+        let k = 0;
+        while (k < 48 && performance.now() - t0 < 8) { LP.step(S.W, 0.008); k++; }
         if (performance.now() - lastSay > 250) { lastSay = performance.now(); say(); }
         ctx.clearRect(0, 0, cw, ch);
         if (!cw) return;
@@ -233,8 +239,11 @@
           O.atom(ctx, X(a), Y(a), u * LP.HEAD_R * 0.95, 'P', { color: kind().head ? pal.neg : pal.eTail, label: false });
         });
         BL.label(ctx, 'water', ox + 44, oy - 14, { font: BL.font(600, 13), bg: false, color: pal.neg });
+        // the hint stands down once something has visibly happened, whether or
+        // not anybody touched a control
+        if (hidden() > 0.3) S.hint = false;
         if (S.hint && !BL.reduced) BL.label(ctx, 'watch. nothing is arranging them →', cw / 2, 16, { font: BL.font(700, 14), border: pal.ui });
-        else BL.label(ctx, hidden() > 0.35 ? WORD[shapeOf().kind] : 'sorting themselves out…', cw / 2, 16, { font: BL.font(800, 15), border: pal.ui });
+        else BL.label(ctx, hidden() > 0.3 ? WORD[shapeOf().kind] : 'sorting themselves out…', cw / 2, 16, { font: BL.font(800, 15), border: pal.ui });
       }
 
       scatter();
