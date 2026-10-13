@@ -359,6 +359,10 @@ html[data-theme="light"] .readout .zone { color: var(--ui); }
 .cmp-row .mbar.b2 > div { background: var(--electron); }
 .cmp-row .muted { color: var(--muted); grid-column: 2 / 4; }
 .cmp-row .nums { color: var(--muted); font-size: 0.95rem; text-align: right; }
+/* A grid track's automatic minimum is its content, so a long label can shove
+   the whole table past the panel. These let the columns actually shrink. */
+.cmp, .cmp-row > * { min-width: 0; }
+.cmp-row .muted, .cmp-row b { overflow-wrap: anywhere; }
 .legend span[data-i]::before { content: ""; width: 1.6rem; height: 0; border-top: 4px solid var(--sw, var(--fg)); display: inline-block; }
 .lab { font-weight: 700; font-size: 0.98rem; }
 .meters { display: grid; gap: 12px; margin-bottom: 14px; }
@@ -511,6 +515,8 @@ html[data-theme="dark"] .spine-band span { color: #08151a; }
 }
 @media (max-width: 600px) {
   /* Narrow columns: a label and its reading stop fighting over one line. */
+  .cmp-row { grid-template-columns: 1.5rem minmax(0, 1fr); }
+  .cmp-row .nums { grid-column: 2; text-align: left; }
   .meter-row, .row { flex-wrap: wrap; }
   .meter-read { text-align: left; }
   .el-grid { grid-template-columns: repeat(auto-fill, minmax(2.9rem, 1fr)); }
