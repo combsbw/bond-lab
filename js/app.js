@@ -178,7 +178,27 @@
         h('span', {}, 'Calm motion', h('small', {}, 'Stops pulsing hints and slows movement.'))),
       h('label', { class: 'check' },
         h('input', { type: 'checkbox', checked: D.nums ? 'checked' : null, onchange: (e) => { BL.setDisplay({ nums: e.target.checked }); } }),
-        h('span', {}, 'Show the numbers', h('small', {}, 'Adds the measured values — kilojoules, kelvin, electron volts, ångströms — on top of the plain words. Off is the normal way round.'))));
+        h('span', {}, 'Show the numbers', h('small', {}, 'Adds the measured values — kilojoules, kelvin, electron volts, ångströms — on top of the plain words. Off is the normal way round.'))),
+      progressBlock());
+  }
+
+  /* What this lab remembers about you, and the way to make it forget.
+     Each instrument has its own “start this one over” under its list of
+     things to try; this is the whole lab at once. The two labs share one
+     store, so this only clears the one you are in. */
+  function progressBlock() {
+    const p = BL.labProgress();
+    return h('div', { class: 'progress-block' },
+      h('h2', {}, 'Progress'),
+      h('p', { class: 'hint' }, p.done + ' of ' + p.total + ' things tried'
+        + (p.quiz ? ', and ' + p.quiz + ' challenge' + (p.quiz === 1 ? '' : 's') + ' answered' : '')
+        + '. Kept in this browser only — nothing leaves the device, and another browser or another device starts fresh.'),
+      h('div', { class: 'actions' },
+        BL.confirmBtn('Reset ' + L.name + '’s progress', 'Tap again — this cannot be undone', () => {
+          BL.resetLab();
+          closePop(true);
+        })),
+      h('p', { class: 'hint' }, 'Clears the ticks, the calls you committed to and the challenge answers for ' + L.name + '. The other lab is left alone, and so are these display settings.'));
   }
   const closePop = (focusBtn) => { pop.hidden = true; btn.setAttribute('aria-expanded', 'false'); if (focusBtn) btn.focus(); };
   btn.addEventListener('click', () => {
@@ -195,6 +215,9 @@
   fitBar();
 
   window.addEventListener('hashchange', route);
+  /* A reset has to show: the hub's pips and tallies, and any instrument on
+     screen, are all built from what was just thrown away. */
+  window.addEventListener('bl-progress-reset', route);
   document.getElementById('foot-note').textContent = L.version || 'v1.0';
   // Instruments register themselves when their scripts load, before this file runs.
   route();

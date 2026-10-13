@@ -30,6 +30,9 @@
     set(key, value) {
       try { localStorage.setItem('bondlab.' + key, JSON.stringify(value)); } catch (e) { /* ignore */ }
     },
+    del(key) {
+      try { localStorage.removeItem('bondlab.' + key); } catch (e) { /* ignore */ }
+    },
   };
 
   /* -------------------------------------------------------------------
@@ -365,9 +368,23 @@
       list.appendChild(li);
     });
     host.appendChild(list);
+    const wipe = () => {
+      done.clear();
+      BL.resetSim(simId);
+      defs.forEach((g) => {
+        const li = items[g.id];
+        if (!li) return;
+        li.classList.remove('done', 'just');
+        li.lastChild.textContent = '';
+      });
+      say.textContent = 'Cleared. Nothing on this one is ticked any more.';
+    };
+    host.appendChild(BL.h('div', { class: 'actions reset-row' },
+      BL.confirmBtn('Start this one over', 'Tap again to clear it', wipe)));
     host.appendChild(say);
     return {
       el: list,
+      reset: wipe,
       done(id) {
         if (done.has(id) || !items[id]) return;
         done.add(id);
@@ -384,6 +401,48 @@
 
   /* How many goals has this browser completed for an instrument? */
   BL.goalsDone = (simId) => (BL.store.get('goals.' + simId, []) || []).length;
+
+  /* -------------------------------------------------------------------
+     Forgetting.
+
+     A learner who wants to come back to a module and meet it cold, a second
+     person picking up the same tablet, or a class starting the term again —
+     all of them need a way to put the ticks back. The two labs share one
+     store, so a lab reset only clears what belongs to the lab you are in.
+     ------------------------------------------------------------------- */
+  BL.resetSim = function (simId) {
+    BL.store.del('goals.' + simId);
+    BL.store.del('predicts.' + simId);
+  };
+  BL.resetLab = function () {
+    BL.sims.forEach((s) => BL.resetSim(s.id));
+    if (BL.quizReset) BL.quizReset(((BL.lab && BL.lab.fields) || []).map((f) => f.id));
+    window.dispatchEvent(new Event('bl-progress-reset'));
+  };
+  /* What a lab reset would actually throw away, so the button can say so. */
+  BL.labProgress = function () {
+    let done = 0, total = 0;
+    BL.sims.forEach((s) => { done += Math.min(BL.goalsDone(s.id), s.goals.length); total += s.goals.length; });
+    const fields = ((BL.lab && BL.lab.fields) || []).map((f) => f.id);
+    return { done, total, quiz: BL.quizAnswered ? BL.quizAnswered(fields) : 0 };
+  };
+
+  /* A button that asks once before doing something it cannot undo. Two taps
+     rather than a browser dialog: it stays inside the page, it is styled like
+     everything else, and it forgets it was asked after a few seconds. */
+  BL.confirmBtn = function (label, warn, fn, cls) {
+    let armed = false, timer = 0;
+    const b = BL.h('button', { type: 'button', class: 'action ' + (cls || 'ghost') }, label);
+    const stand = () => { armed = false; b.textContent = label; b.classList.remove('armed'); };
+    b.addEventListener('click', () => {
+      if (armed) { clearTimeout(timer); stand(); fn(); return; }
+      armed = true;
+      b.textContent = warn;
+      b.classList.add('armed');
+      timer = setTimeout(stand, 4500);
+    });
+    return b;
+  };
 
   /* -------------------------------------------------------------------
      A guided poke: predict, then poke, then find out.
@@ -465,8 +524,30 @@
 
     defs.forEach((g) => settle(g, false));
 
+    /* Put a module back to how it was found: no ticks, and no calls committed
+       to either, because a prediction you already know the answer to is not a
+       prediction. */
+    const wipe = () => {
+      done.clear();
+      Object.keys(picks).forEach((k) => delete picks[k]);
+      BL.resetSim(simId);
+      defs.forEach((g) => {
+        const r = rows[g.id];
+        if (!r) return;
+        r.li.classList.remove('done', 'just');
+        r.li.lastChild.textContent = '';
+        r.verdict.hidden = true;
+        r.verdict.textContent = '';
+        settle(g, false);
+      });
+      say.textContent = 'Cleared. Nothing on this one is ticked, and the calls are yours to make again.';
+    };
+    host.appendChild(BL.h('div', { class: 'actions reset-row' },
+      BL.confirmBtn('Start this one over', 'Tap again to clear it', wipe)));
+
     return {
       el: list,
+      reset: wipe,
       done(id) {
         const r = rows[id];
         if (!r || done.has(id)) return;

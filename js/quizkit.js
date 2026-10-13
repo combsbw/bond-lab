@@ -27,6 +27,19 @@
     return { done: qs.filter((q) => s[q.id] === 'right').length, total: qs.length };
   };
 
+  /* Forgetting the answers, for one lab's fields or for all of them. An
+     answered challenge is spent — you cannot un-know which option was right —
+     so clearing the marks is the only way to hand it to somebody fresh. */
+  BL.quizReset = function (fields) {
+    const s = saved();
+    BANK.forEach((q) => { if (!fields || fields.indexOf(q.field) >= 0) delete s[q.id]; });
+    BL.store.set(KEY, s);
+  };
+  BL.quizAnswered = function (fields) {
+    const s = saved();
+    return BANK.filter((q) => (!fields || fields.indexOf(q.field) >= 0) && s[q.id]).length;
+  };
+
   /* One challenge, as a card. Answer it, then go and check. */
   function card(q, opts) {
     const state = saved()[q.id];

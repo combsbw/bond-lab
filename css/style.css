@@ -316,6 +316,15 @@ html[data-nums="off"] .landmarks .chip .numv { display: none; }
 .step-said.held { color: var(--ui); font-weight: 700; }
 .step-said.broke { color: var(--pos); font-weight: 700; }
 
+/* Reset controls: quiet until they are armed, then unmistakable. */
+.reset-row { margin-top: 16px; padding-top: 14px; border-top: 1.5px dashed var(--line); }
+.reset-row .action { font-size: 0.92rem; }
+.action.armed { border-color: var(--pos); color: var(--pos); background: var(--panel); font-weight: 800; }
+.action.armed:hover { background: var(--panel-2); }
+.progress-block { margin-top: 6px; padding-top: 14px; border-top: 1.5px solid var(--line); display: grid; gap: 8px; }
+.progress-block .hint { margin: 0; }
+.progress-block .actions { margin: 2px 0 0; }
+
 /* A control that cannot do anything right now says so. */
 .action:disabled, .chip:disabled { opacity: .42; cursor: default; }
 .action:disabled:hover, .chip:disabled:hover { border-color: var(--line); background: var(--panel); }
