@@ -4,11 +4,11 @@
    misread as four kinds of protein. They are four things true of one molecule
    at once: the order you threaded the beads on (primary), the backbone
    holding on to itself a few places along (secondary), the whole thing
-   collapsing into a lump with the greasy bits hidden (tertiary), and two
+   collapsing into a lump with the non-polar bits hidden (tertiary), and two
    finished lumps sticking to each other (quaternary).
 
    None of it is designed. Nothing tells the chain what shape to be. You set
-   the order of the beads and the water does the rest: the greasy ones are
+   the order of the beads and the water does the rest: the non-polar ones are
    pushed together because the water will not have them, the charged ones find
    each other, and whatever is left over is the shape. Change one bead and you
    can change the lot — which is a real disease, and it is one letter.
@@ -26,8 +26,8 @@
   /* The four kinds of R-group this instrument needs. Twenty amino acids
      really do boil down to about this for the purposes of folding. */
   const R = {
-    grease: { id: 'grease', tag: 'greasy', col: () => BL.pal.eTail, says: 'water will not have it, so it gets pushed inward' },
-    wet: { id: 'wet', tag: 'water-loving', col: () => BL.pal.neg, says: 'happy facing the water, so it ends up on the outside' },
+    grease: { id: 'grease', tag: 'non-polar', col: () => BL.pal.eTail, says: 'no charged ends, so water has nothing to grip and it gets pushed inward' },
+    wet: { id: 'wet', tag: 'polar', col: () => BL.pal.neg, says: 'charged ends that water can grip, so it is happy facing the water and ends up on the outside' },
     plus: { id: 'plus', tag: 'positive', col: () => BL.pal.pos, says: 'pulls on anything negative' },
     minus: { id: 'minus', tag: 'negative', col: () => BL.pal.eN, says: 'pulls on anything positive' },
   };
@@ -38,20 +38,20 @@
 
   const PRESETS = [
     ['A real one', 'wet,plus,grease,grease,grease,wet,minus,grease,grease,wet,plus,grease,grease,minus,wet,wet'],
-    ['All greasy', Array(N).fill('grease').join(',')],
-    ['All water-loving', Array(N).fill('wet').join(',')],
-    ['Greasy in the middle', 'wet,wet,wet,grease,grease,grease,grease,grease,grease,grease,grease,grease,wet,wet,wet,wet'],
+    ['All non-polar', Array(N).fill('grease').join(',')],
+    ['All polar', Array(N).fill('wet').join(',')],
+    ['Non-polar in the middle', 'wet,wet,wet,grease,grease,grease,grease,grease,grease,grease,grease,grease,wet,wet,wet,wet'],
     ['Plus and minus', 'plus,minus,plus,minus,plus,minus,plus,minus,plus,minus,plus,minus,plus,minus,plus,minus'],
   ];
 
   const STEPS = [
-    { id: 'bury', text: 'Fold a chain whose greasy beads are all in the middle of the sequence.',
-      how: 'Press “Greasy in the middle” and let it settle. Watch where the brown beads end up.',
-      ask: 'where do the greasy R-groups finish?',
+    { id: 'bury', text: 'Fold a chain whose non-polar beads are all in the middle of the sequence.',
+      how: 'Press “Non-polar in the middle” and let it settle. Watch where the brown beads end up.',
+      ask: 'where do the non-polar R-groups finish?',
       opts: ['Buried in the middle of the lump', 'Out on the surface', 'Spread evenly through it'], right: 0 },
-    { id: 'nothing', text: 'Make every R-group water-loving and fold that.',
-      how: 'Press “All water-loving” and wait. Compare the compactness bar with the one before.',
-      ask: 'with nothing greasy in it, will the chain still ball up?',
+    { id: 'nothing', text: 'Make every R-group polar and fold that.',
+      how: 'Press “All polar” and wait. Compare the compactness bar with the one before.',
+      ask: 'with nothing non-polar in it, will the chain still ball up?',
       opts: ['Yes, just the same', 'No — nothing is pushing it together'], right: 1 },
     { id: 'one', text: 'Change one bead in the middle of a folded chain.',
       how: 'Click one square in the sequence strip to cycle it, and watch the shape settle again.',
@@ -85,7 +85,7 @@
   BL.register({
     id: 'fold', field: 'four', order: 0, name: 'Fold',
     tagline: 'Set the order of the beads. The water decides the shape.',
-    lede: 'A chain of amino acids in three dimensions — drag the background to turn it. Each bead has an R-group that is greasy, water-loving, positive or negative, and nothing is told what shape to be. Set the sequence, let go, and watch what the water pushes it into. Grab any bead and pull; tap one to change it. Then heat it and find out what you can and cannot get back.',
+    lede: 'A chain of amino acids in three dimensions — drag the background to turn it. Each bead has an R-group that is non-polar, polar, positive or negative, and nothing is told what shape to be. Set the sequence, let go, and watch what the water pushes it into. Grab any bead and pull; tap one to change it. Then heat it and find out what you can and cannot get back.',
     art, goals: STEPS,
 
     mount({ stage: stageHost, aux, dock }) {
@@ -95,7 +95,7 @@
       };
 
       const stage = BL.stage(stageHost, '8 / 5', {
-        label: 'A chain of coloured beads in water. Greasy beads clump together and the chain collapses round them. Heating it shakes the shape apart.',
+        label: 'A chain of coloured beads in water. Non-polar beads clump together and the chain collapses round them. Heating it shakes the shape apart.',
         focusable: true,
       });
       const ctx = stage.ctx;
@@ -127,7 +127,7 @@
       dock.appendChild(h('section', {},
         h('h2', {}, 'The sequence — the first level'),
         strip,
-        h('p', { class: 'hint' }, 'Sixteen beads. Click one to cycle it through greasy, water-loving, positive, negative. This is the only thing you get to decide; everything below is what the water does with it.'),
+        h('p', { class: 'hint' }, 'Sixteen beads. Click one to cycle it through non-polar, polar, positive, negative. This is the only thing you get to decide; everything below is what the water does with it.'),
         h('div', { class: 'chips', role: 'group', 'aria-label': 'Ready-made sequences' },
           PRESETS.map(([name, seq]) => h('button', {
             type: 'button', class: 'chip',
@@ -165,7 +165,7 @@
 
       const meters = h('div', { class: 'meters' });
       const compM = BL.meter('How tightly it has balled up');
-      const buryM = BL.meter('How well the greasy beads are hidden');
+      const buryM = BL.meter('How well the non-polar beads are hidden');
       meters.append(compM.el, buryM.el);
       aux.appendChild(h('section', { class: 'panel' }, meters,
         h('p', { class: 'hint' }, 'A protein’s job is its shape: an enzyme’s notch, a hormone’s fit, a hair’s stiffness. Lose the shape and you have lost the job, even though every atom is still there. That is what “denatured” means, and it is what a fried egg is.')));
@@ -187,16 +187,16 @@
         statusP.textContent = S.W.cooked && S.T < T_COOK
           ? 'Cooled back down, and it has not gone back. The order of the beads is untouched — every single one is where it was — but the shape has gone and the chains have got hold of each other. You cannot un-fry an egg.'
           : S.T > T_COOK
-            ? 'Too hot. The backbone has let go of itself and the greasy beads are no longer being held in. Watch what the chains do to each other while they are loose.'
+            ? 'Too hot. The backbone has let go of itself and the non-polar beads are no longer being held in. Watch what the chains do to each other while they are loose.'
             : L.compact > 0.6
-              ? 'Settled. Nothing arranged this: the water pushed the greasy beads together and this is what was left over.'
+              ? 'Settled. Nothing arranged this: the water pushed the non-polar beads together and this is what was left over.'
               : 'Still finding its shape. Give it a moment.';
 
         lv.textContent = '';
         lv.append(
           h('p', { class: 'fact' }, h('b', {}, 'First — the order. '), S.seq.map((k) => R[k].tag[0].toUpperCase()).join('') + '. This is the only thing that was ever decided, and the only thing heat cannot take away.'),
           h('p', { class: 'fact' }, h('b', {}, 'Second — the backbone holding itself. '), L.holds + (L.holds === 1 ? ' place' : ' places') + ' where a bead is holding one three along. Enough of those in a row and you have a coil; that is the spiral in every picture of a protein.'),
-          h('p', { class: 'fact' }, h('b', {}, 'Third — the whole shape. '), L.compact > 0.6 ? 'Balled up, with the greasy beads inside.' : L.compact > 0.3 ? 'Partly collapsed.' : 'Not collapsed — it is lying there as a string.'),
+          h('p', { class: 'fact' }, h('b', {}, 'Third — the whole shape. '), L.compact > 0.6 ? 'Balled up, with the non-polar beads inside.' : L.compact > 0.3 ? 'Partly collapsed.' : 'Not collapsed — it is lying there as a string.'),
           h('p', { class: 'fact' }, h('b', {}, 'Fourth — chains stuck together. '), S.nch < 2 ? 'Only one chain in the bowl, so there is no fourth level to have.' : L.joined ? L.joined + (L.joined === 1 ? ' place' : ' places') + ' where the two chains are holding each other. That is one bigger molecule now.' : 'The two chains are still separate.'));
         compM.set(L.compact, L.compact > 0.6 ? 'into a lump' : L.compact > 0.3 ? 'part way' : 'not at all', '');
         buryM.set(clamp((L.buried + 1) / 2, 0, 1), L.buried > 0.25 ? 'inside, out of the water' : L.buried > -0.1 ? 'about evenly spread' : 'out on the surface', '');
@@ -317,7 +317,7 @@
         if (S.W.cooked) BL.label(ctx, S.T > T_COOK ? 'coming apart' : 'cooked — it will not go back', cw - 130, 22, { font: BL.font(700, 14), border: pal.pos });
         V.cue(ctx, pal);
         if (S.hint && !BL.reduced) BL.label(ctx, 'grab a bead · drag the background to turn · or turn the heat up', cw / 2, 52, { font: BL.font(700, 14), border: pal.ui });
-        const key = [['grease', 'greasy'], ['wet', 'water-loving'], ['plus', 'positive'], ['minus', 'negative']];
+        const key = [['grease', 'non-polar'], ['wet', 'polar'], ['plus', 'positive'], ['minus', 'negative']];
         key.forEach(([k, name], i) => {
           const x = 24 + i * ((cw - 48) / 4);
           O.atom(ctx, x + 8, ch - 18, 7, 'C', { color: R[k].col(), label: false });

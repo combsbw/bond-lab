@@ -7,7 +7,7 @@
    each. There is no force in here that pulls molecules into a sheet or a
    ball — the only things in the model are:
 
-     - the water will not have the greasy beads, which shows up as an
+     - the water will not have the non-polar beads, which shows up as an
        attraction between any two of them — stronger when the two tails are
        lying parallel, because that is when they touch along their length,
        which is why a straight tail grips its neighbours and a kinked one
@@ -234,7 +234,7 @@
   /* What the molecules actually made, worked out from where they are rather
      than from what they were supposed to make.
 
-     Clusters are found over the greasy beads. What tells a sheet from a ball
+     Clusters are found over the non-polar beads. What tells a sheet from a ball
      is the shape of each cluster, not how many there are: a crowd that has
      settled into two separate strips has made a bilayer twice over, and
      calling that "micelles" because there are two of them would be wrong. So

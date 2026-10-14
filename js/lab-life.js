@@ -36,7 +36,7 @@
       href: 'index.html',
       kicker: 'The chapter before',
       title: 'Bond Lab',
-      blurb: 'Every bond in here is a bond from there. Covalent sharing, polar ends, hydrogen bonds and water-hating hydrocarbons are what folds a protein and what holds a membrane together. If any of that is shaky, go back one chapter.',
+      blurb: 'Every bond in here is a bond from there. Covalent sharing, polar ends, hydrogen bonds and non-polar hydrocarbons are what folds a protein and what holds a membrane together. If any of that is shaky, go back one chapter.',
       go: 'Open Bond Lab →',
     },
   };

@@ -2,16 +2,16 @@
 
    Pure model, no DOM, so it can be tested in Node (tools/check-fold.js).
 
-   Sixteen beads on a string. Every bead has an R-group that is greasy,
-   water-loving, positive or negative, and nothing else about it is decided.
+   Sixteen beads on a string. Every bead has an R-group that is non-polar,
+   polar, positive or negative, and nothing else about it is decided.
    The only forces are the ones the chapter names:
 
      - the backbone: a stiff spring between neighbours;
      - the backbone holding on to itself: a weaker spring between a bead and
        the one three along (hydrogen bonds, which is level two);
-     - the water will not have the greasy beads, so greasy attracts greasy;
+     - the water will not have the non-polar beads, so non-polar attracts non-polar;
      - opposite charges pull, like charges push;
-     - the water-loving beads would rather be out where the water is;
+     - the polar beads would rather be out where the water is;
      - a thermostat, because everything is jostled.
 
    Nothing says what shape to be. Heat it and the secondary spring and the
@@ -53,7 +53,7 @@
     const kT = clamp((W.T - 260) / 420, 0.02, 1.1) * (W.T > T_COOK ? 3 : 1);
     const hot = W.T > T_COOK;
     /* In 3D a bead has far more neighbours than on a page, so every pull is
-       scaled down to keep a greasy ball from squeezing its beads together. And
+       scaled down to keep a non-polar ball from squeezing its beads together. And
        when it is hot the pulls nearly vanish, which is what unfolding is. */
     const sec = hot ? 0.08 : 1, grab = hot ? 0.03 : 0.55;
     for (const a of p) { a.fx = 0; a.fy = 0; a.fz = 0; }

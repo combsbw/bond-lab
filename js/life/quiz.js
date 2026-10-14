@@ -94,7 +94,7 @@
         { t: 'A lower density, so it floats into the water rather than being pushed out of it.', ok: false,
           why: 'Alcohol is less dense than water and still mixes completely. Petrol is less dense too and does not. Density says which one ends up on top, not whether they mix at all.' },
       ],
-      after: 'One group, bolted onto an otherwise greasy molecule, changes what it will and will not mix with. That is the whole idea of a functional group, and it is why soap works too.',
+      after: 'One group, bolted onto an otherwise non-polar molecule, changes what it will and will not mix with. That is the whole idea of a functional group, and it is why soap works too.',
       tryIt: 'In Handles, press Ethane and read the water line, then bolt one —OH on and read it again.',
     },
     {
@@ -342,7 +342,7 @@
         { t: 'The water in it boiled off, and what is left is the dried protein.', ok: false,
           why: 'A cooked egg white is still about four-fifths water — weigh one before and after and barely anything has gone. The solid thing is sitting in the water, not left behind by it.' },
         { t: 'The chains came unfolded and got hold of each other instead of themselves.', ok: true,
-          why: 'Heat shakes a folded chain loose. Loose chains meet other loose chains, their greasy parts find each other, and now they are joined into a tangle. The sequence is untouched. The shape is gone and there is no route back to it.' },
+          why: 'Heat shakes a folded chain loose. Loose chains meet other loose chains, their non-polar parts find each other, and now they are joined into a tangle. The sequence is untouched. The shape is gone and there is no route back to it.' },
         { t: 'The heat made the protein react with the oxygen in the air, which is what turns it white.', ok: false,
           why: 'It goes white just as well sealed in a bag with no air at all, and boiled in the shell. Nothing has been oxidised.' },
         { t: 'The heat broke the chains into shorter pieces, and short pieces pack into a solid.', ok: false,
@@ -440,7 +440,7 @@
       ask: 'Hot water alone will not shift the grease off a plate. A drop of washing-up liquid and it comes away at once. The soap has not dissolved the grease — the grease is still grease. What has it done?',
       choices: [
         { t: 'Wrapped each bit of grease in molecules, tails inward, heads facing the water.', ok: true,
-          why: 'A soap molecule has a water-loving head and a water-hating tail, so it can face both ways at once. A ball of them closes round the grease, tails inward, heads out — and the outside of that ball is something water will carry away.' },
+          why: 'A soap molecule has a polar head and a non-polar tail, so it can face both ways at once. A ball of them closes round the grease, tails inward, heads out — and the outside of that ball is something water will carry away.' },
         { t: 'Lowered the water’s surface tension, weakening the hydrogen bonds that were keeping it from getting under the grease.', ok: false,
           why: 'Soap does lower surface tension, which is why it foams and wets a surface better. But grease comes off into the water and stays off, which wetting alone cannot do.' },
         { t: 'Reacted with the fat and turned it into something that dissolves.', ok: false,

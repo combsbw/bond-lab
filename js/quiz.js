@@ -447,7 +447,7 @@
           why: 'Ethanol is 46 units to water’s 18 — two and a half times heavier. It evaporates faster while being the heavier molecule.' },
         { t: 'Alcohol has a lower surface tension, so molecules at the surface are held back less and leave sooner.', ok: false,
           why: 'Lower surface tension is another consequence of the weaker grip, not its cause. Both follow from the same thing.' },
-        { t: 'Each water molecule grips neighbours at several points; alcohol has one such point and a greasy tail.', ok: true,
+        { t: 'Each water molecule grips neighbours at several points; alcohol has one such point and a non-polar tail.', ok: true,
           why: 'Water offers two hydrogens and two lone pairs — four grips. Ethanol offers one −OH and a hydrocarbon tail that offers nothing.' },
         { t: 'Alcohol’s O–H bond is less polar than water’s, so the hydrogen bonds it forms are individually weaker.', ok: false,
           why: 'The two −OH groups are very nearly as polar as each other. It is how many grips there are, not how good each one is.' },

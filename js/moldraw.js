@@ -43,7 +43,7 @@
      o.label: draw O and H letters (only worth it when u is large).
      o.charge: draw δ− / δ+ marks.
      o.lone: 0..1 how strongly to show the negative back.
-     o.soap: draw it as a soap molecule instead (a greasy tail). */
+     o.soap: draw it as a soap molecule instead (a non-polar tail). */
   function water(ctx, x, y, th, u, pal, o) {
     o = o || {};
     if (!(u > 0)) return { o: { x, y }, h: [] };

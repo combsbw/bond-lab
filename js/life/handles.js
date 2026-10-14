@@ -217,7 +217,7 @@
       /* The molecule goes into the tank as one more body, nailed in place, with
          its hands turned up or down by how polar it is. Then nothing has to be
          faked: polar, and the water crowds in and shakes hands with it;
-         greasy, and the water finds nothing to hold and closes round it
+         non-polar, and the water finds nothing to hold and closes round it
          holding on to itself instead. */
       const WW = 11, WH = 5, NW = 26, SOLUTE = NW;
       function newWater() {

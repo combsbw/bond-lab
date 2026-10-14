@@ -23,13 +23,13 @@
 
   const KINDS = [
     { id: 'two', name: 'Phospholipid', tails: 2, head: true,
-      n: 40, is: 'a water-loving head and two water-hating tails. Straight-sided, so a crowd of them lies flat: a sheet two molecules thick, heads out on both faces, tails hidden in the middle. This is your cell membrane.',
+      n: 40, is: 'a polar head and two non-polar tails. Straight-sided, so a crowd of them lies flat: a sheet two molecules thick, heads out on both faces, tails hidden in the middle. This is your cell membrane.',
       makes: 'a sheet — a bilayer' },
     { id: 'one', name: 'Soap', tails: 1, head: true, n: 36,
       is: 'the same head with only one tail, so the molecule is a wedge. Wedges cannot lie flat; they close up into a ball with the tails in the middle. Drop grease into the middle of one of those balls and you have just washed up.',
       makes: 'balls — micelles' },
     { id: 'tri', name: 'Triglyceride', tails: 3, head: false, n: 20,
-      is: 'three tails on a glycerol and no water-loving end left anywhere. Nothing on it will face the water, so it cannot line a surface. It just huddles. This is the fat in a fat cell, and in a chip pan.',
+      is: 'three tails on a glycerol and no polar end left anywhere. Nothing on it will face the water, so it cannot line a surface. It just huddles. This is the fat in a fat cell, and in a chip pan.',
       makes: 'a droplet of fat' },
   ];
 
@@ -44,7 +44,7 @@
       opts: ['Yes, the same sheet', 'No — it closes up into balls'], right: 1 },
     { id: 'nohead', text: 'Take the head off altogether.',
       how: 'Press “Triglyceride”, which is three tails and no head.',
-      ask: 'with no water-loving end left, will it make a membrane?',
+      ask: 'with no polar end left, will it make a membrane?',
       opts: ['Yes', 'No — there is nothing left to face the water'], right: 1 },
     { id: 'cold', text: 'Compare a straight-tailed sheet with a kinked one.',
       how: 'Let a sheet settle with the kinks off and read the packing bar, then drag the kinks all the way up and read it again.',
@@ -77,7 +77,7 @@
   BL.register({
     id: 'faces', field: 'four', order: 2, name: 'Two Faces',
     tagline: 'Water will not have the tails. The membrane is what is left over.',
-    lede: 'Lipids scattered in water, each with a water-loving head and one, two or three water-hating tails. Nothing in here pulls them into any shape. Watch what they do anyway, grab one and pull it out of the crowd, then change the shape of the molecule and watch the answer change with it. Underneath, the same lipids in three dimensions: turn them over, and cut them open.',
+    lede: 'Lipids scattered in water, each with a polar head and one, two or three non-polar tails. Nothing in here pulls them into any shape. Watch what they do anyway, grab one and pull it out of the crowd, then change the shape of the molecule and watch the answer change with it. Underneath, the same lipids in three dimensions: turn them over, and cut them open.',
     art, goals: STEPS,
 
     mount({ stage: stageHost, aux, dock }) {
@@ -194,7 +194,7 @@
         packM.tone(pk > 0.7 ? BL.pal.pos : BL.pal.ui);
         holdP.textContent = k.head
           ? 'Nothing. There is no bond between one lipid and the next — you could slide one out sideways and the rest would close up behind it. What holds the sheet together is the water on both sides refusing to let the tails out.'
-          : 'Nothing, and there is no sheet either. With no water-loving end the molecule has no reason to sit at a surface, so it just hides in the middle of the heap with the rest.';
+          : 'Nothing, and there is no sheet either. With no polar end the molecule has no reason to sit at a surface, so it just hides in the middle of the heap with the rest.';
         energy.textContent = '';
         [['A gram of fat', 1, '≈ 37 kJ'], ['A gram of carbohydrate', 0.46, '≈ 17 kJ']].forEach(([name, frac, num]) => {
           energy.appendChild(h('div', { class: 'cmp-row' },
@@ -302,7 +302,7 @@
         BL.label(c, S.cut ? 'cut open: heads on the outside, tails hidden in the middle' : k.id === 'two' ? 'a patch of bilayer — two layers of lipids, tails to tails' : k.id === 'one' ? 'a micelle — a ball with every tail pointing in' : 'a droplet of fat — nothing on the outside to face the water',
           cw / 2, ch - 16, { font: BL.font(700, 13), border: pal.ui });
         const kv = Math.round(S.kink * 10) / 10;
-        note3.textContent = k.id === 'two' && kv > 0.4 ? 'With kinks in the tails the two layers cannot pack together tightly: look at the gaps. That is a membrane that stays fluid in the cold.' : k.id === 'two' ? 'Straight tails lie against each other all the way down. Slide the kinks up and watch the packing loosen.' : 'Drag it round. Whatever the shape, the water-loving ends are on the outside and the greasy ones are hidden.';
+        note3.textContent = k.id === 'two' && kv > 0.4 ? 'With kinks in the tails the two layers cannot pack together tightly: look at the gaps. That is a membrane that stays fluid in the cold.' : k.id === 'two' ? 'Straight tails lie against each other all the way down. Slide the kinks up and watch the packing loosen.' : 'Drag it round. Whatever the shape, the polar ends are on the outside and the non-polar ones are hidden.';
       }
 
       /* ---------------- grabbing a lipid ---------------- */
