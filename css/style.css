@@ -204,13 +204,18 @@ a.tile:hover { border-color: var(--ui); transform: translateY(-2px); }
    the stage stays pinned while you work the controls underneath it. */
 .sim {
   display: grid; grid-template-columns: minmax(0, 1fr) minmax(19rem, 23rem);
-  grid-template-areas: "stage dock" "aux dock";
-  grid-template-rows: auto 1fr;
+  grid-template-areas: "stage dock" "aux dock" "ask ask";
+  grid-template-rows: auto 1fr auto;
   gap: 18px 24px; align-items: start;
 }
 .slot-stage { grid-area: stage; min-width: 0; }
 .slot-aux { grid-area: aux; min-width: 0; display: grid; gap: 18px; }
 .slot-dock { grid-area: dock; }
+/* The everyday questions come last, under the readouts AND the controls AND
+   the things to try, across the whole width. A learner meets them having
+   already played, which is the only order in which they are worth anything. */
+.slot-ask { grid-area: ask; min-width: 0; margin-top: 6px; }
+.slot-ask:empty { display: none; }
 .panel { border: 2px solid var(--line); border-radius: 16px; background: var(--panel); padding: 16px; display: grid; gap: 12px; min-width: 0; box-shadow: var(--shadow); }
 .panel h2, .dock h2 { font: 700 1.05rem/1.2 var(--font-body); color: var(--fg); }
 .stage { position: relative; width: 100%; border: 2px solid var(--line); border-radius: 16px; background: var(--panel); overflow: hidden; touch-action: none; box-shadow: var(--shadow); }
@@ -512,13 +517,15 @@ html[data-theme="dark"] .spine-band span { color: #08151a; }
 .spine.sibling .tag { justify-self: start; }
 .ch-host { display: grid; gap: 14px; }
 .ch-host .panel { border: 0; background: transparent; box-shadow: none; padding: 0; }
+/* Inside a module the fold's own summary already says "Why this matters". */
+.ch-host.ch-sim .challenges > h2 { display: none; }
 .field .fold { margin-top: 18px; }
 @media (max-width: 600px) {
   .spine-band { grid-auto-flow: row; }
 }
 
 @container (max-width: 62rem) {
-  .sim { grid-template-columns: minmax(0, 1fr); grid-template-areas: "stage" "aux" "dock"; }
+  .sim { grid-template-columns: minmax(0, 1fr); grid-template-areas: "stage" "aux" "dock" "ask"; grid-template-rows: auto; }
   .slot-stage { position: sticky; top: var(--bar-h, 3.6rem); z-index: 20; padding-bottom: 2px; background: var(--bg); }
   .slot-stage .stage { max-height: 56svh; }
 }

@@ -122,22 +122,33 @@
       stage: h('div', { class: 'slot-stage' }),
       aux: h('div', { class: 'slot-aux' }),
       dock: h('aside', { class: 'dock slot-dock', 'aria-label': sim.name + ' controls' }),
+      ask: h('div', { class: 'slot-ask' }),
       params,
     };
     // one plain sentence saying what the learner is about to look at, before
     // any of the instrument's own machinery gets a word in
     if (sim.lede) slots.stage.appendChild(h('p', { class: 'stage-cap' }, sim.lede));
-    view.appendChild(h('div', { class: 'sim' }, slots.stage, slots.aux, slots.dock));
+    view.appendChild(h('div', { class: 'sim' }, slots.stage, slots.aux, slots.dock, slots.ask));
     current = sim.mount(slots);
     /* Every instrument ends with the everyday questions it can settle. They go
-       last, under the readouts, so the learner meets them having already
-       played — which is the only order in which they are worth anything. */
-    if (BL.challenges) {
-      BL.challenges(slots.aux, {
+       last — under the readouts, the controls and the things to try — and shut,
+       the same way they sit on the hub, so the learner meets them having
+       already played and nobody has to scroll past them to get to the work. */
+    if (BL.challenges && BL.quizFor({ sim: sim.id }).length) {
+      const total = BL.quizFor({ sim: sim.id }).length;
+      const host = h('div', { class: 'ch-host ch-sim' });
+      const words = () => {
+        const done = BL.quizFor({ sim: sim.id }).filter((q) => (BL.store.get('quiz', {}) || {})[q.id]).length;
+        return 'Why this matters · ' + total + ' everyday challenge' + (total === 1 ? '' : 's') + (done ? ' · ' + done + ' answered' : '');
+      };
+      const fold = BL.fold(words(), host);
+      BL.challenges(host, {
         sim: sim.id,
         title: 'Why this matters',
         lede: 'Ordinary things that come out of what you have just been poking. Commit to an answer, then go back up and settle it.',
+        onanswer: () => { fold.firstChild.textContent = words(); },
       });
+      slots.ask.appendChild(fold);
     }
   }
 
