@@ -99,6 +99,30 @@
         h('p', { class: 'hint' }, 'The line is the temperature of each box against the heat that went in. Steep: it heats up fast. Shallow: it soaks up heat.')));
 
       function say(t) { statusP.textContent = t; }
+
+      /* ---------------- pointer: tap a heater to switch it, pull a molecule in a box ---------------- */
+      BL.drag(stage.canvas, {
+        pick: (p) => {
+          const g = S.geo; if (!g) return null;
+          for (let c = 0; c < 3; c++) {
+            const x0 = c * (g.colW + g.gap);
+            if (p.x < x0 || p.x > x0 + g.colW) continue;
+            if (p.y > g.y0 + g.boxH && p.y < g.y0 + g.boxH + 48) return { heater: IDS[c] };
+            if (p.y >= g.y0 && p.y <= g.y0 + g.boxH) {
+              const W = S.W[IDS[c]]; let best = -1, bd = 0.8;
+              for (let i = 0; i < W.n; i++) { const d = Math.hypot((p.x - x0) / S.u - W.x[i], (p.y - g.y0) / S.u - W.y[i]); if (d < bd) { bd = d; best = i; } }
+              if (best >= 0) return { id: IDS[c], i: best, x0 };
+            }
+          }
+          return null;
+        },
+        move: (a, p, start) => {
+          S.hinted = true;
+          if (a.heater) { if (start) { S.on[a.heater] = !S.on[a.heater]; onBtns[IDS.indexOf(a.heater)].setAttribute('aria-pressed', String(S.on[a.heater])); if (S.mode === 0) setMode(1); } return; }
+          const W = S.W[a.id]; W.drag = { i: a.i, x: (p.x - a.x0) / S.u, y: (p.y - S.geo.y0) / S.u, k: 30 }; W.fresh = false;
+        },
+        end: (a) => { if (a.id) S.W[a.id].drag = null; },
+      });
       function setMode(m) {
         S.mode = m; S.hinted = true; modeBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(i - 1 === m)));
       }
@@ -115,7 +139,7 @@
         const gap = Math.max(6, cw * 0.015), colW = (cw - gap * 2) / 3, boxH = colW * 0.8, topB = 34, botB = 44;
         const need = Math.round(topB + boxH + botB), asp = cw + ' / ' + need;
         if (asp !== S.aspect) { S.aspect = asp; stage.wrap.style.aspectRatio = asp; }
-        const ch = stage.h; S.u = colW / 10;
+        const ch = stage.h; S.u = colW / 10; S.geo = { colW, gap, boxH, y0: topB };
 
         // heat in (or out)
         const mode = S.mode;
@@ -190,11 +214,11 @@
           for (let k = 0; k <= nz; k++) { const x = x0 + 12 + k * step, y = by + 10 + ((heating || cooling) ? Math.sin(flick * (heating ? 1 : -1) + k * 1.5) * 5 : 0); k ? ctx.lineTo(x, y) : ctx.moveTo(x, y); }
           ctx.stroke(); ctx.lineCap = 'butt';
           ctx.fillStyle = pal.muted; ctx.font = BL.font(600, 13); ctx.textAlign = 'center';
-          ctx.fillText(heating ? 'heating' : cooling ? 'cooling' : S.on[id] ? 'heater off' : 'switched off', x0 + colW / 2, by + 32);
+          ctx.fillText(heating ? 'heating · tap to switch off' : cooling ? 'cooling · tap to switch off' : S.on[id] ? 'heater off' : 'switched off · tap to switch on', x0 + colW / 2, by + 32);
           // temperature
           BL.label(ctx, BL.tempLabel(K[id]), x0 + colW / 2, y0 + 20, { font: BL.font(800, 17), border: pal.fg });
         });
-        if (!S.hinted && !BL.reduced) BL.label(ctx, 'press Heat in the side panel', cw / 2, topB + boxH / 2, { font: BL.font(700, 14), border: pal.ui });
+        if (!S.hinted && !BL.reduced) BL.label(ctx, 'press Heat, or tap a heater below a box', cw / 2, topB + boxH / 2, { font: BL.font(700, 14), border: pal.ui });
       }
 
       function drawChart(K) {

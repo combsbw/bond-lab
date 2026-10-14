@@ -95,6 +95,87 @@
       aux.appendChild(h('section', { class: 'panel' }, h('h2', {}, 'Float or sink?'), tank.wrap, tankNote,
         h('p', { class: 'hint' }, 'The block is made of whatever the sheet is made of right now. The pond is the same stuff, mild and liquid.')));
 
+      /* ---------------- real ice, in three dimensions ---------------- */
+      /* The flat sheet above is a model of why water does this. This is what it
+         does it in: ordinary ice (hexagonal ice, the kind in a freezer and on a
+         pond) laid out from its real unit cell. Every oxygen sits at the middle
+         of four others, joined by hydrogen bonds, and the way four hands can
+         reach is a puckered ring of six — so the whole crystal is stacked
+         hexagonal tubes with empty space down the middle of each. Look down the
+         channels and the holes are right there. Melt it and the lattice slumps
+         into its own holes, which is exactly why the liquid is denser. */
+      const ICE = (() => {
+        const a = 4.52, c = 7.37, s3 = Math.sqrt(3) / 2;
+        // the four oxygens of the unit cell, as fractions of (a1, a2, c)
+        const base = [[1 / 3, 2 / 3, 0], [2 / 3, 1 / 3, 0.5], [1 / 3, 2 / 3, 0.375], [2 / 3, 1 / 3, 0.875]];
+        const atoms = [];
+        for (let i = -1; i <= 3; i++) for (let j = -1; j <= 3; j++) for (let k = 0; k < 2; k++) {
+          base.forEach(([u, v, w]) => {
+            const X = (i + u) * a - (j + v) * a * 0.5, Z = (j + v) * a * s3, Y = (k + w) * c;
+            atoms.push({ x: X / 2.76, y: -Y / 2.76, z: Z / 2.76 });
+          });
+        }
+        // keep a hexagon-ish lump in the middle of what was generated
+        let cx = 0, cy = 0, cz = 0; atoms.forEach((q) => { cx += q.x; cy += q.y; cz += q.z; }); cx /= atoms.length; cy /= atoms.length; cz /= atoms.length;
+        const keep = atoms.filter((q) => Math.hypot(q.x - cx, q.z - cz) < 3.6 && Math.abs(q.y - cy) < 2.9).map((q) => ({ x: q.x - cx, y: q.y - cy, z: q.z - cz }));
+        const bonds = [];
+        keep.forEach((p, i) => keep.forEach((q, j) => { if (j > i && Math.hypot(p.x - q.x, p.y - q.y, p.z - q.z) < 1.08) bonds.push([i, j]); }));
+        // the lattice points of the channels: where no oxygen is, in plan
+        const chan = [];
+        for (let i = -3; i <= 3; i++) for (let j = -3; j <= 3; j++) chan.push({ x: (i * a - j * a * 0.5) / 2.76 - cx, z: (j * a * s3) / 2.76 - cz });
+        return { atoms: keep, bonds, chan };
+      })();
+      const c3 = BL.stage(h('div'), '1.6 / 1', { label: 'A three-dimensional model of ordinary ice: oxygen atoms joined by hydrogen bonds into hexagonal tubes with empty channels down the middle. A slider melts it. Drag to turn it.', focusable: true });
+      c3.wrap.classList.add('flat');
+      const meltOut = h('output', { class: 'val' }, 'frozen');
+      const meltIn = h('input', { type: 'range', min: '0', max: '100', step: '1', value: '0', 'aria-label': 'Melt the ice' });
+      const dens = BL.meter('How tightly it is packed');
+      const crys = { m: 0 };
+      meltIn.addEventListener('input', () => { crys.m = parseFloat(meltIn.value) / 100; meltOut.textContent = crys.m < 0.05 ? 'frozen' : crys.m > 0.95 ? 'liquid' : 'melting'; if (crys.m > 0.5) crys.melted = true; });
+      const V3 = BL.view3d(c3.canvas, { yaw: 0.5, pitch: 0.42, auto: 0.22 });
+      aux.appendChild(h('section', { class: 'panel' }, h('h2', {}, 'Real ice, in three dimensions'), c3.wrap,
+        h('div', { class: 'ctl' }, h('div', { class: 'row' }, h('h2', {}, 'Melt it'), meltOut),
+          h('div', { class: 'range-wrap' }, meltIn, h('div', { class: 'range-ends' }, h('span', {}, 'frozen'), h('span', {}, 'liquid')))),
+        h('div', { class: 'actions' }, h('button', { type: 'button', class: 'action ghost', onclick: () => { V3.home = { yaw: 0, pitch: 1.5 }; V3.goal = { yaw: 0, pitch: 1.5, zoom: 1 }; V3.auto = 0; V3.userTurned = true; } }, 'Look down the channels'),
+          h('button', { type: 'button', class: 'action ghost', onclick: () => { V3.home = { yaw: 0.5, pitch: 0.42 }; V3.goal = { yaw: 0.5, pitch: 0.42, zoom: 1 }; V3.userTurned = false; V3.auto = 0.22; } }, 'Back to the side')),
+        dens.el,
+        h('p', { class: 'hint' }, 'Every oxygen holds four neighbours with hydrogen bonds, and four hands can only reach so far: the crystal is forced open into hexagonal tubes. Look straight down them. Then melt it — the tubes slump in on themselves, the molecules crowd closer, and the liquid ends up about 9% denser than the ice. That is why it floats.')));
+      function drawIce(dt) {
+        const pal = BL.pal, cw = c3.w, ch = c3.h, c = c3.ctx;
+        if (!cw) return;
+        c.clearRect(0, 0, cw, ch);
+        V3.step(dt);
+        V3.frame(cw, ch, 3.5, { x: 0, y: 0, z: 0 });
+        const m = crys.m, sc = V3.scale, t = performance.now() / 1000;
+        // melting: each molecule slumps toward the nearest channel and starts to wobble
+        const pos = ICE.atoms.map((q, i) => {
+          let best = null, bd = 1e9;
+          ICE.chan.forEach((ch2) => { const d = Math.hypot(q.x - ch2.x, q.z - ch2.z); if (d < bd) { bd = d; best = ch2; } });
+          const pull = 0.3 * m * (bd > 0.01 ? 1 : 0);
+          const wob = 0.34 * m;
+          return {
+            x: q.x + (best.x - q.x) * pull + Math.sin(t * 1.7 + i * 1.3) * wob,
+            y: q.y * (1 - 0.05 * m) + Math.sin(t * 1.3 + i * 2.1) * wob,
+            z: q.z + (best.z - q.z) * pull + Math.cos(t * 1.5 + i * 0.9) * wob,
+          };
+        });
+        const P = pos.map((q) => V3.project(q));
+        const rb = sc * 0.2;
+        ICE.bonds.forEach(([i, j], bi) => {
+          // as it melts some bonds are always breaking and re-forming, so fewer are up at any moment
+          const keep = ((bi * 7919) % 100) / 100 < 1 - 0.28 * m || Math.sin(t * 2 + bi) > 0.2;
+          if (!keep) return;
+          const a = P[i], b = P[j];
+          V3.add((a.z + b.z) / 2 - 0.02, () => { c.save(); c.globalAlpha = 0.35 + 0.6 * Math.min(a.d, b.d); c.setLineDash([3, 4]); c.lineWidth = Math.max(2, sc * 0.05); c.strokeStyle = pal.tHydrogen; c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke(); c.restore(); });
+        });
+        P.forEach((q) => V3.add(q.z, () => BL.sphere3(c, q, rb, pal.neg, null)));
+        V3.flush();
+        V3.cue(c, pal);
+        const d = 0.917 + 0.083 * m;
+        dens.set((d - 0.9) / 0.12, m < 0.05 ? 'open — the least dense it gets' : m > 0.95 ? 'closed up — denser than the ice' : 'slumping', BL.nums ? d.toFixed(3) + ' g/cm³' : '');
+        BL.label(c, m < 0.05 ? 'ice: hexagonal tubes, with empty channels down the middle' : m > 0.95 ? 'liquid: the channels have collapsed' : 'melting — the lattice slumps into its own holes', cw / 2, ch - 16, { font: BL.font(700, 13), border: pal.ui });
+      }
+
       const chart = BL.stage(h('div'), '2.6 / 1', { label: 'Graph of how tightly packed the sheet is, against heat, for the two kinds of molecule.' });
       chart.wrap.classList.add('flat', 'hist');
       aux.appendChild(h('section', { class: 'panel' }, h('h2', {}, 'How packed is it?'), chart.wrap,
@@ -117,6 +198,7 @@
 
       /* ---------------- frame ---------------- */
       function frame(dt) {
+        drawIce(dt || 1 / 60);
         const pal = BL.pal, cw = stage.w, ch = stage.h;
         if (S.sweep) {
           S.sweep.t += dt; const f = clamp(S.sweep.t / S.sweep.dur, 0, 1);
@@ -272,7 +354,7 @@
       say('Cool the sheet with the heat slider.');
       const loop = BL.loop(frame);
       loop.start();
-      return { destroy() { loop.stop(); stage.destroy(); chart.destroy(); tank.destroy(); } };
+      return { destroy() { loop.stop(); stage.destroy(); chart.destroy(); tank.destroy(); c3.destroy(); } };
     },
   });
 })();

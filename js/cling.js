@@ -23,6 +23,7 @@
     { id: 'slide', text: 'Tilt a surface until the drop slides along it.' },
     { id: 'stick', text: 'Tilt a surface a long way and have the drop stay put.' },
     { id: 'presets', text: 'Try wax, plastic and glass.' },
+    { id: 'poke', text: 'Grab a molecule at the top of the drop, pull it away, and let go. Does it come back?' },
   ];
   const art =
     '<svg viewBox="0 0 200 120" aria-hidden="true"><path d="M20 92 H180" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>' +
@@ -85,6 +86,28 @@
         h('div', { class: 'actions' }, clearBtn),
         h('p', { class: 'hint' }, 'The contact angle is how steeply the water’s edge rises from the surface. Points are added while the drop settles. Change one slider at a time.')));
 
+      /* ---------------- pointer: pull a molecule, or turn the tilt dial ---------------- */
+      const origin = () => ({ x: (stage.w - WW * S.u) / 2, y: stage.h - 34 - WH * S.u });
+      const dial = () => ({ x: stage.w - 80, y: 56 });
+      BL.drag(stage.canvas, {
+        pick: (p) => {
+          const d = dial(); if (Math.hypot(p.x - d.x, p.y - (d.y + 12)) < 52) return { tilt: true };
+          const W = S.W, u = S.u, o = origin(); let best = -1, bd = 0.8;
+          for (let i = 0; i < N; i++) { const dd = Math.hypot((p.x - o.x) / u - W.x[i], (p.y - o.y) / u - W.y[i]); if (dd < bd) { bd = dd; best = i; } }
+          return best >= 0 ? { i: best } : null;
+        },
+        move: (a, p, start) => {
+          S.hinted = true; const W = S.W, u = S.u, o = origin();
+          if (a.tilt) {
+            const d = dial(); S.tilt = clamp(Math.round(Math.atan2(p.y - (d.y + 18), Math.max(1, p.x - d.x)) * 180 / Math.PI), 0, 40); // the bar's right end follows the pointer
+            tiltC.input.value = String(S.tilt); tiltC.out.textContent = Math.round(S.tilt) + '°'; apply(false, false, true); return;
+          }
+          if (start) S.poke = { i: a.i, x: W.x[a.i], y: W.y[a.i], max: 0 };
+          W.drag = { i: a.i, x: (p.x - o.x) / u, y: (p.y - o.y) / u, k: 30 }; W.fresh = false;
+        },
+        end: () => { const W = S.W; if (S.poke && S.poke.max > 2.2) goals.done('poke'); S.poke = null; if (W) W.drag = null; },
+      });
+
       /* ---------------- world ---------------- */
       function newDrop() {
         S.seed++; S.hasAng = false;
@@ -126,6 +149,7 @@
         const W = S.W, pal = BL.pal, cw = stage.w, ch = stage.h;
         S.u = Math.min(cw / WW, (ch - 34) / WH);
         const t0 = performance.now(); let k = 0; while (k < 40 && performance.now() - t0 < 10) { M.step(W, 0.005); k++; }
+        if (S.poke && W.drag) S.poke.max = Math.max(S.poke.max, Math.hypot(W.x[S.poke.i] - S.poke.x, W.y[S.poke.i] - S.poke.y));
         S.t += dt; S.sinceChange += dt;
         const hs = M.handshakes(W); S.bonds = hs.list;
         if (++mTick % 6 === 0) {

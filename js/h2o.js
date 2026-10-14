@@ -150,6 +150,72 @@
         h('h2', {}, 'What this molecule can do'),
         verdict, mLop.el, mPull.el, why));
 
+      /* ---------------- the same molecule, in three dimensions ---------------- */
+      /* Water is bent because of what is round the back. Oxygen has four
+         things to hold — two hydrogens and two lone pairs — and four things
+         arrange themselves at the corners of a tetrahedron. The lone pairs push
+         harder than the bonds do and squeeze the hydrogens together from the
+         ideal 109.5° to 104.5°. On a flat page you cannot see the lone pairs at
+         all. Turn this one and there they are, one either side, behind. */
+      const c3 = BL.stage(h('div'), '1.7 / 1', { label: 'A three-dimensional model of the molecule on the stage: the two hydrogens, the oxygen, and the two lone pairs of electrons round the back. It follows the angle and the pull above. Drag to turn it.', focusable: true });
+      c3.wrap.classList.add('flat');
+      aux.appendChild(h('section', { class: 'panel' }, h('h2', {}, 'In three dimensions'), c3.wrap,
+        h('p', { class: 'hint' }, 'Turn it. The two soft lobes round the back are the oxygen’s lone pairs: electrons that belong to the oxygen alone, pushing the hydrogens together. Straighten the angle above and watch where they go.')));
+      const V3 = BL.view3d(c3.canvas, { yaw: 0.5, pitch: 0.3, auto: 0.3 });
+      function draw3d(dt) {
+        const pal = BL.pal, cw = c3.w, ch = c3.h, c = c3.ctx;
+        if (!cw) return;
+        c.clearRect(0, 0, cw, ch);
+        V3.step(dt);
+        V3.frame(cw, ch, 1.9, { x: 0, y: 0.1, z: 0 });
+        const sc = V3.scale, K3 = BL.v3;
+        const half = (S.angle / 2) * Math.PI / 180, bl = 1.05;
+        const isWater = S.mid === 'O' && S.out === 'H';
+        const mid = { x: 0, y: 0, z: 0 };
+        // screen y runs downward, so the hydrogens are at negative y to point up, as on the stage
+        const outs = [K3.v(Math.sin(half) * bl, -Math.cos(half) * bl, 0), K3.v(-Math.sin(half) * bl, -Math.cos(half) * bl, 0)];
+        const col = (sym) => (sym === 'O' ? pal.neg : sym === 'H' ? pal.pos : pal.eC);
+        const midNeg = !S.greedyOut, strength = clamp(S.greed / GREED_MAX, 0, 1);
+        const rM = sc * 0.36, rO = sc * (S.out === 'H' ? 0.22 : 0.3);
+        const qm = V3.project(mid), qo = outs.map((q) => V3.project(q));
+        // the lone pairs: round the back, above and below the plane of the three atoms
+        if (isWater) {
+          const lp = [K3.v(0, 0.55, 0.83), K3.v(0, 0.55, -0.83)].map((d) => K3.mul(K3.unit(d), 1.0));
+          // they open out as the hydrogens close in, and swing round as it straightens
+          lp.forEach((d, i) => {
+            const q = V3.project(d);
+            V3.add(q.z, () => {
+              const g = c.createRadialGradient(q.x, q.y, 1, q.x, q.y, sc * 0.55);
+              g.addColorStop(0, BL.alpha(pal.neg, 0.55)); g.addColorStop(1, BL.alpha(pal.neg, 0));
+              c.fillStyle = g; c.beginPath(); c.arc(q.x, q.y, sc * 0.55, 0, 7); c.fill();
+              BL.stick3(c, qm, q, sc * 0.05, { color: BL.alpha(pal.neg, 0.4), ta: BL.sphereR(qm, rM) * 0.9, tb: 0 });
+            });
+          });
+        }
+        qo.forEach((q, i) => {
+          V3.add((qm.z + q.z) / 2 - 0.01, () => BL.stick3(c, qm, q, sc * 0.1, { ta: BL.sphereR(qm, rM) * 0.9, tb: BL.sphereR(q, rO) * 0.9 }));
+          V3.add(q.z, () => BL.sphere3(c, q, rO, S.greedyOut ? BL.mixHex(col(S.out), pal.neg, 0.5 * strength) : BL.mixHex(col(S.out), pal.pos, 0.4 * strength), S.out));
+        });
+        V3.add(qm.z, () => BL.sphere3(c, qm, rM, midNeg ? BL.mixHex(col(S.mid), pal.neg, 0.5 * strength) : BL.mixHex(col(S.mid), pal.pos, 0.4 * strength), S.mid));
+        // the pull: the molecule's one overall arrow, from the positive side toward the negative
+        const dip = dipole(S.angle, S.greed);
+        if (Math.abs(dip) > 0.04) {
+          const base = K3.v(0, -Math.cos(half) * bl * 0.55, 0);
+          const tip = K3.v(0, base.y + Math.sign(dip) * clamp(Math.abs(dip), 0, 1.4) * 1.35 * (S.greedyOut ? -1 : 1), 0);
+          const a = V3.project(base), b = V3.project(tip);
+          V3.add(Math.max(a.z, b.z) + 0.6, () => {
+            c.save(); c.strokeStyle = pal.electron; c.fillStyle = pal.electron; c.lineWidth = 4; c.lineCap = 'round';
+            c.beginPath(); c.moveTo(a.x, a.y); c.lineTo(b.x, b.y); c.stroke();
+            const an = Math.atan2(b.y - a.y, b.x - a.x);
+            c.beginPath(); c.moveTo(b.x, b.y); c.lineTo(b.x - Math.cos(an - 0.45) * 13, b.y - Math.sin(an - 0.45) * 13); c.lineTo(b.x - Math.cos(an + 0.45) * 13, b.y - Math.sin(an + 0.45) * 13); c.closePath(); c.fill();
+            c.restore();
+          });
+        }
+        V3.flush();
+        V3.cue(c, pal);
+        BL.label(c, isWater ? 'H₂O: two hydrogens, and two lone pairs round the back' : S.mid === 'C' ? 'CO₂: straight, so the two pulls cancel' : 'the shape you have made', cw / 2, ch - 16, { font: BL.font(700, 13), border: pal.ui });
+      }
+
       const bondBox = h('section', { class: 'panel' }, h('h2', {}, 'The second molecule'));
       const bondSay = h('p', { class: 'status' });
       const mBond = BL.meter('Grip of the hydrogen bond');
@@ -295,7 +361,8 @@
         return { g: clamp(best * d * (S.greedyOut ? 0 : 1), 0, 1), at: which };
       }
 
-      function frame() {
+      function frame(dt) {
+        draw3d(dt || 1 / 60);
         const pal = BL.pal, W = stage.w, H = stage.h;
         if (!W) return;
         stage.onresize();
@@ -373,7 +440,7 @@
 
       const loop = BL.loop(frame);
       loop.start();
-      return { destroy() { loop.stop(); stage.destroy(); } };
+      return { destroy() { loop.stop(); stage.destroy(); c3.destroy(); } };
     },
   });
 })();

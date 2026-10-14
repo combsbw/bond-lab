@@ -167,22 +167,8 @@
       sync();
 
       /* ---------------- turning it ---------------- */
-      BL.drag(stage.canvas, {
-        pick: () => 'cloud',
-        move: (_h, p, start) => {
-          if (start) { S.px = p.x; S.py = p.y; return; }
-          const dx = p.x - S.px, dy = p.y - S.py; S.px = p.x; S.py = p.y;
-          S.yaw += dx * 0.011; S.pitch = clamp(S.pitch + dy * 0.011, -1.5, 1.5); S.spun += Math.abs(dx) * 0.011 + Math.abs(dy) * 0.011; S.userTurned = true; S.hinted = true;
-          if (S.spun > 2.2) goals.done('turn');
-        },
-      });
-      stage.canvas.addEventListener('keydown', (e) => {
-        const k = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
-        if (!k) return; e.preventDefault();
-        S.yaw += k[0] * 0.15; S.pitch = clamp(S.pitch + k[1] * 0.15, -1.5, 1.5); S.spun += 0.15; S.userTurned = true; S.hinted = true;
-        if (S.spun > 2.2) goals.done('turn');
-      });
-
+      const V = BL.view3d(stage.canvas, { yaw: S.yaw, pitch: S.pitch, auto: 0.25, onturn: () => { S.hinted = true; } });
+      V.home = { yaw: 0.5, pitch: 0.35 };
 
       /* ---------------- the orbital as a filled body ----------------
          The catches say where the electron turns up. They do not, on their
@@ -347,10 +333,10 @@
           let n = Math.min(Math.floor(S.acc), 3000); S.acc -= Math.floor(S.acc);
           while (n-- > 0) push();
         }
-        if (!S.userTurned && !BL.reduced) S.yaw += dt * 0.25;
+        V.step(dt); S.yaw = V.yaw; S.pitch = V.pitch; S.userTurned = V.userTurned; S.spun = V.turned; if (S.spun > 2.2) goals.done('turn');
 
         const o = S.orb, ext = S.fit ? extent(o.n, 1) / S.Z * (o.n === 3 ? 0.95 : 1) * (o.l === 2 ? 0.8 : 1) * 1.0 : 30;
-        const sc = (Math.min(W, H) * 0.46) / (S.fit ? (o.n === 1 ? 4.2 : o.n === 2 ? (o.l === 1 ? 11 : 13) : o.l === 2 ? 16 : o.l === 1 ? 22 : 26) / S.Z : 26);
+        const sc = V.zoom * (Math.min(W, H) * 0.46) / (S.fit ? (o.n === 1 ? 4.2 : o.n === 2 ? (o.l === 1 ? 11 : 13) : o.l === 2 ? 16 : o.l === 1 ? 22 : 26) / S.Z : 26);
         const cx = W / 2, cy = H / 2, cyaw = Math.cos(S.yaw), syaw = Math.sin(S.yaw), cp = Math.cos(S.pitch), sp = Math.sin(S.pitch);
         ctx.clearRect(0, 0, W, H);
 

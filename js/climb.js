@@ -26,6 +26,7 @@
     { id: 'rise', text: 'Make water climb a tube.' },
     { id: 'narrow', text: 'Find out which tube lifts the water highest.' },
     { id: 'wax', text: 'Find a surface where the water goes down the tube instead.' },
+    { id: 'drag', text: 'Grab the wall of a tube and drag it sideways to make the tube wider or narrower.' },
     { id: 'zero', text: 'Find a surface where the water neither climbs nor drops.' },
     { id: 'coh', text: 'Keep the glass and make the water grip itself more tightly. Does the climb go up or down?' },
     { id: 'moon', text: 'Take the experiment to the Moon.' },
@@ -102,6 +103,24 @@
       aux.appendChild(h('section', { class: 'panel' }, h('div', { class: 'row' }, h('h2', {}, 'Close up, at the wall'), h('div', { class: 'seg', role: 'group', 'aria-label': 'Which tube to look at' }, selBtns)), zoom.wrap,
         h('p', { class: 'hint' }, 'A drawing, not a simulation: the red arrow is the wall pulling on the water at the rim, the teal bars are the handshakes that drag the rest along.')));
 
+      /* ---------------- pointer: drag a tube's wall to change its width ---------------- */
+      BL.drag(stage.canvas, {
+        pick: (p) => {
+          const g = S.geo; if (!g) return null;
+          for (let i = 0; i < 3; i++) {
+            const iw = Math.max(5, S.d[i] * g.pxW);
+            if (Math.abs(p.x - g.xs[i]) < iw / 2 + g.wallW + 9 && p.y > g.yTop - 6 && p.y < g.yBot + 6) return { i };
+          }
+          return null;
+        },
+        move: (a, p) => {
+          const g = S.geo, d = clamp(Math.round(2 * Math.abs(p.x - g.xs[a.i]) / g.pxW * 10) / 10, 0.2, 4);
+          S.sel = a.i; S.d[a.i] = d; S.hinted = true; S.dragged = true;
+          wIn[a.i].querySelector('input').value = String(Math.round(d * 10)); wIn[a.i].querySelector('output').textContent = d.toFixed(1) + ' mm'; sync();
+        },
+        end: () => { if (S.dragged) goals.done('drag'); S.dragged = false; },
+      });
+
       function sync() {
         presetBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(Math.abs(S.grab - presets[i][1]) < 2)));
         selBtns.forEach((b, i) => b.setAttribute('aria-pressed', String(i === S.sel)));
@@ -165,6 +184,7 @@
         ctx.beginPath(); ctx.moveTo(rx, y0 + 40 * pxMm); ctx.lineTo(rx, y0 - TOP * pxMm); ctx.stroke();
         // the tubes
         const xs = [W * 0.2, W * 0.42, W * 0.64], pxW = 16, wallW = 6;
+        S.geo = { xs, pxW, wallW, yTop: y0 - TOP * pxMm, yBot: y0 + DOWN * pxMm };
         S.d.forEach((d, i) => {
           const cx = xs[i], iw = Math.max(5, d * pxW), x0 = cx - iw / 2, x1 = cx + iw / 2, yTop = y0 - TOP * pxMm, yBot = y0 + DOWN * pxMm;
           const wl = y0 - S.L[i] * pxMm;
@@ -172,6 +192,7 @@
           ctx.fillStyle = BL.alpha(pal.ui, pal.dark ? 0.55 : 0.5); ctx.fillRect(x0, wl, iw, yBot - wl);
           // tube walls
           ctx.fillStyle = BL.alpha(pal.fg, 0.55); ctx.fillRect(x0 - wallW, yTop, wallW, yBot - yTop); ctx.fillRect(x1, yTop, wallW, yBot - yTop);
+          ctx.fillStyle = pal.ui; [x0 - wallW / 2, x1 + wallW / 2].forEach((hx) => { ctx.beginPath(); ctx.arc(hx, (yTop + yBot) / 2, 6, 0, 7); ctx.fill(); ctx.strokeStyle = pal.panel; ctx.lineWidth = 2; ctx.stroke(); });
           if (S.sel === i) { ctx.strokeStyle = pal.electron; ctx.lineWidth = 3; ctx.strokeRect(x0 - wallW - 4, yTop - 4, iw + wallW * 2 + 8, yBot - yTop + 8); }
           // meniscus
           const c = cosTheta(S.grab, S.coh), sag = clamp(c, -1, 1) * Math.min(iw * 0.45, 9);
@@ -183,7 +204,7 @@
           ctx.fillStyle = pal.muted; ctx.font = BL.font(400, 12); ctx.fillText(d.toFixed(1) + ' mm', cx, yBot + 16);
         });
         ctx.fillStyle = pal.muted; ctx.font = BL.font(400, 12); ctx.textAlign = 'left'; ctx.fillText('Tube widths are drawn bigger than they are.', 24, H - 4);
-        if (!S.hinted && !BL.reduced) BL.label(ctx, 'change the tube material or the widths →', W * 0.42, H - 40, { font: BL.font(700, 14), border: pal.ui });
+        if (!S.hinted && !BL.reduced) BL.label(ctx, 'drag a tube wall to change its width, or use the controls →', W * 0.42, H - 40, { font: BL.font(700, 14), border: pal.ui });
       }
 
       function drawZoom() {

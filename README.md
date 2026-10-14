@@ -126,6 +126,9 @@ assets/icons/       both app icons at every size the web asks for (generated)
 js/core.js          helpers: canvas stage, pointer drag, loop, goals, guided protocols, registry,
                     display settings, plain-language word scales, meters, folds, electron spheres,
                     filled clouds, the element palette
+js/view3d.js        the one way to turn a solid over, everywhere: drag to orbit (with momentum),
+                    pinch or wheel to zoom, double-tap to go home, arrow keys, and a claim
+                    system so a press can grab an atom instead of turning the view
 js/app.js           hash router and hub page, shared by both labs, driven by BL.lab
 js/lab-bond.js      what Bond Lab is: name, fields, spine, the link to the other lab
 js/lab-life.js      the same for the Life Lab
@@ -140,6 +143,8 @@ js/lattice.js       lattice water model (three hands per molecule), Monte Carlo
 js/<name>.js        one file per Bond Lab instrument
 js/life/draw.js     how an organic molecule looks: lettered atoms, single/double/triple bonds,
                     rings, functional-group pills, fatty tails, and the four monomers
+js/life/geom.js     3D positions for a molecule from a plain atom-and-bond list (tetrahedral, staggered)
+js/life/fold3.js    the 3D bead chain behind Fold
 js/life/lipid.js    amphiphiles in implicit water, for Two Faces
 js/life/quiz.js     the Life Lab's 30 challenges
 js/life/<name>.js   one file per Life Lab instrument
@@ -196,6 +201,8 @@ And for the Life Lab:
 
   One thing it deliberately does not claim. A flat model like this does not reproduce a membrane freezing: measure how far a lipid actually travels in the cold and the kinked one comes out very slightly *slower*, which is the wrong way round. So the instrument never says "which one goes stiff first". It reads the thing underneath instead — how tightly the tails have managed to pack — where the model is both right and emphatic, a straight-tailed sheet packing about 1.5× tighter at every temperature. Tight packing is what being solid *is*, so the butter-and-olive-oil point still lands, and **Twins** carries the two molecules themselves.
 - **Four Hands** is real three-dimensional geometry, not a drawing of some. Spare hands are worked out from where an atom's neighbours already are — one neighbour gives three directions at the tetrahedral angle, staggered against the grandparent so chains zigzag; two give the pair left over either side of their plane; three give the one gap — so a bare atom, a chain end, a branch point and a ring corner all come out of the same few lines. A twist is a Rodrigues rotation of everything past the bond, about that bond's own axis. What it does not do is relax: bond lengths are all 1 and angles are all ideal, nothing repels anything, and a ring is placed rather than found. It is a model of what carbon's hands allow, not of what a molecule settles into.
+- **Fold** is a chain of beads in three dimensions with one rule — greasy beads go together, wet ones do not mind — plus the backbone's own stiffness. Heat scales the greasy attraction nearly to nothing, so the chain opens and cannot find its way back until it is cooled; pulling it straight and letting go refolds it. `tools/check-fold.js` checks it folds with its greasy beads inside, that an all-wet chain stays loose, that an all-greasy one is tighter, that heat opens it and cooked links persist, and that a pulled chain refolds, across three seeds. It is a toy chain: there is no real protein's sequence, no secondary structure, and the compactness numbers are chosen so the difference is plain, not measured.
+- **The 3D panels** (water's lone pairs in The Molecule, real ice in Float, the double helix in Letters, the bilayer/micelle/droplet in Two Faces) are drawn from real geometry, not decoration, but are not simulations. Ice is hexagonal ice Ih laid out from its unit cell (a = 4.52 Å, c = 7.37 Å, nearest oxygens 2.76 Å apart), so the channels you can look down are genuinely there. The melt slider is a picture of the lattice slumping into its own holes — each molecule drifts toward the nearest channel and starts to wobble — with the density read off the real 0.917 → 1.00 g/cm³; it is not a molecular-dynamics melt.
 - **Sweet** and **Letters** are models of shape, not simulations. Sweet's two chain geometries are the real reason starch coils and cellulose does not, drawn rather than computed. Letters tests a pair on two things — one double ring facing one single ring, and hydrogen-bond donors facing acceptors all along the edge — which is enough to leave exactly A–T and G–C standing out of the ten, and is the real reason; but it is a peg-and-hole cartoon of it.
 
 ## Checks
@@ -208,6 +215,7 @@ node tools/check-water2d.js     # the flat water model (add --sweep for the temp
 node tools/check-drude.js       # dispersion force
 node tools/check-lattice.js     # density peaks mid-range for water-like, never for no-hands
 node tools/check-enzyme.js      # Hurry Up reproduces the bench lab's three tubes
+node tools/check-fold.js       # a chain folds greasy-in, heat opens it, a pulled chain refolds, over several seeds
 node tools/check-lipid.js       # lipids make what the chapter says they make, over several seeds
 node tools/check-contrast.js    # WCAG contrast of the tokens in all four themes
 node tools/bundle.js            # one-file build (add --life for the other lab)
