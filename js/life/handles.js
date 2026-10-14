@@ -98,17 +98,23 @@
   BL.register({
     id: 'handles', field: 'carbon', order: 1, name: 'Handles',
     tagline: 'Bolt a group on and the molecule gets a job.',
-    lede: 'Two carbons with six spare hands. Pick a group from the panel and click a hand to bolt it on. The readouts say what you have just made, whether it will mix with water, whether it turns water sour, and — at the bottom — what it could now join to and what that bond would be called.',
+    lede: 'Two carbons with six spare hands, in three dimensions — drag to turn it over. Pick a group from the panel and tap a hand to bolt it on; tap it again to take it off. The readouts say what you have just made, whether it will mix with water, whether it turns water sour, and — at the bottom — what it could now join to and what that bond would be called.',
     art, goals: STEPS,
 
     mount({ stage: stageHost, aux, dock }) {
       /* Six sockets: three on each carbon, at the hands that are not already
-         holding the other carbon. Same plus-sign geometry as Four Hands. */
-      const SOCK = [
-        { c: 0, a: Math.PI }, { c: 0, a: -Math.PI / 2 }, { c: 0, a: Math.PI / 2 },
-        { c: 1, a: 0 }, { c: 1, a: -Math.PI / 2 }, { c: 1, a: Math.PI / 2 },
-      ];
-      const S = { g: SOCK.map(() => 'H'), paint: 'hydroxyl', hint: true, hits: [], W: null, t: 0, seen: new Set() };
+         holding the other carbon. Real geometry: each carbon's three spare
+         hands sit 109.5° from the bond between them, and the two carbons are
+         staggered by 60° so the hydrogens do not eclipse one another. Turn it
+         over and you can see why a model drawn on paper has to cheat. */
+      const ST = Math.sqrt(8) / 3;          // sin of the tetrahedral angle; the spare hands lean 1/3 away from the bond
+      const SOCK = [0, 1, 2, 3, 4, 5].map((k) => {
+        const c = k < 3 ? 0 : 1, j = k % 3;
+        const phi = (j * 2 * Math.PI) / 3 + (c ? Math.PI / 3 : 0) + 0.35;
+        return { c, d: { x: (c ? 1 : -1) / 3, y: ST * Math.cos(phi), z: ST * Math.sin(phi) } };
+      });
+      const CARB = [{ x: -0.55, y: 0, z: 0 }, { x: 0.55, y: 0, z: 0 }];
+      const S = { g: SOCK.map(() => 'H'), paint: 'hydroxyl', hint: true, hits: [], hover: -1, W: null, t: 0, seen: new Set() };
 
       const stage = BL.stage(stageHost, '8 / 5', {
         label: 'A two-carbon molecule with six spare hands. Each hand holds a group, drawn as a labelled pill. Pick a group in the side panel and click a hand to bolt it on.',
@@ -139,7 +145,8 @@
       });
 
       function apply(i) {
-        S.g[i] = S.paint;
+        // tapping a socket that already holds the group you are painting takes it off again
+        S.g[i] = S.g[i] === S.paint && S.paint !== 'H' ? 'H' : S.paint;
         S.hint = false;
         groups().forEach((k) => S.seen.add(k));
         check(); say();
@@ -231,14 +238,17 @@
         return true;
       }
 
-      /* ---------------- picking ---------------- */
-      stage.canvas.addEventListener('pointerdown', (e) => {
-        const r = stage.canvas.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
-        for (const hit of S.hits) if (Math.hypot(hit.x - mx, hit.y - my) < hit.r) { apply(hit.i); return; }
-      });
-      stage.canvas.addEventListener('pointermove', (e) => {
-        const r = stage.canvas.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
-        stage.canvas.style.cursor = S.hits.some((hit) => Math.hypot(hit.x - mx, hit.y - my) < hit.r) ? 'pointer' : 'default';
+      /* ---------------- picking and turning ---------------- */
+      const sockAt = (p) => {
+        let best = -1, bd = 1e9;
+        S.hits.forEach((hh) => { const d = Math.hypot(hh.x - p.x, hh.y - p.y); if (d < hh.r + 8 && d < bd) { bd = d; best = hh.i; } });
+        return best;
+      };
+      const V = BL.view3d(stage.canvas, {
+        yaw: 0.5, pitch: 0.28, auto: 0.3,
+        onturn: () => { S.hint = false; },
+        hover: (p) => { S.hover = p ? sockAt(p) : -1; stage.canvas.style.cursor = S.hover >= 0 ? 'pointer' : ''; },
+        tap: (p) => { const i = sockAt(p); if (i >= 0) apply(i); },
       });
 
       /* ---------------- words ---------------- */
@@ -281,27 +291,41 @@
         S.t += dt;
         ctx.clearRect(0, 0, cw, ch);
         if (!cw) return;
-        const u = clamp(Math.min(cw / 9.4, ch / 6.2), 14, 46);
-        const cx = cw / 2, cy = ch / 2;
-        const bx = [cx - u * 0.9, cx + u * 0.9], R = u * 0.62, L = u * 1.75;
+        V.step(dt);
+        V.frame(cw, ch, 2.15, { x: 0, y: 0, z: 0 });
+        const sc = V.scale, R = sc * 0.34;
         S.hits = [];
+        const add3 = BL.v3.add, mul3 = BL.v3.mul;
+        const QC = CARB.map((p) => V.project(p));
 
-        O.bond(ctx, bx[0], cy, bx[1], cy, { width: R * 0.5 });
-        SOCK.forEach((s, i) => {
-          const px = bx[s.c] + Math.cos(s.a) * L, py = cy + Math.sin(s.a) * L;
-          const g = GROUPS[S.g[i]];
-          O.bond(ctx, bx[s.c], cy, px, py, { width: R * 0.34, alpha: S.g[i] === 'H' ? 0.3 : 0.65 });
-          if (S.g[i] === 'H') {
-            O.atom(ctx, px, py, R * 0.46, 'H');
-            S.hits.push({ x: px, y: py, r: R * 0.46 + 12, i });
-          } else {
-            const box = O.pill(ctx, px, py, '—' + g.tag, { color: pal[g.color] || pal.ui, size: Math.max(13, u * 0.36) });
-            S.hits.push({ x: px, y: py, r: Math.max(box.w, box.h) / 2 + 6, i });
-          }
+        V.add((QC[0].z + QC[1].z) / 2, () => BL.stick3(ctx, QC[0], QC[1], R * 0.5, { ta: BL.sphereR(QC[0], R) * 0.9, tb: BL.sphereR(QC[1], R) * 0.9 }));
+
+        SOCK.forEach((sk, i) => {
+          const g = GROUPS[S.g[i]], isH = S.g[i] === 'H';
+          const over = S.hover === i;
+          const reach = isH ? 0.95 : 1.5;
+          const q = V.project(add3(CARB[sk.c], mul3(sk.d, reach)));
+          const bond = BL.sphereR(QC[sk.c], R);
+          V.add(q.z, () => {
+            if (isH) {
+              BL.stick3(ctx, QC[sk.c], q, R * 0.3, { color: BL.alpha(pal.fg, 0.16 + 0.34 * q.d), ta: bond * 0.9, tb: BL.sphereR(q, R * 0.5) * 0.9 });
+              BL.sphere3(ctx, q, R * 0.5 * (over ? 1.3 : 1), pal.pos, 'H', over ? { ring: pal.ui } : null);
+              S.hits.push({ x: q.x, y: q.y, r: R * 0.5 + 12, i });
+            } else {
+              BL.stick3(ctx, QC[sk.c], q, R * 0.34, { color: BL.alpha(pal.fg, 0.2 + 0.5 * q.d), ta: bond * 0.9 });
+              ctx.save();
+              ctx.globalAlpha = 0.55 + 0.45 * q.d;
+              const box = O.pill(ctx, q.x, q.y, '—' + g.tag, { color: pal[g.color] || pal.ui, size: Math.max(13, sc * 0.3) * (0.82 + 0.3 * q.d) });
+              if (over) { ctx.lineWidth = 3; ctx.strokeStyle = pal.ui; ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(q.x - box.w / 2 - 4, q.y - box.h / 2 - 4, box.w + 8, box.h + 8, box.h / 2 + 4); else ctx.rect(q.x - box.w / 2 - 4, q.y - box.h / 2 - 4, box.w + 8, box.h + 8); ctx.stroke(); }
+              ctx.restore();
+              S.hits.push({ x: q.x, y: q.y, r: Math.max(box.w, box.h) / 2 + 4, i });
+            }
+          });
         });
-        O.atom(ctx, bx[0], cy, R, 'C');
-        O.atom(ctx, bx[1], cy, R, 'C');
+        QC.forEach((q) => V.add(q.z, () => BL.sphere3(ctx, q, R, pal.el.C, 'C')));
+        V.flush();
 
+        V.cue(ctx, pal);
         if (S.hint && !BL.reduced) {
           const t = (performance.now() / 600) % TAU;
           const hit = S.hits.find((x) => S.g[x.i] === 'H');
@@ -309,7 +333,7 @@
             ctx.lineWidth = 2.5; ctx.strokeStyle = BL.alpha(pal.ui, 0.5 + 0.4 * Math.sin(t));
             ctx.beginPath(); ctx.arc(hit.x, hit.y, hit.r + 3 * Math.sin(t), 0, TAU); ctx.stroke();
           }
-          BL.label(ctx, 'pick a handle, then click a hydrogen', cw / 2, 24, { font: BL.font(700, 14), border: pal.ui });
+          BL.label(ctx, 'pick a handle, then tap a hydrogen · drag to turn', cw / 2, 24, { font: BL.font(700, 14), border: pal.ui });
         }
         drawCup();
       }

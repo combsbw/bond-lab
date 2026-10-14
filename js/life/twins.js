@@ -15,9 +15,11 @@
   const O = BL.org;
   const TAU = Math.PI * 2;
 
-  /* Each pair: two arrangements of one parts list.
-     Positions are in bond-lengths, laid out by hand so both forms read
-     clearly, and the atom list is identical between the two by construction. */
+  /* Each pair: two arrangements of one parts list. Atoms are a list of
+     elements and a list of bonds; where everything sits in three dimensions is
+     worked out by BL.geom, which is the same tetrahedral geometry Four Hands
+     builds with. Atom i in one form is atom i in the other, so switching can
+     slide each atom to its new place rather than cutting. */
   const PAIRS = [
     {
       id: 'oxy', name: 'Where the oxygen sits', parts: '2 carbon · 6 hydrogen · 1 oxygen', formula: 'C₂H₆O',
@@ -26,10 +28,10 @@
       forms: [
         { name: 'Ethanol', is: 'the alcohol in a drink and in hand sanitiser',
           bp: 351, mix: 1, note: 'Its oxygen is on the end, carrying a hydrogen. That hydrogen reaches the next molecule, and the next, and water.',
-          atoms: [['C', -1.4, 0.35], ['C', -0.2, -0.35], ['O', 1.0, 0.35]], h: [[0, 3], [1, 2], [2, 1]], bonds: [[0, 1], [1, 2]] },
+          els: ['C', 'C', 'O'], bonds: [[0, 1, 1], [1, 2, 1]] },
         { name: 'Dimethyl ether', is: 'a propellant — the gas that pushes paint out of a spray can',
           bp: 249, mix: 0.18, note: 'Its oxygen sits in the middle with a carbon on each side. There is no hydrogen on it, so there is nothing to reach out with.',
-          atoms: [['C', -1.4, 0.35], ['O', -0.2, -0.35], ['C', 1.0, 0.35]], h: [[0, 3], [1, 0], [2, 3]], bonds: [[0, 1], [1, 2]] },
+          els: ['C', 'O', 'C'], bonds: [[0, 1, 1], [1, 2, 1]] },
       ],
     },
     {
@@ -39,10 +41,10 @@
       forms: [
         { name: 'Butane', is: 'camping-gas canisters and the fuel in a cheap lighter',
           bp: 272.5, mix: 0.02, note: 'Four carbons in a line. Two of these lie against each other the whole way down.',
-          atoms: [['C', -1.6, 0.4], ['C', -0.55, -0.3], ['C', 0.5, 0.4], ['C', 1.55, -0.3]], h: [[0, 3], [1, 2], [2, 2], [3, 3]], bonds: [[0, 1], [1, 2], [2, 3]] },
+          els: ['C', 'C', 'C', 'C'], bonds: [[0, 1, 1], [1, 2, 1], [2, 3, 1]] },
         { name: 'Isobutane', is: 'the gas in a fridge, and in a lighter meant to work in the cold',
           bp: 261, mix: 0.02, note: 'Same four carbons, but one has moved to the middle. The molecule is now a lump rather than a line.',
-          atoms: [['C', 0, -0.1], ['C', -1.2, 0.55], ['C', 1.2, 0.55], ['C', 0, -1.35]], h: [[0, 1], [1, 3], [2, 3], [3, 3]], bonds: [[0, 1], [0, 2], [0, 3]] },
+          els: ['C', 'C', 'C', 'C'], bonds: [[0, 1, 1], [0, 2, 1], [0, 3, 1]] },
       ],
     },
     {
@@ -98,7 +100,7 @@
   BL.register({
     id: 'twins', field: 'carbon', order: 2, name: 'Twins',
     tagline: 'Identical parts list. Different substance.',
-    lede: 'Three pairs of molecules. Each pair is built from exactly the same atoms in exactly the same numbers — the counter under the picture proves it and never moves. Switch between the two forms and read what changed anyway.',
+    lede: 'Three pairs of molecules, in three dimensions — drag to turn them over. Each pair is built from exactly the same atoms in exactly the same numbers; the counter under the picture proves it and never moves. Switch between the two forms, tap any atom to ask what it is doing, and read what changed anyway.',
     art, goals: STEPS,
 
     mount({ stage: stageHost, aux, dock }) {
@@ -115,7 +117,7 @@
       /* ---------------- dock ---------------- */
       const pairBtns = PAIRS.map((p, i) => h('button', {
         type: 'button', class: 'chip', 'aria-pressed': String(S.p === i),
-        onclick: () => { S.p = i; S.f = 0; S.t = 1; S.from = null; sync(); },
+        onclick: () => { S.p = i; S.f = 0; S.t = 1; S.from = null; S.pick = -1; sync(); setView(); },
       }, p.name));
       dock.appendChild(h('section', {},
         h('h2', {}, 'The pair'),
@@ -136,7 +138,7 @@
 
       function switchTo(i) {
         if (i === S.f) return;
-        S.from = S.f; S.f = i; S.t = 0; S.hint = false;
+        S.from = S.f; S.f = i; S.t = 0; S.hint = false; S.pick = -1;
         steps.done('count');
         if (S.p === 0) { steps.done('bp'); steps.done('mix'); }
         if (S.p === 1) steps.done('vdw');
@@ -183,87 +185,171 @@
           h('b', {}, ''), h('span', { class: 'muted' }, 'Top bar: the temperature it boils at — how hard the molecules hold on to each other. Lower bar: how much of it mixes into water.')));
       }
 
-      /* ---------------- drawing ---------------- */
-      /* The long-chain pair is drawn as a chain rather than as atoms, because
-         eighteen carbons as eighteen lettered spheres is unreadable and the
-         thing worth seeing is the bend. */
-      function drawFat(cw, ch, pal, kinkAmount) {
-        const cy = ch * 0.52, u = clamp(Math.min(cw / 15, ch / 7), 10, 30);
-        const head = cw * 0.12;
-        O.atom(ctx, head, cy, u * 0.6, 'C', { color: pal.pos, text: 'O' });
-        BL.label(ctx, 'the acid head', head, cy - u * 1.5, { font: BL.font(600, 13) });
-        // first half, straight
-        let x = head + u * 0.7, y = cy, ang = 0;
-        const seg = u * 0.62;
-        for (let i = 0; i < 7; i++) {
-          const nx = x + Math.cos(ang) * seg, ny = y + (i & 1 ? 1 : -1) * seg * 0.36;
-          O.bond(ctx, x, y, nx, ny, { width: u * 0.26, color: pal.eTail });
-          x = nx; y = ny;
-        }
-        // the double bond: the one that will not turn
-        const dx = x + seg * 1.3, dy = y + (kinkAmount ? seg * 0.1 : -seg * 0.3);
-        O.bond(ctx, x, y, dx, dy, { order: 2, width: u * 0.3, color: pal.electron });
-        BL.label(ctx, 'the double bond', (x + dx) / 2, dy + u * 1.7, { font: BL.font(700, 13), border: pal.electron });
-        // second half, leaving on one side or the other
-        let bend = kinkAmount * 1.05;
-        x = dx; y = dy; ang = bend;
-        for (let i = 0; i < 8; i++) {
-          const nx = x + Math.cos(ang) * seg, ny = y + Math.sin(ang) * seg + (i & 1 ? 1 : -1) * seg * 0.3 * Math.cos(ang);
-          O.bond(ctx, x, y, nx, ny, { width: u * 0.26, color: pal.eTail });
-          x = nx; y = ny;
-        }
-        BL.label(ctx, kinkAmount > 0.5 ? 'kinked — it cannot stack' : 'straight — it stacks like a brick',
-          cw / 2, ch - 44, { font: BL.font(700, 14), border: kinkAmount > 0.5 ? pal.ui : pal.pos });
+      /* ---------------- the molecules, in three dimensions ---------------- */
+      const cache = new Map();
+      const mol = (f) => { if (!cache.has(f)) cache.set(f, BL.geom.layout(f.els, f.bonds)); return cache.get(f); };
+      const ELCOL = { C: () => BL.pal.eC, O: () => BL.pal.neg, H: () => BL.pal.pos, N: () => BL.pal.eN };
+      let V = null;
+
+      /* Tapping an atom says what it is doing for the molecule. For the oxygen
+         that is the whole lesson: does it have a hydrogen to reach out with? */
+      function describe(m, i) {
+        const el = m.els[i];
+        const hs = m.h.filter((x) => x.of === i).length;
+        const nb = m.bonds.filter(([a, b]) => a === i || b === i).length;
+        if (el === 'O') return hs ? 'an oxygen carrying a hydrogen — a hydrogen bond waiting to happen' : 'an oxygen buried between two carbons — nothing on it to reach out with';
+        if (nb >= 3) return 'a carbon with three carbons on it — the branch point';
+        return 'a carbon, ' + nb + (nb === 1 ? ' neighbour, ' : ' neighbours, ') + hs + ' hydrogens';
       }
+
+      /* The fat. Fourteen carbons is enough to show the shape without
+         eighteen lettered spheres being unreadable. kink is 0 for trans, 1 for
+         cis, and both halves are real zigzags.
+
+         Trans: the zigzag carries straight on through the double bond. Cis:
+         the two chain bonds that meet the double bond leave on the same side,
+         which turns the whole second half through 60° — the zigzag's average
+         direction changes, not just its phase. That bend is the thing that
+         will not straighten out, and it is why these cannot lie flat against
+         each other. */
+      const NF = 14, DB = 6, ZZ = 0.52, BEND = Math.PI / 3;
+      function fatPoints(kink) {
+        const alt = (k) => (k % 2 ? -ZZ : ZZ);
+        const pts = [{ x: 0, y: 0, z: 0 }];
+        let x = 0, y = 0;
+        for (let k = 0; k < NF - 1; k++) {
+          const a = k <= DB ? alt(k) : alt(k) + (BEND + alt(k - 1) - alt(k)) * kink;
+          x += Math.cos(a); y += Math.sin(a);
+          pts.push({ x, y, z: 0 });
+        }
+        return pts;
+      }
+      function clashes(pts, dy) {
+        const out = [];
+        pts.forEach((p, i) => pts.forEach((q, j) => {
+          const d = Math.hypot(p.x - q.x, p.y - (q.y + dy));
+          if (d < 0.78 && Math.abs(i - j) > 0) out.push({ x: (p.x + q.x) / 2, y: (p.y + q.y + dy) / 2, z: 0 });
+        }));
+        return out;
+      }
+
+      V = BL.view3d(stage.canvas, {
+        yaw: 0.55, pitch: 0.28, auto: 0.3,
+        onturn: () => { S.hint = false; },
+        hover: (pt) => { S.hov = pt ? atomAt(pt) : -1; stage.canvas.style.cursor = S.hov >= 0 ? 'pointer' : ''; },
+        tap: (pt) => { const i = atomAt(pt); S.pick = i >= 0 && !pair().forms[0].tail ? i : -1; S.hint = false; },
+      });
+      S.pick = -1; S.hov = -1; S.atomHits = [];
+      /* The fat pair is a point about two shapes lying side by side, and seen
+         end-on three chains are one chain. So it opens face-on and does not
+         spin by itself; turn it and the thickness is there to find. The
+         small molecules open at a three-quarter view and turn gently. */
+      function setView() {
+        const fat = !!pair().forms[0].tail;
+        V.auto = fat ? 0 : 0.3;
+        V.home = fat ? { yaw: 0.12, pitch: 0.12 } : { yaw: 0.55, pitch: 0.28 };
+        V.userTurned = false; V.turned = 0;
+        V.goal = { yaw: V.home.yaw, pitch: V.home.pitch, zoom: 1 };
+      }
+      const atomAt = (pt) => {
+        let best = -1, bd = 1e9;
+        S.atomHits.forEach((a) => { const d = Math.hypot(a.x - pt.x, a.y - pt.y); if (d < a.r + 8 && d < bd) { bd = d; best = a.i; } });
+        return best;
+      };
 
       function frame(dt) {
         const pal = BL.pal, cw = stage.w, ch = stage.h;
         ctx.clearRect(0, 0, cw, ch);
         if (!cw) return;
+        V.step(dt);
         S.t = Math.min(1, S.t + dt * (BL.reduced ? 4 : 2.2));
         const ease = S.t * S.t * (3 - 2 * S.t);
         const p = pair();
+        S.atomHits = [];
 
         if (p.forms[0].tail) {
+          /* the fat: three copies side by side. Straight, they lie neatly
+             against each other. Kinked, they cannot, and the places where
+             they run into each other light up. */
           const want = S.f === 0 ? 1 : 0, had = S.from == null ? want : (S.from === 0 ? 1 : 0);
-          drawFat(cw, ch, pal, had + (want - had) * ease);
-        } else {
-          const A = p.forms[S.from == null ? S.f : S.from], B = p.forms[S.f];
-          const u = clamp(Math.min(cw / 5.2, (ch - 70) / 3.2), 26, 104);
-          const cx = cw / 2, cy = ch * 0.46;
-          const at = (frm, i) => frm.atoms[i];
-          const lerp = (i) => {
-            const a = at(A, i), b = at(B, i);
-            return [cx + (a[1] + (b[1] - a[1]) * ease) * u, cy + (a[2] + (b[2] - a[2]) * ease) * u];
-          };
-          const n = B.atoms.length;
-          // bonds morph too: the ones that are breaking fade out, the new ones fade in
-          const key = (bd) => bd[0] + '-' + bd[1];
-          const inA = new Set(A.bonds.map(key)), inB = new Set(B.bonds.map(key));
-          const all = [...new Set([...A.bonds.map(key), ...B.bonds.map(key)])];
-          all.forEach((k) => {
-            const [i, j] = k.split('-').map(Number);
-            const a = lerp(i), b = lerp(j);
-            const was = inA.has(k), will = inB.has(k);
-            const al = was && will ? 0.8 : was ? 0.8 * (1 - ease) : 0.8 * ease;
-            O.bond(ctx, a[0], a[1], b[0], b[1], { width: u * 0.17, alpha: al });
-          });
-          // hydrogens, fanned off each heavy atom
-          for (let i = 0; i < n; i++) {
-            const pos = lerp(i);
-            const ha = (A.h.find((x) => x[0] === i) || [i, 0])[1], hb = (B.h.find((x) => x[0] === i) || [i, 0])[1];
-            const cnt = Math.round(ha + (hb - ha) * ease);
-            const base = Math.atan2(pos[1] - cy, pos[0] - cx) || -Math.PI / 2;
-            for (let k = 0; k < cnt; k++) {
-              const ang = base + (k - (cnt - 1) / 2) * 0.72;
-              const hx = pos[0] + Math.cos(ang) * u * 0.62, hy = pos[1] + Math.sin(ang) * u * 0.62;
-              O.bond(ctx, pos[0], pos[1], hx, hy, { width: u * 0.1, alpha: 0.3 });
-              O.atom(ctx, hx, hy, u * 0.17, 'H', { label: false });
+          const kink = had + (want - had) * ease;
+          const pts = fatPoints(kink);
+          const mid = pts.reduce((t, q) => ({ x: t.x + q.x, y: t.y + q.y, z: 0 }), { x: 0, y: 0, z: 0 });
+          mid.x /= pts.length; mid.y = 0.5;
+          const rows = [-1.3, 0, 1.3];
+          // framed to hold BOTH shapes, so it does not rescale while it morphs
+          const both = fatPoints(0).concat(fatPoints(1)).flatMap((q) => [q, { x: q.x, y: q.y + 2.6, z: 0 }]);
+          const lo = { x: Math.min(...both.map((q) => q.x)), y: Math.min(...both.map((q) => q.y)) };
+          const hi = { x: Math.max(...both.map((q) => q.x)), y: Math.max(...both.map((q) => q.y)) };
+          V.frame(cw, ch, Math.max(hi.x - lo.x, (hi.y - lo.y) * 1.6) / 2 + 0.4, { x: (lo.x + hi.x) / 2, y: (lo.y + hi.y) / 2 - 0.3, z: 0 });
+          const R = V.scale * 0.2;
+          let clash = 0;
+          rows.forEach((off, ri) => {
+            const Q = pts.map((q) => V.project({ x: q.x, y: q.y + off * 1.0, z: ri * 0.0 }));
+            for (let i = 0; i < Q.length - 1; i++) {
+              const dbl = i === DB;
+              V.add((Q[i].z + Q[i + 1].z) / 2, () => BL.stick3(ctx, Q[i], Q[i + 1], R * (dbl ? 0.62 : 0.5), { order: dbl ? 2 : 1, color: dbl ? pal.electron : BL.alpha(pal.eTail, 0.45 + 0.5 * Q[i].d), ta: BL.sphereR(Q[i], R) * 0.8, tb: BL.sphereR(Q[i + 1], R) * 0.8 }));
             }
-          }
-          for (let i = 0; i < n; i++) {
-            const pos = lerp(i);
-            O.atom(ctx, pos[0], pos[1], u * 0.3, B.atoms[i][0]);
+            Q.forEach((q, i) => V.add(q.z, () => BL.sphere3(ctx, q, R, i === 0 ? pal.pos : pal.eTail, i === 0 ? 'O' : null)));
+          });
+          // where one chain runs into the next
+          const one = fatPoints(kink);
+          [1.3, 2.6].forEach((dy) => clashes(one, dy).forEach((c) => {
+            clash++;
+            const q = V.project(c);
+            V.add(q.z + 0.5, () => { ctx.lineWidth = 3; ctx.strokeStyle = BL.alpha(pal.pos, 0.85); ctx.beginPath(); ctx.arc(q.x, q.y, R * 1.15, 0, TAU); ctx.stroke(); });
+          }));
+          V.flush();
+          const dbq = V.project({ x: (pts[DB].x + pts[DB + 1].x) / 2, y: pts[DB].y - 0.2 + rows[0], z: 0 });
+          BL.label(ctx, 'the double bond — it will not turn', dbq.x, 26, { font: BL.font(700, 13), border: pal.electron });
+          BL.label(ctx, kink > 0.5 ? 'kinked — they run into each other (red), so they cannot stack' : 'straight — they lie against each other, so they stack',
+            cw / 2, ch - 76, { font: BL.font(700, 14), border: kink > 0.5 ? pal.pos : pal.ui });
+        } else {
+          const A = mol(p.forms[S.from == null ? S.f : S.from]), B = mol(p.forms[S.f]);
+          const mid = { x: (A.mid.x + (B.mid.x - A.mid.x) * ease) * 0, y: 0, z: 0 };
+          const rad = A.radius + (B.radius - A.radius) * ease;
+          const lerp = (i) => BL.v3.add(A.pos[i], BL.v3.mul(BL.v3.sub(B.pos[i], A.pos[i]), ease));
+          // centre on the heavy atoms so the picture does not wander as it morphs
+          const cen = A.pos.map((_, i) => lerp(i)).reduce((t, q) => BL.v3.add(t, q), { x: 0, y: 0, z: 0 });
+          const n = A.pos.length;
+          V.frame(cw, ch, rad + 0.15, { x: cen.x / n, y: cen.y / n, z: cen.z / n });
+          const R = V.scale * 0.3, RH = R * 0.5;
+          const P = A.pos.map((_, i) => V.project(lerp(i)));
+          // bonds: the ones that are breaking fade out, the new ones fade in
+          const key = (bd) => Math.min(bd[0], bd[1]) + '-' + Math.max(bd[0], bd[1]);
+          const inA = new Set(A.bonds.map(key)), inB = new Set(B.bonds.map(key));
+          [...new Set([...inA, ...inB])].forEach((k) => {
+            const [i, j] = k.split('-').map(Number);
+            const was = inA.has(k), will = inB.has(k);
+            const al = was && will ? 1 : was ? 1 - ease : ease;
+            V.add((P[i].z + P[j].z) / 2, () => { ctx.save(); ctx.globalAlpha = al; BL.stick3(ctx, P[i], P[j], R * 0.46, { ta: BL.sphereR(P[i], R) * 0.9, tb: BL.sphereR(P[j], R) * 0.9 }); ctx.restore(); });
+          });
+          // hydrogens: the old ones fade out where they were, the new ones fade in
+          // before any switch there is only one molecule, so only one layer
+          (S.from == null ? [[B, 1]] : [[A, 1 - ease], [B, ease]]).forEach(([M, al]) => {
+            if (al < 0.02) return;
+            M.h.forEach((hh) => {
+              const par = P[hh.of], q = V.project(BL.v3.add(lerp(hh.of), BL.v3.mul(hh.d, 0.72)));
+              V.add(q.z, () => {
+                ctx.save(); ctx.globalAlpha = al;
+                BL.stick3(ctx, par, q, R * 0.26, { color: BL.alpha(pal.fg, 0.15 + 0.3 * q.d), ta: BL.sphereR(par, R) * 0.9, tb: BL.sphereR(q, RH) * 0.9 });
+                BL.sphere3(ctx, q, RH, pal.pos, 'H');
+                ctx.restore();
+              });
+            });
+          });
+          // the heavy atoms; an atom that changes element fades from one colour to the other
+          P.forEach((q, i) => {
+            const ea = A.els[i], eb = B.els[i];
+            const col = ea === eb ? ELCOL[ea]() : BL.mixHex(ELCOL[ea](), ELCOL[eb](), ease);
+            const ring = S.pick === i ? pal.ui : S.hov === i ? BL.alpha(pal.ui, 0.6) : null;
+            V.add(q.z, () => BL.sphere3(ctx, q, R * (ea !== eb && ease > 0.2 && ease < 0.8 ? 1.12 : 1), col, ease < 0.5 ? ea : eb, ring ? { ring } : null));
+            S.atomHits.push({ x: q.x, y: q.y, r: BL.sphereR(q, R), i });
+          });
+          V.flush();
+          if (S.pick >= 0 && S.pick < n) {
+            const q = P[S.pick];
+            BL.label(ctx, describe(B, S.pick), cw / 2, 26, { font: BL.font(700, 14), border: pal.ui });
           }
         }
 
@@ -271,8 +357,9 @@
         const plate = BL.label(ctx, p.parts, cw / 2, ch - 18, { font: BL.font(800, 15), border: pal.ui, pad: 12 });
         BL.label(ctx, 'unchanged, both ways round', cw / 2, plate.y - 12, { font: BL.font(600, 13), bg: false, color: pal.muted });
 
+        V.cue(ctx, pal);
         if (S.hint && !BL.reduced) {
-          BL.label(ctx, 'switch to the other form in the panel →', cw / 2, 24, { font: BL.font(700, 14), border: pal.ui });
+          BL.label(ctx, 'drag to turn it · tap an atom · switch form in the panel →', cw / 2, 24, { font: BL.font(700, 14), border: pal.ui });
         }
       }
 

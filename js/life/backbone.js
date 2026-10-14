@@ -103,8 +103,7 @@
         ring: false,
         sel: -1,
         twist: 0, twistTried: 0,
-        yaw: 0.6, pitch: 0.3, spun: 0, turned: false,
-        hint: true, hits: [], bhits: [],
+        hint: true, hits: [], bhits: [], hover: null,
       };
 
       const stage = BL.stage(stageHost, '8 / 5', {
@@ -112,6 +111,7 @@
         focusable: true,
       });
       const ctx = stage.ctx;
+      let V = null;
 
       /* ---------------- the skeleton ---------------- */
       function reset(el) {
@@ -276,7 +276,7 @@
       function check() {
         const n = S.atoms.length;
         const straight = !S.ring && !S.atoms.some((_, i) => neighbours(i).length > 2);
-        if (S.spun > 1.6) steps.done('turn');
+        if (V && V.turned > 1.6) steps.done('turn');
         if (S.el === 'C' && n >= 6 && straight) steps.done('chain');
         if (S.el === 'C' && n >= 5 && !S.ring && S.atoms.some((_, i) => neighbours(i).length > 2)) steps.done('branch');
         if (S.el === 'O' && n >= 3) steps.done('starved');
@@ -350,34 +350,24 @@
         h('p', { class: 'hint' }, 'Hydrogen, carbon, nitrogen and oxygen are about 96% of your mass. The one with four hands is the one that gets to be the backbone. And the four hands are 109.5° apart, not 90° — turn the molecule over and you can see it.')));
 
       /* ---------------- turning, growing, picking ---------------- */
-      BL.drag(stage.canvas, {
-        pick: (p) => ({ x0: p.x, y0: p.y, px: p.x, py: p.y, moved: 0 }),
-        move: (hd, p) => {
-          const dx = p.x - hd.px, dy = p.y - hd.py;
-          hd.px = p.x; hd.py = p.y;
-          hd.moved += Math.abs(dx) + Math.abs(dy);
-          if (hd.moved < 5) return;          // same threshold a tap uses, so one gesture is never both
-          S.yaw += dx * 0.011;
-          S.pitch = clamp(S.pitch + dy * 0.011, -1.5, 1.5);
-          S.spun += (Math.abs(dx) + Math.abs(dy)) * 0.011;
-          S.turned = true; S.hint = false;
-          check();
-        },
-        end: (hd) => {
-          if (hd.moved >= 5) return;               // that was a turn, not a tap
+      const hitAt = (p) => {
+        for (const hit of S.hits) if (Math.hypot(hit.x - p.x, hit.y - p.y) < hit.r + 10) return { kind: 'h', hit };
+        for (const hit of S.bhits) if (Math.hypot(hit.x - p.x, hit.y - p.y) < 22) return { kind: 'b', hit };
+        return null;
+      };
+      V = BL.view3d(stage.canvas, {
+        yaw: 0.6, pitch: 0.3, auto: 0.35,
+        onturn: () => { S.hint = false; check(); },
+        hover: (p) => { S.hover = p ? hitAt(p) : null; stage.canvas.style.cursor = S.hover ? 'pointer' : ''; },
+        tap: (p) => {
           S.hint = false;
-          for (const hit of S.hits) if (Math.hypot(hit.x - hd.x0, hit.y - hd.y0) < hit.r + 9) { grow(hit.i, hit.dir); return; }
-          for (const hit of S.bhits) if (Math.hypot(hit.x - hd.x0, hit.y - hd.y0) < 20) { S.sel = hit.bi; S.twist = 0; twistIn.value = '0'; twistOut.textContent = '0°'; say(); return; }
+          const t = hitAt(p);
+          if (!t) return;
+          if (t.kind === 'h') grow(t.hit.i, t.hit.dir);
+          else { S.sel = t.hit.bi; S.twist = 0; twistIn.value = '0'; twistOut.textContent = '0°'; say(); }
         },
       });
       stage.canvas.addEventListener('keydown', (e) => {
-        const k = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] }[e.key];
-        if (k) {
-          e.preventDefault();
-          S.yaw += k[0] * 0.15; S.pitch = clamp(S.pitch + k[1] * 0.15, -1.5, 1.5);
-          S.spun += 0.15; S.turned = true; S.hint = false; check();
-          return;
-        }
         if (e.key === 'Enter' || e.key === ' ') {
           const i = S.atoms.length - 1, sp = slots(i);
           if (sp.length) { grow(i, sp[0]); e.preventDefault(); }
@@ -420,12 +410,9 @@
         const pal = BL.pal, cw = stage.w, ch = stage.h;
         ctx.clearRect(0, 0, cw, ch);
         if (!cw) return;
-        /* A slow turn until somebody takes over, so it is obvious at a glance
-           that this is a solid object and not a diagram. */
-        if (!S.turned && !BL.reduced) S.yaw += dt * 0.35;
+        V.step(dt);
 
         const pos = placed();
-        const cyaw = Math.cos(S.yaw), syaw = Math.sin(S.yaw), cp = Math.cos(S.pitch), sp = Math.sin(S.pitch);
         /* Fit to a sphere around the molecule's own middle, counting the
            hydrogens, which stick a bond-length further out. A sphere rather
            than a box because a box's size changes as the thing turns, and a
@@ -435,24 +422,13 @@
         const mid = mul(all.reduce(add, v(0, 0, 0)), 1 / all.length);
         let reach = 0.9;
         all.forEach((p) => { reach = Math.max(reach, len(sub(p, mid))); });
-        const sc = clamp(Math.min(cw - 40, ch - 76) / (reach * 2.1), 20, 170);
-        const mq = { x: mid.x * cyaw + mid.z * syaw, y: 0, z: -mid.x * syaw + mid.z * cyaw };
-        const cx = cw / 2 - mq.x * sc;
-        const cy = ch / 2 + 6 - (mid.y * cp - mq.z * sp) * sc;
-        const proj = (p) => {
-          const x1 = p.x * cyaw + p.z * syaw, z1 = -p.x * syaw + p.z * cyaw;
-          const y2 = p.y * cp - z1 * sp, z2 = p.y * sp + z1 * cp;
-          return { x: cx + x1 * sc, y: cy + y2 * sc, z: z2 };
-        };
-        const depth = (z) => clamp(0.5 + z / (reach * 2.1), 0.18, 1);
+        V.frame(cw, ch, reach, mid);
+        const sc = V.scale;
         const R = sc * 0.3, RH = R * 0.52;
 
         S.hits = []; S.bhits = [];
-        const P = pos.map(proj);
-
-        /* Everything goes into one list and comes out sorted back to front, so
-           what is in front really is drawn in front. */
-        const items = [];
+        const P = pos.map((p) => V.project(p));
+        const hov = S.hover;
 
         // the plane a double bond holds its two ends in
         if (S.sel >= 0 && S.bonds[S.sel].order === 2) {
@@ -462,8 +438,8 @@
           ends.forEach((i) => { near.push(pos[i]); neighbours(i).forEach((j) => { if (ends.indexOf(j) < 0) near.push(pos[j]); }); });
           slots(b.a, pos).forEach((d) => near.push(add(pos[b.a], mul(d, 0.72))));
           slots(b.b, pos).forEach((d) => near.push(add(pos[b.b], mul(d, 0.72))));
-          const zq = near.reduce((t, p) => t + proj(p).z, 0) / near.length;
-          items.push({ z: zq - 0.01, draw: () => {
+          const zq = near.reduce((t, p) => t + V.project(p).z, 0) / near.length;
+          V.add(zq - 0.01, () => {
             const axis = unit(sub(pos[b.b], pos[b.a]));
             let up = perp(axis);
             const sideRef = near.find((p) => len(cross(sub(p, pos[b.a]), axis)) > 0.2);
@@ -472,34 +448,30 @@
               const wp = sub(w, mul(axis, dot(w, axis)));
               if (len(wp) > 1e-5) up = unit(wp);
             }
-            const mid = mul(add(pos[b.a], pos[b.b]), 0.5);
+            const m = mul(add(pos[b.a], pos[b.b]), 0.5);
             const corners = [[-1.5, -1.1], [1.5, -1.1], [1.5, 1.1], [-1.5, 1.1]]
-              .map(([u2, w2]) => proj(add(mid, add(mul(axis, u2), mul(up, w2)))));
+              .map(([u2, w2]) => V.project(add(m, add(mul(axis, u2), mul(up, w2)))));
             ctx.beginPath();
             corners.forEach((q, k) => (k ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y)));
             ctx.closePath();
             ctx.fillStyle = BL.alpha(pal.ui, 0.13); ctx.fill();
             ctx.setLineDash([6, 5]); ctx.lineWidth = 2; ctx.strokeStyle = BL.alpha(pal.ui, 0.65); ctx.stroke(); ctx.setLineDash([]);
-          } });
+          });
         }
 
         // bonds
         S.bonds.forEach((b, bi) => {
           const qa = P[b.a], qb = P[b.b];
           const z = (qa.z + qb.z) / 2;
-          const picked = bi === S.sel;
-          items.push({ z, draw: () => {
-            const d = depth(z);
-            O.bond(ctx, qa.x, qa.y, qb.x, qb.y, {
-              order: b.order, width: R * 0.46 * (0.6 + 0.5 * d),
-              color: picked ? pal.ui : BL.alpha(pal.fg, 0.2 + 0.55 * d),
-            });
+          const picked = bi === S.sel, over = hov && hov.kind === 'b' && hov.hit.bi === bi;
+          V.add(z, () => {
+            BL.stick3(ctx, qa, qb, R * 0.46, { order: b.order, color: picked ? pal.ui : over ? BL.alpha(pal.ui, 0.7) : null, ta: BL.sphereR(qa, R) * 0.92, tb: BL.sphereR(qb, R) * 0.92 });
             const mx = (qa.x + qb.x) / 2, my = (qa.y + qb.y) / 2;
-            if (picked) {
-              ctx.lineWidth = 2.5; ctx.strokeStyle = pal.ui;
+            if (picked || over) {
+              ctx.lineWidth = 2.5; ctx.strokeStyle = picked ? pal.ui : BL.alpha(pal.ui, 0.6);
               ctx.beginPath(); ctx.arc(mx, my, R * 0.78, 0, TAU); ctx.stroke();
             }
-          } });
+          });
           S.bhits.push({ x: (qa.x + qb.x) / 2, y: (qa.y + qb.y) / 2, bi });
         });
 
@@ -507,26 +479,20 @@
         S.atoms.forEach((_, i) => {
           slots(i, pos).forEach((dir) => {
             const hp = add(pos[i], mul(dir, 0.72));
-            const q = proj(hp), qa = P[i];
-            items.push({ z: q.z, draw: () => {
-              const d = depth(q.z);
-              O.bond(ctx, qa.x, qa.y, q.x, q.y, { width: R * 0.26 * (0.6 + 0.5 * d), alpha: 0.18 + 0.28 * d });
-              O.atom(ctx, q.x, q.y, RH * (0.72 + 0.4 * d), 'H', { label: RH * d >= 9, color: BL.mix(pal.pos, pal.bg, 1 - d) });
-            } });
+            const q = V.project(hp), qa = P[i];
+            const over = hov && hov.kind === 'h' && hov.hit.i === i && len(sub(hov.hit.dir, dir)) < 1e-6;
+            V.add(q.z, () => {
+              BL.stick3(ctx, qa, q, R * 0.26, { color: BL.alpha(pal.fg, 0.14 + 0.3 * q.d), ta: BL.sphereR(qa, R) * 0.9, tb: BL.sphereR(q, RH) * 0.9 });
+              BL.sphere3(ctx, q, RH * (over ? 1.35 : 1), pal.pos, 'H', over ? { ring: pal.ui } : null);
+            });
             if (!S.ring && S.atoms.length < 14) S.hits.push({ x: q.x, y: q.y, r: RH, i, dir });
           });
         });
 
         // the heavy atoms
-        pos.forEach((_, i) => {
-          const q = P[i];
-          items.push({ z: q.z, draw: () => {
-            const d = depth(q.z);
-            O.atom(ctx, q.x, q.y, R * (0.68 + 0.4 * d), S.el, { color: BL.mix(pal.el[S.el] || pal.eC, pal.bg, (1 - d) * 0.75) });
-          } });
-        });
+        pos.forEach((_, i) => V.add(P[i].z, () => BL.sphere3(ctx, P[i], R, pal.el[S.el] || pal.eC, S.el)));
 
-        items.sort((a, b) => a.z - b.z).forEach((it) => it.draw());
+        V.flush();
 
         // the axis a twist turns about, so it is clear what is going round what
         if (S.sel >= 0 && S.bonds[S.sel].order === 1 && S.twist > 0.03) {
@@ -541,16 +507,17 @@
             arm = mul(unit(arm), 0.75);
             ctx.beginPath();
             for (let k = 0; k <= 48; k++) {
-              const q = proj(add(B, spin(arm, axis, (k / 48) * S.twist)));
+              const q = V.project(add(B, spin(arm, axis, (k / 48) * S.twist)));
               k ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
             }
             ctx.lineWidth = 3; ctx.strokeStyle = BL.alpha(pal.electron, 0.9); ctx.stroke();
-            const tip = proj(add(B, spin(arm, axis, S.twist)));
-            O.atom(ctx, tip.x, tip.y, 5, 'C', { color: pal.electron, label: false });
+            const tip = V.project(add(B, spin(arm, axis, S.twist)));
+            ctx.fillStyle = pal.electron; ctx.beginPath(); ctx.arc(tip.x, tip.y, 5, 0, TAU); ctx.fill();
           }
           BL.label(ctx, 'turned ' + Math.round((S.twist * 180) / Math.PI) + '°', cw / 2, ch - 18, { font: BL.font(700, 14), border: pal.electron });
         }
 
+        V.cue(ctx, pal);
         if (S.hint && !BL.reduced) {
           const t = (performance.now() / 600) % TAU;
           const hit = S.hits[0];
@@ -558,7 +525,7 @@
             ctx.lineWidth = 2.5; ctx.strokeStyle = BL.alpha(pal.ui, 0.5 + 0.4 * Math.sin(t));
             ctx.beginPath(); ctx.arc(hit.x, hit.y, RH + 9 + 3 * Math.sin(t), 0, TAU); ctx.stroke();
           }
-          BL.label(ctx, '↻ drag to turn it · click a hydrogen to grow it', cw / 2, 22, { font: BL.font(700, 14), border: pal.ui });
+          BL.label(ctx, 'drag to turn it · tap a hydrogen to grow it', cw / 2, 22, { font: BL.font(700, 14), border: pal.ui });
         }
       }
 

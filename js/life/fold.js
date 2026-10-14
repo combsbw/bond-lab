@@ -32,8 +32,8 @@
     minus: { id: 'minus', tag: 'negative', col: () => BL.pal.eN, says: 'pulls on anything positive' },
   };
   const RK = ['grease', 'wet', 'plus', 'minus'];
+  const R_ = { grease: () => BL.pal.eTail, wet: () => BL.pal.neg, plus: () => BL.pal.pos, minus: () => BL.pal.eN };
   const N = 16;                       // beads per chain
-  const L0 = 1.0, L3 = 2.1;           // neighbour spacing, and the reach of a backbone hold
   const T_COOK = 340;
 
   const PRESETS = [
@@ -65,6 +65,10 @@
       how: 'Look at the four levels panel after cooking.',
       ask: 'after cooking, what is left of the protein?',
       opts: ['The order of the beads, and nothing else', 'Nothing at all', 'Everything, it is only hot'], right: 0 },
+    { id: 'pull', text: 'Grab a bead and pull the folded chain out straight, then let go.',
+      how: 'Let it settle, press on any bead and drag it away from the lump. Hold it there a moment, then release.',
+      ask: 'let go of a chain you have stretched out. What does it do?',
+      opts: ['Folds back up on its own', 'Stays stretched — it has nothing to fold back to'], right: 0 },
     { id: 'two', text: 'Put two chains in and let them find each other.',
       how: 'Press “Two chains”, let both settle, then look at the fourth level.',
       ask: 'two finished chains next to each other —',
@@ -81,13 +85,13 @@
   BL.register({
     id: 'fold', field: 'four', order: 0, name: 'Fold',
     tagline: 'Set the order of the beads. The water decides the shape.',
-    lede: 'A chain of amino acids, each with an R-group that is greasy, water-loving, positive or negative. Nothing here is told what shape to be. Set the sequence, let go, and watch what the water pushes it into — then heat it and find out what you can and cannot get back.',
+    lede: 'A chain of amino acids in three dimensions — drag the background to turn it. Each bead has an R-group that is greasy, water-loving, positive or negative, and nothing is told what shape to be. Set the sequence, let go, and watch what the water pushes it into. Grab any bead and pull; tap one to change it. Then heat it and find out what you can and cannot get back.',
     art, goals: STEPS,
 
     mount({ stage: stageHost, aux, dock }) {
       const S = {
         seq: PRESETS[0][1].split(','), nch: 1, T: 300, t: 0,
-        p: [], links: [], cooked: false, wasHot: false, hint: true, settle: 0, hits: [],
+        W: null, hint: true, hits: [], hover: -1, held: -1, pulled: false, rad: 4.5, mid: { x: 0, y: 0, z: 0 },
       };
 
       const stage = BL.stage(stageHost, '8 / 5', {
@@ -97,120 +101,16 @@
       const ctx = stage.ctx;
 
       /* ---------------- the chain ---------------- */
+      /* The model is js/life/fold3.js, so it can be tested in Node
+         (tools/check-fold.js) rather than judged by eye. */
+      const F3 = BL.fold3;
       function build() {
-        S.p = []; S.links = []; S.cooked = false; S.wasHot = false; S.settle = 0;
-        for (let c = 0; c < S.nch; c++) {
-          for (let i = 0; i < N; i++) {
-            S.p.push({
-              x: 3 + i * L0 * 0.95 + (Math.random() - 0.5) * 0.2,
-              y: (c ? 7.5 : 4.5) + Math.sin(i * 0.6) * 0.4,
-              vx: 0, vy: 0, c, i, k: S.seq[i],
-            });
-          }
-        }
+        S.W = F3.create({ seq: S.seq, nch: S.nch, T: S.T, seed: (S.seedN = (S.seedN || 0) + 1) });
+        S.pulled = false; S.held = -1;
         say();
       }
-      const idx = (c, i) => c * N + i;
-
-      /* One step of the folding. Springs along the backbone, a weaker spring
-         three along (that is the backbone holding on to itself), the greasy
-         beads pulling together, charges pulling or pushing, and a thermostat
-         shaking the lot. */
-      function step(dt) {
-        const p = S.p, n = p.length;
-        const kT = clamp((S.T - 260) / 420, 0.02, 1.1);
-        const hot = S.T > T_COOK;
-        const sec = hot ? 0.1 : 1;                 // the backbone lets go of itself when hot
-        const grab = hot ? 0.25 : 1;
-        for (const a of p) { a.fx = 0; a.fy = 0; }
-        const pull = (a, b, L, k) => {
-          const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy) || 1e-6;
-          const f = k * (d - L) / d;
-          a.fx += f * dx; a.fy += f * dy; b.fx -= f * dx; b.fy -= f * dy;
-        };
-        for (let c = 0; c < S.nch; c++) {
-          for (let i = 0; i < N - 1; i++) pull(p[idx(c, i)], p[idx(c, i + 1)], L0, 26);
-          for (let i = 0; i < N - 3; i++) pull(p[idx(c, i)], p[idx(c, i + 3)], L3, 2.6 * sec);
-        }
-        for (let i = 0; i < n; i++) {
-          for (let j = i + 1; j < n; j++) {
-            const a = p[i], b = p[j];
-            const dx = b.x - a.x, dy = b.y - a.y;
-            const d2 = dx * dx + dy * dy;
-            if (d2 > 16) continue;
-            const d = Math.sqrt(d2) || 1e-6;
-            let f = 0;
-            if (d < 0.92) f = -34 * (0.92 - d);                                   // nothing sits on top of anything
-            if (a.k === 'grease' && b.k === 'grease' && d < 3.2) f += 1.5 * grab;  // water pushes them together
-            if ((a.k === 'plus' && b.k === 'minus') || (a.k === 'minus' && b.k === 'plus')) { if (d < 3.4) f += 1.3 * grab; }
-            if (a.k === b.k && (a.k === 'plus' || a.k === 'minus') && d < 2.6) f -= 1.4;
-            if (!f) continue;
-            const fx = (f * dx) / d, fy = (f * dy) / d;
-            a.fx += fx; a.fy += fy; b.fx -= fx; b.fy -= fy;
-          }
-        }
-        // the water-loving beads would rather be on the outside
-        let cx = 0, cy = 0;
-        for (const a of p) { cx += a.x; cy += a.y; }
-        cx /= n; cy /= n;
-        for (const a of p) {
-          const dx = a.x - cx, dy = a.y - cy, d = Math.hypot(dx, dy) || 1e-6;
-          if (a.k === 'wet') { a.fx += (dx / d) * 0.6 * grab; a.fy += (dy / d) * 0.6 * grab; }
-          a.fx -= dx * 0.04; a.fy -= dy * 0.04;         // and nothing wanders off the stage
-        }
-        // links the chains made while they were cooked, which do not come undone
-        S.links.forEach(([i, j]) => pull(p[i], p[j], 1.0, 18));
-        // move
-        const g = 3.0, c0 = Math.exp(-g * dt), sg = Math.sqrt((1 - c0 * c0) * kT);
-        for (const a of p) {
-          a.vx = c0 * a.vx + a.fx * dt + sg * BL.randn();
-          a.vy = c0 * a.vy + a.fy * dt + sg * BL.randn();
-          const sp = Math.hypot(a.vx, a.vy);
-          if (sp > 14) { a.vx *= 14 / sp; a.vy *= 14 / sp; }
-          a.x += a.vx * dt; a.y += a.vy * dt;
-        }
-        // cooking: unfolded chains get hold of each other, and that is permanent
-        if (hot && S.nch > 1 && S.links.length < 10) {
-          for (let i = 0; i < n; i++) {
-            for (let j = i + 1; j < n; j++) {
-              if (p[i].c === p[j].c) continue;
-              if (p[i].k !== 'grease' || p[j].k !== 'grease') continue;
-              if (S.links.some(([a, b]) => a === i || b === i || a === j || b === j)) continue;
-              if (Math.hypot(p[i].x - p[j].x, p[i].y - p[j].y) < 1.5) { S.links.push([i, j]); S.cooked = true; }
-            }
-          }
-        }
-        if (hot) { S.wasHot = true; S.cooked = true; }
-      }
-
-      /* ---------------- what the four levels measure ---------------- */
-      function levels() {
-        const p = S.p, n = p.length;
-        let cx = 0, cy = 0;
-        for (const a of p) { cx += a.x; cy += a.y; }
-        cx /= n; cy /= n;
-        let rg = 0, gin = 0, ng = 0, win = 0, nw = 0;
-        for (const a of p) {
-          const d = Math.hypot(a.x - cx, a.y - cy);
-          rg += d * d;
-          if (a.k === 'grease') { gin += d; ng++; }
-          if (a.k === 'wet') { win += d; nw++; }
-        }
-        rg = Math.sqrt(rg / n);
-        let holds = 0;
-        for (let c = 0; c < S.nch; c++) {
-          for (let i = 0; i < N - 3; i++) {
-            const a = p[idx(c, i)], b = p[idx(c, i + 3)];
-            if (Math.abs(Math.hypot(a.x - b.x, a.y - b.y) - L3) < 0.5) holds++;
-          }
-        }
-        return {
-          rg, holds,
-          buried: ng && nw ? clamp(1 - (gin / ng) / Math.max(0.3, win / nw), -1, 1) : 0,
-          compact: clamp(1 - (rg - 1.6) / 2.6, 0, 1),
-          joined: S.links.length,
-        };
-      }
+      const idx = F3.idx;
+      const levels = () => F3.levels(S.W);
 
       /* ---------------- dock ---------------- */
       const strip = h('div', { class: 'el-grid', role: 'group', 'aria-label': 'The sequence. Click a bead to change its R-group.' });
@@ -219,7 +119,7 @@
         const b = h('button', { type: 'button', class: 'chip', 'aria-label': 'Bead ' + (i + 1) });
         b.addEventListener('click', () => {
           S.seq[i] = RK[(RK.indexOf(S.seq[i]) + 1) % RK.length];
-          S.p.forEach((a) => { if (a.i === i) a.k = S.seq[i]; });
+          S.W.p.forEach((a) => { if (a.i === i) a.k = S.seq[i]; });
           S.changed = true; S.hint = false; say();
         });
         stripBtns.push(b); strip.appendChild(b);
@@ -238,9 +138,9 @@
       const tIn = h('input', { type: 'range', min: '280', max: '380', step: '1', value: '300', 'aria-label': 'Temperature' });
       const tword = (T) => (T < 292 ? 'cool' : T < 306 ? 'body warm' : T < 322 ? 'warm' : T < T_COOK ? 'hot' : T < 358 ? 'very hot' : 'near boiling');
       const tsay = (T) => tword(T) + (BL.nums ? ' · ' + Math.round(T - 273) + ' °C' : '');
-      tIn.addEventListener('input', () => { S.T = parseFloat(tIn.value); tOut.textContent = tsay(S.T); S.hint = false; say(); });
+      tIn.addEventListener('input', () => { S.T = parseFloat(tIn.value); S.W.T = S.T; tOut.textContent = tsay(S.T); S.hint = false; say(); });
       tOut.textContent = tsay(S.T);
-      const setT = (v) => { S.T = v; tIn.value = String(v); tOut.textContent = tsay(v); S.hint = false; say(); };
+      const setT = (v) => { S.T = v; S.W.T = v; tIn.value = String(v); tOut.textContent = tsay(v); S.hint = false; say(); };
       dock.appendChild(h('section', {},
         h('div', { class: 'ctl' }, h('div', { class: 'row' }, h('h2', {}, 'Temperature'), tOut),
           h('div', { class: 'range-wrap' }, tIn, h('div', { class: 'range-ends' }, h('span', {}, 'cool'), h('span', {}, 'frying pan')))),
@@ -281,10 +181,10 @@
         });
         readout.textContent = '';
         readout.append(
-          h('span', { class: 'name' }, S.cooked ? 'Cooked' : L.compact > 0.6 ? 'Folded' : L.compact > 0.3 ? 'Half folded' : 'A loose string'),
+          h('span', { class: 'name' }, S.W.cooked ? 'Cooked' : L.compact > 0.6 ? 'Folded' : L.compact > 0.3 ? 'Half folded' : 'A loose string'),
           h('span', { class: 'zone' }, tword(S.T)),
           h('span', { class: 'dim' }, S.nch + (S.nch === 1 ? ' chain' : ' chains') + ' · ' + N * S.nch + ' amino acids'));
-        statusP.textContent = S.cooked && S.T < T_COOK
+        statusP.textContent = S.W.cooked && S.T < T_COOK
           ? 'Cooled back down, and it has not gone back. The order of the beads is untouched — every single one is where it was — but the shape has gone and the chains have got hold of each other. You cannot un-fry an egg.'
           : S.T > T_COOK
             ? 'Too hot. The backbone has let go of itself and the greasy beads are no longer being held in. Watch what the chains do to each other while they are loose.'
@@ -308,52 +208,115 @@
         if (L.compact > 0.55 && L.buried > 0.25 && S.seq.indexOf('grease') >= 0) steps.done('bury');
         if (S.seq.every((k) => k === 'wet') && L.compact < 0.4) steps.done('nothing');
         if (S.changed && L.compact > 0.3) steps.done('one');
-        if (S.cooked && S.T < T_COOK) { steps.done('cook'); steps.done('left'); }
-        if (S.nch > 1 && S.links.length) steps.done('two');
+        if (S.W.cooked && S.T < T_COOK) { steps.done('cook'); steps.done('left'); }
+        if (S.nch > 1 && S.W.links.length) steps.done('two');
+        if (S.pulled && S.held < 0 && L.compact > 0.6) steps.done('pull');
       }
+
+      /* ---------------- turning, grabbing, changing ---------------- */
+      const beadAt = (pt) => {
+        let best = -1, bz = -1e9;
+        S.hits.forEach((hh) => { if (Math.hypot(hh.x - pt.x, hh.y - pt.y) < hh.r + 6 && hh.z > bz) { bz = hh.z; best = hh.i; } });
+        return best;
+      };
+      const V = BL.view3d(stage.canvas, {
+        yaw: 0.4, pitch: 0.25, auto: 0.22,
+        onturn: () => { S.hint = false; },
+        hover: (pt) => { S.hover = pt ? beadAt(pt) : -1; stage.canvas.style.cursor = S.hover >= 0 ? 'grab' : ''; },
+        /* A press on a bead claims it. If it then moves, the bead follows the
+           finger in the plane of the screen and the rest of the chain comes
+           with it; if it does not, it was a tap and the bead changes kind. */
+        pick: (pt) => {
+          const i = beadAt(pt);
+          if (i < 0) return null;
+          S.held = i; S.hint = false;
+          return { i, z: V.project(S.W.p[i]).z };
+        },
+        drag: (c, pt) => {
+          const q = V.unproject(pt.x, pt.y, c.z);
+          S.W.grab = { i: c.i, x: q.x, y: q.y, z: q.z };
+          if (levels().rg > 2.4) S.pulled = true;
+        },
+        end: (c, pt, moved) => {
+          S.W.grab = null; S.held = -1;
+          if (moved < 6) {
+            const a = S.W.p[c.i];
+            S.seq[a.i] = RK[(RK.indexOf(S.seq[a.i]) + 1) % RK.length];
+            S.W.p.forEach((b) => { if (b.i === a.i) b.k = S.seq[a.i]; });
+            S.changed = true; say();
+          }
+        },
+      });
 
       /* ---------------- drawing ---------------- */
       let lastSay = 0;
       function frame(dt) {
         const pal = BL.pal, cw = stage.w, ch = stage.h;
         S.t += dt;
-        for (let k = 0; k < 6; k++) step(0.006);
+        S.W.T = S.T;
+        V.step(dt);
+        /* As many steps as fit in a slice of the frame: folding takes a few
+           thousand, and nobody should have to wait half a minute to watch it. */
+        const t0 = performance.now();
+        let ks = 0;
+        while (ks < 40 && performance.now() - t0 < 7) { F3.step(S.W, 0.006); ks++; }
         if (performance.now() - lastSay > 240) { lastSay = performance.now(); say(); }
         ctx.clearRect(0, 0, cw, ch);
         if (!cw) return;
-        const p = S.p;
-        let lo = 1e9, hi = -1e9, lo2 = 1e9, hi2 = -1e9;
-        p.forEach((a) => { lo = Math.min(lo, a.x); hi = Math.max(hi, a.x); lo2 = Math.min(lo2, a.y); hi2 = Math.max(hi2, a.y); });
-        const u = clamp(Math.min((cw - 70) / Math.max(5, hi - lo), (ch - 90) / Math.max(4, hi2 - lo2)), 8, 42);
-        const ox = cw / 2 - ((lo + hi) / 2) * u, oy = ch / 2 - ((lo2 + hi2) / 2) * u;
-        const X = (a) => ox + a.x * u, Y = (a) => oy + a.y * u;
+        const p = S.W.p;
 
-        // the backbone
+        // follow the chain's middle and size, easing, so it does not lurch as it folds
+        let mx = 0, my = 0, mz = 0;
+        p.forEach((a) => { mx += a.x; my += a.y; mz += a.z; });
+        mx /= p.length; my /= p.length; mz /= p.length;
+        let rad = 1.6;
+        p.forEach((a) => { rad = Math.max(rad, Math.hypot(a.x - mx, a.y - my, a.z - mz) + 0.7); });
+        /* While a bead is in somebody's hand the camera may pull back to keep
+           the whole chain in view, but it does not re-centre — the pull is an
+           equal-and-opposite pair, so the chain's middle stays put, and a
+           moving view would make the bead slide away from the finger. */
+        const held = S.held >= 0;
+        const e = 1 - Math.exp(-dt * (held ? 1.4 : 2.2));
+        S.rad += (rad - S.rad) * e;
+        if (!held) { S.mid.x += (mx - S.mid.x) * e; S.mid.y += (my - S.mid.y) * e; S.mid.z += (mz - S.mid.z) * e; }
+        V.frame(cw, ch, S.rad, S.mid);
+        const rb = V.scale * 0.3;
+        const P = p.map((a) => V.project(a));
+        S.hits = [];
+
         for (let c = 0; c < S.nch; c++) {
-          ctx.beginPath();
-          for (let i = 0; i < N; i++) { const a = p[idx(c, i)]; i ? ctx.lineTo(X(a), Y(a)) : ctx.moveTo(X(a), Y(a)); }
-          ctx.lineWidth = u * 0.3; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
-          ctx.strokeStyle = BL.alpha(pal.fg, c ? 0.3 : 0.45);
-          ctx.stroke();
-        }
-        // where the backbone is holding on to itself
-        for (let c = 0; c < S.nch; c++) {
-          for (let i = 0; i < N - 3; i++) {
-            const a = p[idx(c, i)], b = p[idx(c, i + 3)];
-            if (Math.abs(Math.hypot(a.x - b.x, a.y - b.y) - L3) > 0.5) continue;
-            O.weakBond(ctx, X(a), Y(a), X(b), Y(b), { width: Math.max(2, u * 0.11) });
+          for (let i = 0; i < F3.N - 1; i++) {
+            const a = P[idx(c, i)], b = P[idx(c, i + 1)];
+            V.add((a.z + b.z) / 2 - 0.01, () => BL.stick3(ctx, a, b, rb * 0.5, { color: BL.alpha(pal.fg, (c ? 0.18 : 0.3) + 0.35 * Math.min(a.d, b.d)), ta: BL.sphereR(a, rb) * 0.85, tb: BL.sphereR(b, rb) * 0.85 }));
+          }
+          // where the backbone is holding on to itself
+          if (S.T < F3.T_COOK) {
+            for (let i = 0; i < F3.N - 3; i++) {
+              const A = p[idx(c, i)], B = p[idx(c, i + 3)];
+              if (Math.abs(Math.hypot(A.x - B.x, A.y - B.y, A.z - B.z) - F3.L3) > 0.35) continue;
+              const a = P[idx(c, i)], b = P[idx(c, i + 3)];
+              V.add((a.z + b.z) / 2 - 0.005, () => { ctx.save(); ctx.globalAlpha = 0.35 + 0.55 * Math.min(a.d, b.d); O.weakBond(ctx, a.x, a.y, b.x, b.y, { width: Math.max(2, rb * 0.3) }); ctx.restore(); });
+            }
           }
         }
         // what the cooking welded together
-        S.links.forEach(([i, j]) => {
-          O.bond(ctx, X(p[i]), Y(p[i]), X(p[j]), Y(p[j]), { width: u * 0.16, color: BL.alpha(pal.pos, 0.9) });
+        S.W.links.forEach(([i, j]) => V.add((P[i].z + P[j].z) / 2, () => BL.stick3(ctx, P[i], P[j], rb * 0.5, { color: BL.alpha(pal.pos, 0.95) })));
+        p.forEach((a, i) => {
+          const q = P[i];
+          const ring = S.held === i ? pal.ui : S.hover === i ? BL.alpha(pal.ui, 0.65) : null;
+          V.add(q.z, () => BL.sphere3(ctx, q, rb, R_[a.k]().toString(), null, ring ? { ring } : null));
+          S.hits.push({ x: q.x, y: q.y, r: BL.sphereR(q, rb), z: q.z, i });
         });
-        // the beads
-        p.forEach((a) => O.atom(ctx, X(a), Y(a), u * 0.34, 'C', { color: R[a.k].col(), label: false }));
+        V.flush();
 
+        if (S.hover >= 0 && S.held < 0) {
+          const q = P[S.hover], kind = R_[S.W.p[S.hover].k] ? R[S.W.p[S.hover].k] : null;
+          if (kind) BL.label(ctx, kind.tag + ' · bead ' + (S.W.p[S.hover].i + 1) + ' — tap to change, drag to pull', cw / 2, ch - 44, { font: BL.font(600, 13), border: pal.ui });
+        }
         BL.label(ctx, tsay(S.T), 78, 22, { font: BL.font(700, 14), border: S.T > T_COOK ? pal.pos : pal.line2 });
-        if (S.cooked) BL.label(ctx, S.T > T_COOK ? 'coming apart' : 'cooked — it will not go back', cw - 130, 22, { font: BL.font(700, 14), border: pal.pos });
-        if (S.hint && !BL.reduced) BL.label(ctx, 'change the sequence, or turn the heat up →', cw / 2, 22, { font: BL.font(700, 14), border: pal.ui });
+        if (S.W.cooked) BL.label(ctx, S.T > T_COOK ? 'coming apart' : 'cooked — it will not go back', cw - 130, 22, { font: BL.font(700, 14), border: pal.pos });
+        V.cue(ctx, pal);
+        if (S.hint && !BL.reduced) BL.label(ctx, 'grab a bead · drag the background to turn · or turn the heat up', cw / 2, 52, { font: BL.font(700, 14), border: pal.ui });
         const key = [['grease', 'greasy'], ['wet', 'water-loving'], ['plus', 'positive'], ['minus', 'negative']];
         key.forEach(([k, name], i) => {
           const x = 24 + i * ((cw - 48) / 4);
