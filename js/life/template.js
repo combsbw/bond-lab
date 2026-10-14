@@ -78,11 +78,11 @@
   BL.register({
     id: 'template', field: 'build', order: 0, name: 'The Template',
     tagline: 'One reaction. It builds all four families and it takes them all apart.',
-    lede: 'Two building blocks with their handles facing each other. Drag the slider to the right and a water molecule is squeezed out from between them, leaving a bond. Drag it back and the water goes in and the bond is gone. Then switch families and do exactly the same thing again.',
+    lede: 'Two building blocks with their handles facing each other. Take one in your hand and push it into the other: a water molecule is squeezed out from between them, leaving a bond. Pull them apart and the water goes back in. Then switch families and do exactly the same thing again.',
     art, goals: STEPS,
 
     mount({ stage: stageHost, aux, dock }) {
-      const S = { fam: 0, r: 0, done: new Set(), hint: true, waters: new Set(), lastDir: 0 };
+      const S = { fam: 0, r: 0, done: new Set(), hint: true, waters: new Set(), lastDir: 0, lay: null, over: false, grip: false, waterAt: null };
 
       const stage = BL.stage(stageHost, '8 / 5', {
         label: 'Two building blocks side by side. A slider moves them together: a hydrogen from one and a hydroxyl from the other leave as a water molecule and a bond forms between the blocks. Moving the slider back pushes the water in and the bond comes apart.',
@@ -204,12 +204,21 @@
         const L = U[f.left], R = U[f.right];
         const lp = L.draw(ctx, cx - d, cy, s, { base: 'A' });
         const rp = R.draw(ctx, cx + d, cy, s, { base: 'T' });
+        // where things are, so a finger can find them
+        S.lay = { cx, cy, s, d, far, near };
+        // a hand-hold on each block, so it looks like something that can be taken
+        if (S.over || S.grip) {
+          ctx.save(); ctx.lineWidth = 3; ctx.setLineDash([7, 6]); ctx.strokeStyle = BL.alpha(pal.ui, S.grip ? 0.95 : 0.6);
+          [cx - d, cx + d].forEach((bx2) => { ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(bx2 - s * 0.95, cy - s * 0.75, s * 1.9, s * 1.5, 16); else ctx.rect(bx2 - s * 0.95, cy - s * 0.75, s * 1.9, s * 1.5); ctx.stroke(); });
+          ctx.restore();
+        }
 
         // the two leaving atoms, and the water they become. They sit just
         // outside the bodies so it is obvious they are on their way off.
         const ox = lp.right[0] + s * 0.2, oy = lp.right[1] - s * 0.12;
         const hx = rp.left[0] - s * 0.18, hy = rp.left[1] - s * 0.12;
         const mx = (ox + hx) / 2, my = (oy + hy) / 2;
+        S.waterAt = null;
         if (r < 0.62) {
           const t = r / 0.62;
           const rise = s * 0.55 * t;
@@ -229,7 +238,8 @@
           const t = (r - 0.62) / 0.38;
           const wy = my - s * (0.75 + 0.85 * t);
           BL.mol.water(ctx, mx, wy, -Math.PI / 2, s * 0.6, pal, { label: s > 50, lone: 0.5 });
-          BL.label(ctx, 'one water, out', mx, wy - s * 0.72, { font: BL.font(700, 13), border: pal.neg });
+          BL.label(ctx, 'one water, out — tap it to put it back', mx, wy - s * 0.72, { font: BL.font(700, 13), border: pal.neg });
+          S.waterAt = { x: mx, y: wy, r: s * 0.6 };
         }
 
         // the bond itself, and only once the water has actually gone
@@ -243,7 +253,7 @@
         BL.label(ctx, R.name, cx + d, cy + s * 0.95, { font: BL.font(600, 13) });
 
         if (S.hint && !BL.reduced) {
-          BL.label(ctx, 'drag the slider and watch the water leave →', cw / 2, 22, { font: BL.font(700, 14), border: pal.ui });
+          BL.label(ctx, 'take a block in your hand and push it into the other', cw / 2, 22, { font: BL.font(700, 14), border: pal.ui });
         }
         drawCurve();
       }
@@ -273,6 +283,35 @@
         c.textAlign = 'center';
         BL.label(c, 'the hill', X(0.5), Y(prof(0.5)) - 16, { font: BL.font(700, 13), border: pal.electron });
       }
+
+      /* ---------------- take hold of a block ---------------- */
+      /* Either block can be taken. How far it is from the middle is how far
+         along the reaction is: hold it apart and the water is in, push it into
+         the other one and the water is squeezed out. Letting go leaves it where
+         it is, so the middle of the hill is a place you can stop and look at. */
+      const onBlock = (pt) => {
+        const Lh = S.lay; if (!Lh) return false;
+        return Math.abs(pt.y - Lh.cy) < Lh.s * 0.95 && (Math.abs(pt.x - (Lh.cx - Lh.d)) < Lh.s * 1.05 || Math.abs(pt.x - (Lh.cx + Lh.d)) < Lh.s * 1.05);
+      };
+      BL.drag(stage.canvas, {
+        pick: (pt) => {
+          if (S.waterAt && Math.hypot(pt.x - S.waterAt.x, pt.y - S.waterAt.y) < S.waterAt.r) return 'water';
+          return onBlock(pt) ? 'block' : null;
+        },
+        move: (hd, pt, start) => {
+          S.hint = false;
+          if (hd === 'water') { if (start) run(0); return; }
+          anim = null;
+          const Lh = S.lay;
+          const dd = clamp(Math.abs(pt.x - Lh.cx), Lh.near, Lh.far);
+          const nr = (Lh.far - dd) / (Lh.far - Lh.near);
+          S.lastDir = Math.sign(nr - S.r) || S.lastDir;
+          S.r = nr; rIn.value = String(Math.round(nr * 100)); S.grip = true;
+          say(); check();
+        },
+        end: () => { S.grip = false; },
+        hover: (pt) => { S.over = !!pt && (onBlock(pt) || (S.waterAt && Math.hypot(pt.x - S.waterAt.x, pt.y - S.waterAt.y) < S.waterAt.r)); stage.canvas.style.cursor = S.over ? 'grab' : 'default'; },
+      });
 
       say();
       const loop = BL.loop(frame); loop.start();

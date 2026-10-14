@@ -85,13 +85,13 @@
   BL.register({
     id: 'letters', field: 'four', order: 3, name: 'Letters',
     tagline: 'Two pairs fit. Not because of a rule — because of a shape.',
-    lede: 'Two strands facing each other, five rungs between them. Click any base to change it and watch what the rung does: snap together, shove the rails apart, pinch them in, or simply fail to line up. Only two of the ten possible pairs survive both tests.',
+    lede: 'Two strands facing each other, five rungs between them. Drag a base from the tray onto any rung — or just tap one — and watch what the rung does: snap together, shove the rails apart, pinch them in, or simply fail to line up. Underneath, the same rungs wound into a helix you can turn. Only two of the ten possible pairs survive both tests.',
     art, goals: STEPS,
 
     mount({ stage: stageHost, aux, dock }) {
       const S = {
         left: ['A', 'G', 'C', 'T', 'A'], right: ['T', 'C', 'G', 'A', 'T'],
-        rna: false, apart: false, t: 0, hint: true, hits: [], tried: new Set(), sel: null,
+        rna: false, apart: false, t: 0, hint: true, hits: [], tried: new Set(), sel: null, tray: [], ghost: null, dropOn: null,
       };
 
       const stage = BL.stage(stageHost, '8 / 5', {
@@ -155,6 +155,16 @@
       aux.appendChild(h('section', { class: 'panel' }, readout, statusP,
         h('h2', {}, 'Rung by rung'), rungs));
 
+      /* ---------------- the same ladder, twisted ---------------- */
+      /* The flat picture is the ladder before it twists. This is DNA as it
+         really is: the same rungs, wound into a double helix you can turn.
+         Wherever a pair does not fit, the rung is drawn broken, and you can see
+         what a wrong base does to the shape of the whole thing. */
+      const c3 = BL.stage(h('div'), '1.55 / 1', { label: 'A three-dimensional double helix built from the rungs above. Rungs that fit are drawn joined; rungs that do not are drawn broken. Drag to turn it.', focusable: true });
+      c3.wrap.classList.add('flat');
+      aux.appendChild(h('section', { class: 'panel' }, h('h2', {}, 'The same ladder, twisted'), c3.wrap,
+        h('p', { class: 'hint' }, 'Ten rungs of the pattern you built, wound into a helix. Turn it: the two sugar–phosphate rails run all the way round the outside, and the bases pair up in the middle, out of the way. Break a rung above and you can see it break here.')));
+
       const table = h('div', { class: 'facts' });
       aux.appendChild(h('section', { class: 'panel' },
         h('h2', {}, 'Every pair you could make'), table,
@@ -215,14 +225,35 @@
         if (S.rna) steps.done('rna');
       }
 
-      /* ---------------- picking ---------------- */
-      stage.canvas.addEventListener('pointerdown', (e) => {
-        const r = stage.canvas.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
-        for (const hit of S.hits) if (mx > hit.x0 && mx < hit.x1 && Math.abs(my - hit.y) < hit.h / 2) { cycle(hit.side, hit.i); return; }
-      });
-      stage.canvas.addEventListener('pointermove', (e) => {
-        const r = stage.canvas.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
-        stage.canvas.style.cursor = S.hits.some((hit) => mx > hit.x0 && mx < hit.x1 && Math.abs(my - hit.y) < hit.h / 2) ? 'pointer' : 'default';
+      /* ---------------- picking, and a tray of bases ---------------- */
+      /* Bases can be tapped to cycle, or dragged from the tray along the bottom
+         onto any rung. Both are the same edit; the tray is for when you know
+         which one you want. */
+      const slotAt = (pt) => S.hits.find((hit) => pt.x > hit.x0 && pt.x < hit.x1 && Math.abs(pt.y - hit.y) < hit.h / 2);
+      const tileAt = (pt) => (S.tray || []).find((t) => pt.x > t.x && pt.x < t.x + t.w && pt.y > t.y && pt.y < t.y + t.h);
+      BL.drag(stage.canvas, {
+        pick: (pt) => {
+          const t = tileAt(pt); if (t) { S.hint = false; return { kind: 'tile', base: t.id, x: pt.x, y: pt.y, moved: 0 }; }
+          const sl = slotAt(pt); if (sl) return { kind: 'slot', side: sl.side, i: sl.i, moved: 0 };
+          return null;
+        },
+        move: (hd, pt, start) => {
+          if (start) { hd.px = pt.x; hd.py = pt.y; return; }
+          hd.moved += Math.abs(pt.x - hd.px) + Math.abs(pt.y - hd.py); hd.px = pt.x; hd.py = pt.y;
+          if (hd.kind === 'tile') { S.ghost = { base: hd.base, x: pt.x, y: pt.y }; S.dropOn = slotAt(pt) || null; }
+        },
+        end: (hd, pt) => {
+          if (hd.kind === 'slot') { if (hd.moved < 8) cycle(hd.side, hd.i); return; }
+          const sl = slotAt(pt);
+          S.ghost = null; S.dropOn = null;
+          if (sl) {
+            const arr = sl.side === 'l' ? S.left : S.right;
+            arr[sl.i] = hd.base; S.sel = { side: sl.side, i: sl.i }; S.hint = false;
+            S.tried.add([S.left[sl.i], S.right[sl.i]].sort().join(''));
+            say();
+          }
+        },
+        hover: (pt) => { stage.canvas.style.cursor = pt && (tileAt(pt) || slotAt(pt)) ? (tileAt(pt) ? 'grab' : 'pointer') : 'default'; },
       });
 
       /* ---------------- drawing ---------------- */
@@ -249,16 +280,66 @@
         return { x0, x1, face: dir > 0 ? x1 : x0 };
       }
 
+      /* ---------------- the double helix ---------------- */
+      const V3 = BL.view3d(c3.canvas, { yaw: 0.4, pitch: 0.18, auto: 0.35 });
+      const MR = 10;                                   // rungs: the five you built, twice round
+      function drawHelix(dt) {
+        const pal = BL.pal, cw = c3.w, ch = c3.h, c = c3.ctx;
+        if (!cw) return;
+        c.clearRect(0, 0, cw, ch);
+        V3.step(dt);
+        V3.frame(cw, ch, 3.5, { x: 0, y: 0, z: 0 });
+        const sc = V3.scale, R = 1.1, rise = 0.58, twist = 0.63, offs = 2.55;
+        const rb = sc * 0.13;
+        const A = [], B = [];
+        for (let j = 0; j < MR; j++) {
+          const th = j * twist, y = (j - (MR - 1) / 2) * rise;
+          A.push({ x: R * Math.cos(th), y, z: R * Math.sin(th) });
+          B.push({ x: R * Math.cos(th + offs), y, z: R * Math.sin(th + offs) });
+        }
+        const PA = A.map((q) => V3.project(q)), PB = B.map((q) => V3.project(q));
+        // the two rails: sugar and phosphate, going all the way round
+        [[PA, 0], [PB, 1]].forEach(([P, side]) => {
+          for (let j = 0; j < MR - 1; j++) V3.add((P[j].z + P[j + 1].z) / 2 - 0.02, () => BL.stick3(c, P[j], P[j + 1], rb * 1.1, { color: BL.alpha(pal.eP, 0.5 + 0.45 * Math.min(P[j].d, P[j + 1].d)), ta: BL.sphereR(P[j], rb) * 0.8, tb: BL.sphereR(P[j + 1], rb) * 0.8 }));
+          for (let j = 0; j < MR; j++) V3.add(P[j].z, () => BL.sphere3(c, P[j], rb * 1.1, pal.eP, null));
+        });
+        let good = 0;
+        for (let j = 0; j < MR; j++) {
+          const a = BASES[S.left[j % N]], b = BASES[S.right[j % N]];
+          const f = fit(S.left[j % N], S.right[j % N]);
+          if (f.ok) good++;
+          // each base reaches in from its own rail; purines reach further than pyrimidines
+          const wa = f.kind === 'wide' ? 0.62 : f.kind === 'narrow' ? 0.36 : a.width === 2 ? 0.62 : 0.38;
+          const wb = f.kind === 'wide' ? 0.62 : f.kind === 'narrow' ? 0.36 : b.width === 2 ? 0.62 : 0.38;
+          const ma = { x: A[j].x + (B[j].x - A[j].x) * wa, y: A[j].y, z: A[j].z + (B[j].z - A[j].z) * wa };
+          const mb = { x: B[j].x + (A[j].x - B[j].x) * wb, y: B[j].y, z: B[j].z + (A[j].z - B[j].z) * wb };
+          const qa = V3.project(ma), qb = V3.project(mb), za = PA[j], zb = PB[j];
+          V3.add((za.z + qa.z) / 2, () => BL.stick3(c, za, qa, rb * 1.5, { color: BL.alpha(a.col(), 0.4 + 0.6 * Math.min(za.d, qa.d)), ta: 0, tb: 0 }));
+          V3.add((zb.z + qb.z) / 2, () => BL.stick3(c, zb, qb, rb * 1.5, { color: BL.alpha(b.col(), 0.4 + 0.6 * Math.min(zb.d, qb.d)) }));
+          V3.add(qa.z, () => BL.sphere3(c, qa, rb * 0.95, a.col(), a.id));
+          V3.add(qb.z, () => BL.sphere3(c, qb, rb * 0.95, b.col(), b.id));
+          const mid = { x: (qa.x + qb.x) / 2, y: (qa.y + qb.y) / 2, z: (qa.z + qb.z) / 2, d: Math.min(qa.d, qb.d) };
+          V3.add(mid.z + 0.05, () => {
+            if (f.ok) { c.save(); c.globalAlpha = 0.5 + 0.5 * mid.d; O.weakBond(c, qa.x, qa.y, qb.x, qb.y, { width: Math.max(2, rb * 0.5) }); c.restore(); }
+            else { c.save(); c.lineWidth = 3; c.strokeStyle = pal.pos; c.beginPath(); c.moveTo(mid.x - 6, mid.y - 6); c.lineTo(mid.x + 6, mid.y + 6); c.moveTo(mid.x + 6, mid.y - 6); c.lineTo(mid.x - 6, mid.y + 6); c.stroke(); c.restore(); }
+          });
+        }
+        V3.flush();
+        V3.cue(c, pal);
+        BL.label(c, good === MR ? 'every rung fits — the helix runs true' : (MR - good) + ' of ' + MR + ' rungs do not fit', cw / 2, ch - 16, { font: BL.font(700, 13), border: good === MR ? pal.ui : pal.pos });
+      }
+
       function frame(dt) {
         const pal = BL.pal, cw = stage.w, ch = stage.h;
         S.t += dt;
         ctx.clearRect(0, 0, cw, ch);
+        drawHelix(dt);
         if (!cw) return;
         S.hits = [];
 
         if (S.apart) { drawApart(pal, cw, ch); return; }
 
-        const top = 52, bot = ch - 40;
+        const top = 52, bot = ch - 88;
         const rowH = (bot - top) / N;
         const unit = clamp(Math.min((cw - 150) / 6.2, rowH * 1.7), 22, 68);
         const mid = cw / 2;
@@ -317,8 +398,31 @@
         });
         BL.label(ctx, 'sugar–phosphate rail', railL[0][0] - unit * 0.5, top - 22, { font: BL.font(600, 13), border: pal.eP });
         BL.label(ctx, 'and the same again', railR[0][0] + unit * 0.5, top - 22, { font: BL.font(600, 13), border: pal.eP });
-        BL.label(ctx, S.hint && !BL.reduced ? 'click a base to change it' : S.rna ? 'ribose · uracil instead of thymine' : 'deoxyribose · thymine',
-          cw / 2, ch - 14, { font: BL.font(700, 14), border: pal.ui });
+        // the tray: one tile of each base, to drag onto a rung
+        const ids = letters(), tw = clamp((cw - 60) / ids.length, 44, 96), th = 34, ty = ch - 62;
+        const tx0 = cw / 2 - (tw * ids.length + 8 * (ids.length - 1)) / 2;
+        S.tray = ids.map((id, i) => ({ id, x: tx0 + i * (tw + 8), y: ty, w: tw, h: th }));
+        S.tray.forEach((t) => {
+          const b = BASES[t.id];
+          ctx.save();
+          ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(t.x, t.y, t.w, t.h, 10); else ctx.rect(t.x, t.y, t.w, t.h);
+          ctx.fillStyle = BL.alpha(b.col(), S.ghost && S.ghost.base === t.id ? 0.35 : 0.92); ctx.fill();
+          ctx.lineWidth = 2; ctx.strokeStyle = BL.alpha(pal.fg, 0.3); ctx.stroke();
+          ctx.font = BL.font(800, 15); ctx.fillStyle = O.ink(b.col()); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(t.id + ' · ' + (b.ring === 'double' ? '▭▭' : '▭'), t.x + t.w / 2, t.y + t.h / 2);
+          ctx.restore();
+        });
+        // where a dragged base would land
+        if (S.dropOn) { ctx.save(); ctx.lineWidth = 3; ctx.setLineDash([6, 5]); ctx.strokeStyle = pal.ui; ctx.strokeRect(S.dropOn.x0 - 4, S.dropOn.y - S.dropOn.h / 2 - 4, S.dropOn.x1 - S.dropOn.x0 + 8, S.dropOn.h + 8); ctx.restore(); }
+        if (S.ghost) {
+          const b = BASES[S.ghost.base], gw = b.width * unit * 0.62, gh = Math.min(rowH * 0.66, 40);
+          ctx.save(); ctx.globalAlpha = 0.9;
+          ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(S.ghost.x - gw / 2, S.ghost.y - gh / 2, gw, gh, gh * 0.3); else ctx.rect(S.ghost.x - gw / 2, S.ghost.y - gh / 2, gw, gh);
+          ctx.fillStyle = b.col(); ctx.fill(); ctx.lineWidth = 2; ctx.strokeStyle = pal.fg; ctx.stroke();
+          ctx.font = BL.font(800, 18); ctx.fillStyle = O.ink(b.col()); ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(S.ghost.base, S.ghost.x, S.ghost.y); ctx.restore();
+        }
+        BL.label(ctx, S.hint && !BL.reduced ? 'drag a base from the tray onto a rung — or tap one' : S.rna ? 'ribose · uracil instead of thymine' : 'deoxyribose · thymine',
+          cw / 2, ch - 12, { font: BL.font(700, 13), border: pal.ui });
       }
 
       /* One nucleotide, in pieces, so the three parts are countable. */
@@ -350,7 +454,7 @@
 
       say();
       const loop = BL.loop(frame); loop.start();
-      return { destroy() { loop.stop(); stage.destroy(); } };
+      return { destroy() { loop.stop(); stage.destroy(); c3.destroy(); } };
     },
   });
 })();

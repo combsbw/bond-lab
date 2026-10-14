@@ -50,6 +50,10 @@
       how: 'Let a sheet settle with the kinks off and read the packing bar, then drag the kinks all the way up and read it again.',
       ask: 'one of them packs tighter than the other. Which?',
       opts: ['The straight-tailed one', 'The kinked one', 'Neither — they pack the same'], right: 0 },
+    { id: 'poke', text: 'Pull one lipid out of the sheet, and let go.',
+      how: 'Wait for a sheet, press on any lipid and drag it well clear of the others. Hold it there a moment, then release.',
+      ask: 'let go of a lipid you have dragged out into the open water. What happens?',
+      opts: ['It swims back and tucks in by itself', 'It stays out there, on its own'], right: 0 },
     { id: 'holds', text: 'Ask what is actually holding the membrane together.',
       how: 'Read the “what is holding it together” line while the sheet sits there.',
       ask: 'what holds a membrane in one piece?',
@@ -73,12 +77,12 @@
   BL.register({
     id: 'faces', field: 'four', order: 2, name: 'Two Faces',
     tagline: 'Water will not have the tails. The membrane is what is left over.',
-    lede: 'Lipids scattered in water, each with a water-loving head and one, two or three water-hating tails. Nothing in here pulls them into any shape. Watch what they do anyway, then change the shape of the molecule and watch the answer change with it.',
+    lede: 'Lipids scattered in water, each with a water-loving head and one, two or three water-hating tails. Nothing in here pulls them into any shape. Watch what they do anyway, grab one and pull it out of the crowd, then change the shape of the molecule and watch the answer change with it. Underneath, the same lipids in three dimensions: turn them over, and cut them open.',
     art, goals: STEPS,
 
     mount({ stage: stageHost, aux, dock }) {
       const W = 26, H = 15;                       // the box, in bead diameters
-      const S = { kind: 0, T: 300, kink: 0, W: null, t: 0, hint: true, triedCold: new Set(), seed: 0 };
+      const S = { kind: 0, T: 300, kink: 0, W: null, t: 0, hint: true, triedCold: new Set(), seed: 0, lay: null, held: null, poked: false, releasedAt: 0, cut: false, m3: null, m3key: '' };
 
       const stage = BL.stage(stageHost, '8 / 5', {
         label: 'Lipid molecules scattered in water. Each has a head and one or more tails. Left alone they sort themselves so the tails are hidden from the water.',
@@ -148,6 +152,18 @@
       meters.append(hidM.el, packM.el);
       aux.appendChild(h('section', { class: 'panel' }, readout, statusP, meters));
 
+      /* ---------------- the same thing, in three dimensions ---------------- */
+      /* The flat tank is a slice. This is the whole object: a patch of
+         bilayer, a micelle or a droplet, built from the same lipids, that you
+         can pick up and turn. "Cut it open" removes the near half so you can
+         see what is inside, which is the whole point of a membrane. */
+      const c3 = BL.stage(h('div'), '1.7 / 1', { label: 'A three-dimensional model of what the lipids make: a patch of bilayer, a micelle, or a droplet. Drag to turn it.', focusable: true });
+      c3.wrap.classList.add('flat');
+      const cutBtn = h('button', { type: 'button', class: 'action ghost', 'aria-pressed': 'false', onclick: () => { S.cut = !S.cut; cutBtn.textContent = S.cut ? 'Put it back together' : 'Cut it open'; cutBtn.setAttribute('aria-pressed', String(S.cut)); S.hint = false; setView3(); } }, 'Cut it open');
+      const note3 = h('p', { class: 'hint' });
+      aux.appendChild(h('section', { class: 'panel' }, h('h2', {}, 'The same thing, in three dimensions'), c3.wrap,
+        h('div', { class: 'actions' }, cutBtn), note3));
+
       const holdP = h('p', {});
       aux.appendChild(h('section', { class: 'panel' }, h('h2', {}, 'What is holding it together'), holdP,
         h('p', { class: 'hint' }, 'This is why a membrane heals. Push a needle through one and it closes behind the needle, because there is nothing to break — the water simply shuts the hole the way it shut everything else.')));
@@ -194,6 +210,7 @@
         if (S.kind === 1 && hd > 0.45) steps.done('wedge');
         if (S.kind === 2 && hd > 0.45) steps.done('nohead');
         if (hd > 0.4) steps.done('holds');
+        if (S.poked && !S.W.grab && S.kind === 0 && hd > 0.4 && performance.now() - S.releasedAt > 2500) steps.done('poke');
         if (hd > 0.3) S.triedCold.add(S.kink < 0.2 ? 'straight' : S.kink > 0.6 ? 'kinked' : null);
         S.triedCold.delete(null);
         if (S.triedCold.size >= 2) steps.done('cold');
@@ -202,6 +219,110 @@
       // the energy panel is the last thing on the page, so seeing it counts
       const seen = new IntersectionObserver((es) => { if (es.some((e) => e.isIntersecting)) { S.seenEnergy = true; say(); } });
       seen.observe(energy);
+
+      /* ---------------- the 3D model ---------------- */
+      const K3 = BL.v3;
+      function build3() {
+        const k = kind(), kinkv = Math.round(S.kink * 10) / 10;
+        const key = k.id + '|' + kinkv;
+        if (S.m3key === key) return S.m3;
+        const lipids = [];
+        if (k.id === 'two') {
+          const sp = 1.25 + 0.4 * kinkv, N6 = 6;
+          [1, -1].forEach((sgn) => {
+            for (let i = 0; i < N6; i++) for (let j = 0; j < N6; j++) {
+              const x = (i - (N6 - 1) / 2) * sp + (j % 2 ? sp * 0.25 : 0), y = (j - (N6 - 1) / 2) * sp;
+              const head = K3.v(x, y, sgn * 2.0);
+              const tails = [-0.3, 0.3].map((off, ti) => [0, 1, 2].map((b) => {
+                const bend = kinkv * 0.5 * (b === 1 ? 1 : b === 2 ? -0.4 : 0) * (ti ? 1 : -1);
+                return K3.v(x + off + bend, y, sgn * (2.0 - 0.62 * (b + 1)));
+              }));
+              lipids.push({ head, tails });
+            }
+          });
+          S.m3 = { lipids, radius: 4.4 + 1.2 * kinkv, headCol: 'neg' };
+        } else if (k.id === 'one') {
+          const n = 26;
+          for (let i = 0; i < n; i++) {
+            const y = 1 - (i + 0.5) * 2 / n, r = Math.sqrt(1 - y * y), th = i * 2.399963;
+            const d = K3.v(r * Math.cos(th), y, r * Math.sin(th));
+            lipids.push({ head: K3.mul(d, 2.3), tails: [[0, 1, 2].map((b) => K3.mul(d, 2.3 - 0.62 * (b + 1)))] });
+          }
+          S.m3 = { lipids, radius: 3.2, headCol: 'neg' };
+        } else {
+          const n = 12;
+          for (let i = 0; i < n; i++) {
+            const y = 1 - (i + 0.5) * 2 / n, r = Math.sqrt(1 - y * y), th = i * 2.399963;
+            const d = K3.v(r * Math.cos(th), y, r * Math.sin(th));
+            const base = K3.mul(d, 1.2);
+            const tails = [0, 1, 2].map((ti) => {
+              const side = K3.mul(K3.perp(d), 0.32 * (ti - 1));
+              return [0, 1, 2].map((b) => K3.add(K3.add(base, K3.mul(d, 0.55 * b)), K3.add(side, K3.mul(K3.cross(d, K3.perp(d)), 0.18 * Math.sin(b + ti + i)))));
+            });
+            lipids.push({ head: base, tails });
+          }
+          S.m3 = { lipids, radius: 2.7, headCol: 'tail' };
+        }
+        S.m3key = key;
+        return S.m3;
+      }
+      const V3 = BL.view3d(c3.canvas, { yaw: 0.55, pitch: 0.5, auto: 0.22 });
+      function setView3() {
+        // cut open: look along the sheet, so the thickness runs up the screen and the layers show
+        V3.home = S.cut ? { yaw: 0, pitch: 1.45 } : { yaw: 0.55, pitch: 0.5 };
+        V3.userTurned = false; V3.turned = 0;
+        V3.goal = { yaw: V3.home.yaw, pitch: V3.home.pitch, zoom: 1 };
+        V3.auto = S.cut ? 0 : 0.22;
+      }
+      function draw3(dt) {
+        const pal = BL.pal, cw = c3.w, ch = c3.h, c = c3.ctx;
+        if (!cw) return;
+        c.clearRect(0, 0, cw, ch);
+        V3.step(dt || 1 / 60);
+        const m = build3(), k = kind();
+        V3.frame(cw, ch, m.radius, { x: 0, y: 0, z: 0 });
+        const sc = V3.scale, rb = sc * 0.2;
+        // cut open: the near half goes, so what is inside shows
+        const shown = m.lipids.filter((l) => !S.cut || (l.head.y <= 0.35));
+        shown.forEach((l) => {
+          l.tails.forEach((t) => {
+            let prev = V3.project(l.head);
+            t.forEach((b, bi) => {
+              const q = V3.project(b);
+              const a0 = prev;
+              V3.add((a0.z + q.z) / 2, () => BL.stick3(c, a0, q, rb * 0.9, { color: BL.alpha(pal.eTail, 0.4 + 0.5 * Math.min(a0.d, q.d)), ta: bi ? BL.sphereR(a0, rb) * 0.8 : 0, tb: BL.sphereR(q, rb) * 0.8 }));
+              V3.add(q.z, () => BL.sphere3(c, q, rb, pal.eTail, null));
+              prev = q;
+            });
+          });
+          if (k.head) { const q = V3.project(l.head); V3.add(q.z, () => BL.sphere3(c, q, rb * 1.7, pal.neg, null)); }
+        });
+        V3.flush();
+        V3.cue(c, pal);
+        BL.label(c, S.cut ? 'cut open: heads on the outside, tails hidden in the middle' : k.id === 'two' ? 'a patch of bilayer — two layers of lipids, tails to tails' : k.id === 'one' ? 'a micelle — a ball with every tail pointing in' : 'a droplet of fat — nothing on the outside to face the water',
+          cw / 2, ch - 16, { font: BL.font(700, 13), border: pal.ui });
+        const kv = Math.round(S.kink * 10) / 10;
+        note3.textContent = k.id === 'two' && kv > 0.4 ? 'With kinks in the tails the two layers cannot pack together tightly: look at the gaps. That is a membrane that stays fluid in the cold.' : k.id === 'two' ? 'Straight tails lie against each other all the way down. Slide the kinks up and watch the packing loosen.' : 'Drag it round. Whatever the shape, the water-loving ends are on the outside and the greasy ones are hidden.';
+      }
+
+      /* ---------------- grabbing a lipid ---------------- */
+      const beadAt = (pt) => {
+        const Lh = S.lay; if (!Lh) return -1;
+        let best = -1, bd = 1e9;
+        S.W.p.forEach((a, i) => { const d = Math.hypot(Lh.ox + a.x * Lh.u - pt.x, Lh.oy + a.y * Lh.u - pt.y); const rr = Lh.u * (a.head ? 0.85 : 0.6) + 6; if (d < rr && d < bd) { bd = d; best = i; } });
+        return best;
+      };
+      BL.drag(stage.canvas, {
+        pick: (pt) => { const i = beadAt(pt); if (i < 0) return null; S.held = i; S.hint = false; return { i, x0: S.W.p[i].x, y0: S.W.p[i].y }; },
+        move: (hd, pt) => {
+          const Lh = S.lay;
+          const wx = clamp((pt.x - Lh.ox) / Lh.u, 0.5, W - 0.5), wy = clamp((pt.y - Lh.oy) / Lh.u, 0.5, H - 0.5);
+          S.W.grab = { i: hd.i, x: wx, y: wy };
+          if (Math.hypot(wx - hd.x0, wy - hd.y0) > 3.5) S.poked = true;
+        },
+        end: () => { S.W.grab = null; S.held = null; S.releasedAt = performance.now(); },
+        hover: (pt) => { stage.canvas.style.cursor = pt && beadAt(pt) >= 0 ? 'grab' : 'default'; },
+      });
 
       /* ---------------- drawing ---------------- */
       let lastSay = 0;
@@ -219,6 +340,7 @@
         if (!cw) return;
         const u = Math.min((cw - 16) / W, (ch - 40) / H);
         const ox = (cw - W * u) / 2, oy = 30 + (ch - 30 - H * u) / 2;
+        S.lay = { u, ox, oy };
         ctx.fillStyle = BL.alpha(pal.neg, pal.dark ? 0.1 : 0.07);
         ctx.fillRect(ox, oy, W * u, H * u);
         ctx.lineWidth = 2; ctx.strokeStyle = pal.line; ctx.strokeRect(ox, oy, W * u, H * u);
@@ -239,16 +361,18 @@
           O.atom(ctx, X(a), Y(a), u * LP.HEAD_R * 0.95, 'P', { color: kind().head ? pal.neg : pal.eTail, label: false });
         });
         BL.label(ctx, 'water', ox + 44, oy - 14, { font: BL.font(600, 13), bg: false, color: pal.neg });
+        if (S.held != null) { const a = P[S.held]; ctx.lineWidth = 3; ctx.strokeStyle = pal.ui; ctx.beginPath(); ctx.arc(X(a), Y(a), u * 0.75, 0, TAU); ctx.stroke(); }
+        draw3(dt);
         // the hint stands down once something has visibly happened, whether or
         // not anybody touched a control
         if (hidden() > 0.3) S.hint = false;
-        if (S.hint && !BL.reduced) BL.label(ctx, 'watch. nothing is arranging them →', cw / 2, 16, { font: BL.font(700, 14), border: pal.ui });
+        if (S.hint && !BL.reduced) BL.label(ctx, 'watch — then grab a lipid and pull', cw / 2, 16, { font: BL.font(700, 14), border: pal.ui });
         else BL.label(ctx, hidden() > 0.3 ? WORD[shapeOf().kind] : 'sorting themselves out…', cw / 2, 16, { font: BL.font(800, 15), border: pal.ui });
       }
 
       scatter();
       const loop = BL.loop(frame); loop.start();
-      return { destroy() { loop.stop(); stage.destroy(); seen.disconnect(); } };
+      return { destroy() { loop.stop(); stage.destroy(); c3.destroy(); seen.disconnect(); } };
     },
   });
 })();

@@ -42,7 +42,7 @@
     const o = Object.assign({ n: 40, tails: 2, head: true, w: 28, h: 17, T: 300, kink: 0, seed: 5 }, opts || {});
     const rand = rng(o.seed);
     const randn = () => Math.sqrt(-2 * Math.log(Math.max(1e-12, rand()))) * Math.cos(2 * Math.PI * rand());
-    const W = { w: o.w, h: o.h, T: o.T, kink: o.kink, tails: o.tails, head: o.head, p: [], mol: [], rand, randn, t: 0 };
+    const W = { w: o.w, h: o.h, T: o.T, kink: o.kink, tails: o.tails, head: o.head, p: [], mol: [], rand, randn, t: 0, grab: null };
     for (let m = 0; m < o.n; m++) {
       const cx = 1.8 + rand() * (o.w - 3.6), cy = 1.8 + rand() * (o.h - 3.6);
       const a = rand() * Math.PI * 2;
@@ -163,6 +163,15 @@
           }
         }
       }
+    }
+    /* A bead somebody is holding is pulled toward the finger, capped so it can
+       drag a lipid about but never fling one. */
+    if (W.grab) {
+      const a = p[W.grab.i];
+      let gx = (W.grab.x - a.x) * 90, gy = (W.grab.y - a.y) * 90;
+      const gm = Math.hypot(gx, gy), cap = 60;
+      if (gm > cap) { gx *= cap / gm; gy *= cap / gm; }
+      a.fx += gx - a.vx * 5; a.fy += gy - a.vy * 5;
     }
     const g = 4.0, c0 = Math.exp(-g * dt), sg = Math.sqrt((1 - c0 * c0) * kT);
     for (let i = 0; i < n; i++) {

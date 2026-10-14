@@ -68,6 +68,10 @@
       how: 'Full enzyme, room temperature, and wait until every chain has been cut up.',
       ask: 'after one enzyme has cut a hundred chains, how many enzymes are left?',
       opts: ['All of them — it is not used up', 'Half of them', 'None — they are consumed'], right: 0 },
+    { id: 'hand', text: 'Be the enzyme: pick one up and carry it to a chain.',
+      how: 'Press on any blue enzyme and drag it onto a chain. Hold it there and count how many cuts you make.',
+      ask: 'one enzyme, held against a chain. How many bonds does it cut at a time?',
+      opts: ['One — and then it has to be moved on', 'The whole chain at once', 'None — enzymes only work when you are not looking'], right: 0 },
     { id: 'sat', text: 'Turn the gelatin up and up with the juice held steady.',
       how: 'Leave the juice where it is and drag the gelatin from a little to a lot, watching the rate.',
       ask: 'twice as much gelatin — twice the rate?',
@@ -83,12 +87,13 @@
   BL.register({
     id: 'enzyme', field: 'build', order: 2, name: 'Hurry Up',
     tagline: 'An enzyme does not push. It lowers the hill — and then does it again.',
-    lede: 'A bowl of gelatin with fresh pineapple juice stirred into it. Gelatin is protein: long chains that set by tangling. The enzyme in the juice cuts those chains. Change the temperature, the juice and the gelatin, and find out what the enzyme will and will not survive.',
+    lede: 'A bowl of gelatin with fresh pineapple juice stirred into it. Gelatin is protein: long chains that set by tangling. The enzyme in the juice cuts those chains. Drag the thermometer to change the temperature, pick up an enzyme and carry it to a chain yourself, and find out what the enzyme will and will not survive.',
     art, goals: STEPS,
 
     mount({ stage: stageHost, aux, dock }) {
       const S = {
         T: T_ROOM, enz: 1, sub: 1, alive: 1, chains: [], cuts: 0, t: 0, hint: true,
+        es: [], held: -1, ehits: [], hover: null, sparks: [], handCut: 0, therm: null,
         series: new Map(), sampleT: 0, steady: 0, boiled: false, everCooled: false, lastHigh: 0,
       };
 
@@ -107,7 +112,14 @@
         a: (near ? near.a : 0) + (Math.random() - 0.5) * (near ? 0.8 : 1.1),
         ph: Math.random() * TAU,
       });
+      /* Seven enzymes, each with a place in the bowl. They wander a little, more
+         when it is warm, and any of them can be picked up. */
+      function seedEnzymes() {
+        S.es = [];
+        for (let i = 0; i < 7; i++) S.es.push({ u: 0.2 + 0.6 * ((i * 0.37) % 1), v: 0.2 + 0.6 * ((i * 0.61 + 0.2) % 1), vu: 0, vv: 0, ph: Math.random() * TAU, flash: 0 });
+      }
       function fresh() {
+        seedEnzymes();
         S.chains = [];
         for (let i = 0; i < NCH; i++) {
           const p = spot(null);
@@ -149,7 +161,7 @@
       const subC = mk('How much gelatin', '10', '100', '1', 100, (v) => (v < 30 ? 'a little' : v < 70 ? 'some' : 'a lot'),
         (v) => { S.sub = v / 100; S.steady = 0; }, ['a little', 'a lot']);
 
-      const setT = (v) => { S.T = v; tempC.input.value = String(v); tempC.out.textContent = tlabel(v); S.steady = 0; S.hint = false; say(); };
+      const setT = (v) => { if (v >= T_HOT - 4) S.boiled = true; if (S.boiled && v <= T_ROOM + 4) S.everCooled = true; S.T = v; tempC.input.value = String(v); tempC.out.textContent = tlabel(v); S.steady = 0; S.hint = false; say(); };
       dock.appendChild(h('section', {},
         h('h2', {}, 'The bowl'),
         h('div', { class: 'chips', role: 'group', 'aria-label': 'Temperature presets' },
@@ -223,6 +235,7 @@
         if (S.boiled && S.everCooled && S.alive < 0.1) steps.done('dead');
         if (S.cuts >= NCH * (LEN0 - 1) - 2 && S.alive > 0.9) steps.done('spare');
         if (S.satSeen) steps.done('sat');
+        if ((S.handCuts || 0) >= 2) steps.done('hand');
       }
 
       /* ---------------- the bowl ---------------- */
@@ -244,8 +257,43 @@
             S.chains.push(Object.assign({ n: c.n - k }, spot(c)));
             c.n = k;
             S.cuts++;
+            /* Somebody did that. Send the nearest working enzyme over, so a cut
+               is seen to be done by an enzyme finding a chain, not by the bowl. */
+            const nE0 = Math.round(S.enz * 7), okE = Math.round(nE0 * S.alive);
+            let best = -1, bd = 9;
+            for (let i = 0; i < okE; i++) { if (i === S.held) continue; const e = S.es[i]; const d = Math.hypot(e.u - c.u, e.v - c.v); if (d < bd) { bd = d; best = i; } }
+            if (best >= 0) { const e = S.es[best]; e.u += (c.u - e.u) * 0.7; e.v += (c.v - e.v) * 0.7; e.flash = 1; }
+            S.sparks.push({ u: c.u, v: c.v, t: 0 });
           }
         }
+        // the enzymes wander: more when it is warm, and none of them leave the bowl
+        const nEn = Math.round(S.enz * 7);
+        const jig = (0.02 + 0.09 * clamp((S.T - 270) / 90, 0, 1)) * dt;
+        for (let i = 0; i < nEn; i++) {
+          const e = S.es[i];
+          if (i === S.held) continue;
+          e.vu = e.vu * 0.94 + (Math.random() - 0.5) * jig * 6; e.vv = e.vv * 0.94 + (Math.random() - 0.5) * jig * 6;
+          e.u = clamp(e.u + e.vu * dt * 30, 0.06, 0.94); e.v = clamp(e.v + e.vv * dt * 30, 0.08, 0.92);
+          e.flash = Math.max(0, e.flash - dt * 2.5);
+        }
+        S.sparks = S.sparks.filter((q) => (q.t += dt) < 0.5);
+        /* An enzyme in your hand does the same job, by hand: hold one against a
+           chain and it cuts it, one cut at a time. That is how slow one enzyme
+           is — and why there are so many of them. */
+        if (S.held >= 0 && S.held < nEn) {
+          const ok = S.held < Math.round(nEn * S.alive), e = S.es[S.held];
+          const near = S.chains.filter((c) => c.n > 1).map((c) => ({ c, d: Math.hypot(e.u - c.u, (e.v - c.v) * 0.8) })).filter((o) => o.d < 0.09).sort((a, b) => a.d - b.d)[0];
+          S.touching = near ? (ok ? 'cut' : 'dead') : null;
+          if (near && ok && S.chains.length < 60) {
+            S.handCut += dt * 2.2;
+            if (S.handCut >= 1) {
+              S.handCut = 0;
+              const c = near.c, k = 1 + ((Math.random() * (c.n - 1)) | 0);
+              S.chains.push(Object.assign({ n: c.n - k }, spot(c)));
+              c.n = k; S.cuts++; S.handCuts = (S.handCuts || 0) + 1; e.flash = 1; S.sparks.push({ u: c.u, v: c.v, t: 0 });
+            }
+          }
+        } else S.touching = null;
         // the graph: a point per settled temperature
         S.steady += dt; S.sampleT += dt;
         if (S.steady > 1.4 && S.sampleT > 0.4 && S.enz > 0.5) {
@@ -269,7 +317,7 @@
         if (!cw) return;
 
         // the bowl
-        const bx = 16, by = 40, bw = cw - 32, bh = ch - 58;
+        const bx = 16, by = 40, bw = cw - 32 - 58, bh = ch - 58;
         ctx.save();
         ctx.beginPath();
         if (ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 18); else ctx.rect(bx, by, bw, bh);
@@ -302,18 +350,22 @@
 
         // the enzymes: a folded blob with a notch, or a dead tangle
         const nE = Math.round(S.enz * 7);
+        S.ehits = [];
         for (let i = 0; i < nE; i++) {
+          const e = S.es[i];
           const working = i < Math.round(nE * S.alive);
           const a = (i / Math.max(1, nE)) * TAU + S.t * (BL.reduced ? 0 : 0.25 * shake);
-          const ex = bx + bw * (0.18 + 0.64 * (0.5 + 0.45 * Math.cos(a * 1.7 + i)));
-          const ey = by + bh * (0.18 + 0.64 * (0.5 + 0.45 * Math.sin(a * 2.3 + i)));
+          const ex = bx + 10 + e.u * (bw - 20), ey = by + 10 + e.v * (bh - 20);
           const er = clamp(Math.min(bw, bh) * 0.055, 9, 22);
+          S.ehits.push({ i, x: ex, y: ey, r: er });
+          const mine = S.held === i, over = S.hover === i;
+          if (mine || over) { ctx.beginPath(); ctx.arc(ex, ey, er + 7, 0, TAU); ctx.lineWidth = 3; ctx.strokeStyle = mine ? pal.fg : BL.alpha(pal.ui, 0.7); ctx.setLineDash(mine ? [] : [5, 4]); ctx.stroke(); ctx.setLineDash([]); }
           if (working) {
             // the wedge out of it is the active site: the shape a chain has to
             // fit into. Lose the shape and you have lost the enzyme.
             const face = a * 1.3 + i;
             ctx.beginPath();
-            ctx.arc(ex, ey, er, face + 0.85, face - 0.85 + TAU);
+            ctx.arc(ex, ey, er * (1 + 0.3 * e.flash), face + 0.85, face - 0.85 + TAU);
             ctx.lineTo(ex, ey);
             ctx.closePath();
             ctx.fillStyle = BL.alpha(pal.ui, 0.92); ctx.fill();
@@ -329,8 +381,36 @@
             ctx.lineWidth = 2.6; ctx.strokeStyle = BL.alpha(pal.pos, 0.85); ctx.stroke();
           }
         }
+        // a snip, where a chain was just cut
+        S.sparks.forEach((q) => {
+          const sx = bx + 10 + q.u * (bw - 20), sy = by + 10 + q.v * (bh - 20), k = q.t / 0.5;
+          ctx.strokeStyle = BL.alpha(pal.electron, 1 - k); ctx.lineWidth = 2.5;
+          for (let m = 0; m < 6; m++) { const an = (m / 6) * TAU + 0.4; ctx.beginPath(); ctx.moveTo(sx + Math.cos(an) * (6 + k * 10), sy + Math.sin(an) * (6 + k * 10)); ctx.lineTo(sx + Math.cos(an) * (10 + k * 16), sy + Math.sin(an) * (10 + k * 16)); ctx.stroke(); }
+        });
         ctx.restore();
 
+        // the thermometer: the mercury is the temperature, and it is a handle
+        const tx = cw - 30, ty0 = by + 8, ty1 = by + bh - 22, frac = clamp((S.T - T_ICE) / (T_HOT - T_ICE), 0, 1);
+        S.therm = { x: tx, y0: ty0, y1: ty1 };
+        ctx.save();
+        ctx.lineWidth = 2.5; ctx.strokeStyle = pal.line2; ctx.fillStyle = BL.alpha(pal.panel, 0.95);
+        ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(tx - 9, ty0 - 8, 18, ty1 - ty0 + 30, 9); else ctx.rect(tx - 9, ty0 - 8, 18, ty1 - ty0 + 30);
+        ctx.fill(); ctx.stroke();
+        const hot = S.T > T_FRAY, merc = hot ? pal.pos : S.T < T_ICE + 8 ? pal.neg : pal.electron;
+        const my = ty1 - frac * (ty1 - ty0);
+        ctx.fillStyle = merc;
+        ctx.beginPath(); if (ctx.roundRect) ctx.roundRect(tx - 4, my, 8, ty1 + 14 - my, 4); else ctx.rect(tx - 4, my, 8, ty1 + 14 - my); ctx.fill();
+        ctx.beginPath(); ctx.arc(tx, ty1 + 16, 10, 0, TAU); ctx.fill();
+        ctx.lineWidth = 2; ctx.strokeStyle = S.therm.grab ? pal.fg : pal.line2;
+        ctx.beginPath(); ctx.arc(tx, my, 11, 0, TAU); ctx.fillStyle = BL.alpha(pal.panel, 0.95); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = merc; ctx.beginPath(); ctx.arc(tx, my, 5, 0, TAU); ctx.fill();
+        ctx.font = BL.font(600, 12); ctx.fillStyle = pal.muted; ctx.textAlign = 'right';
+        [[T_ICE, 'ice'], [T_ROOM, 'room'], [T_WARM, 'warm'], [T_HOT, 'boil']].forEach(([T, nm]) => { const yy = ty1 - ((T - T_ICE) / (T_HOT - T_ICE)) * (ty1 - ty0); ctx.fillText(nm, tx - 14, yy + 4); ctx.beginPath(); ctx.moveTo(tx - 12, yy); ctx.lineTo(tx - 9, yy); ctx.strokeStyle = pal.line2; ctx.lineWidth = 1.5; ctx.stroke(); });
+        ctx.restore();
+        if (S.held >= 0) {
+          const e = S.es[S.held], ok = S.held < Math.round(nE * S.alive);
+          BL.label(ctx, !ok ? 'this one has come apart — it cuts nothing' : S.touching === 'cut' ? 'it is cutting — one chain at a time' : 'carry it to a chain', bx + bw / 2, by + 16, { font: BL.font(700, 13), border: ok ? pal.ui : pal.pos });
+        }
         const mf = meshFrac();
         BL.label(ctx, mf > 0.55 ? 'enough long chains left to tangle — this would set' : 'cut too short to tangle — this will not set',
           cw / 2, ch - 16, { font: BL.font(800, 15), border: mf > 0.55 ? pal.tDipole : pal.electron });
@@ -339,7 +419,7 @@
           BL.label(ctx, S.alive < 0.08 ? 'the enzymes have come apart' : 'the enzymes are coming apart',
             cw - 150, 22, { font: BL.font(700, 14), border: pal.pos });
         }
-        if (S.hint && !BL.reduced) BL.label(ctx, 'change the temperature and watch →', cw / 2, 22, { font: BL.font(700, 14), border: pal.ui });
+        if (S.hint && !BL.reduced) BL.label(ctx, 'drag the thermometer · pick up an enzyme', bx + bw / 2, ch - 40, { font: BL.font(700, 14), border: pal.ui });
 
         drawHill();
         drawChart();
@@ -451,6 +531,32 @@
         });
         if (line) c.fillText(line, x, yy);
       }
+
+      /* ---------------- hands ---------------- */
+      const enzAt = (pt) => { let best = null, bd = 1e9; S.ehits.forEach((q) => { const d = Math.hypot(q.x - pt.x, q.y - pt.y); if (d < q.r + 10 && d < bd) { bd = d; best = q; } }); return best; };
+      const onTherm = (pt) => S.therm && Math.abs(pt.x - S.therm.x) < 26 && pt.y > S.therm.y0 - 16 && pt.y < S.therm.y1 + 36;
+      const setFromY = (y) => { const f = clamp((S.therm.y1 - y) / (S.therm.y1 - S.therm.y0), 0, 1); setT(Math.round(T_ICE + f * (T_HOT - T_ICE))); };
+      BL.drag(stage.canvas, {
+        pick: (pt) => {
+          const e = enzAt(pt);
+          if (e) { S.held = e.i; S.hint = false; return { kind: 'enz', i: e.i }; }
+          if (onTherm(pt)) { S.therm.grab = true; return { kind: 'therm' }; }
+          return null;
+        },
+        move: (hd, pt) => {
+          S.hint = false;
+          if (hd.kind === 'enz') {
+            const bx = 16, by = 40, bw = stage.w - 32 - 58, bh = stage.h - 58;
+            const e = S.es[hd.i];
+            e.u = clamp((pt.x - bx - 10) / (bw - 20), 0.04, 0.96); e.v = clamp((pt.y - by - 10) / (bh - 20), 0.06, 0.94); e.vu = e.vv = 0;
+          } else setFromY(pt.y);
+        },
+        end: (hd) => { if (hd.kind === 'enz') S.held = -1; else if (S.therm) S.therm.grab = false; if (hd.kind === 'enz' && S.handCuts >= 2) S.handDone = true; },
+        hover: (pt) => { const e = pt && enzAt(pt); S.hover = e ? e.i : null; stage.canvas.style.cursor = e || (pt && onTherm(pt)) ? 'grab' : 'default'; },
+      });
+      stage.canvas.addEventListener('keydown', (ev) => {
+        if (ev.key === 'ArrowUp' || ev.key === 'ArrowDown') { ev.preventDefault(); setT(clamp(S.T + (ev.key === 'ArrowUp' ? 3 : -3), T_ICE, T_HOT)); }
+      });
 
       fresh();
       const loop = BL.loop(frame); loop.start();
