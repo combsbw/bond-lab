@@ -1,6 +1,6 @@
-# Bond Lab, and the Life Lab
+# Bond Lab, the Life Lab and the Cell Lab
 
-Two labs on one machine. **Bond Lab** (`index.html`) is Chapter 2: atoms, electrons, bonds, water. **The Life Lab** (`life.html`) is Chapter 3: carbon, the one reaction that builds everything alive, and the four families it makes. Each hub links to the other, they share every line of shell code, and a learner sets up the display once for both.
+Three labs on one machine. **Bond Lab** (`index.html`) is Chapter 2: atoms, electrons, bonds, water. **The Life Lab** (`life.html`) is Chapter 3: carbon, the one reaction that builds everything alive, and the four families it makes. **The Cell Lab** (`cell.html`) is Chapter 4: the membrane, the rooms it makes, the six jobs a cell has to do, and the thread that carries the plans. Each hub links to the others, they share every line of shell code, and a learner sets up the display once for all three.
 
 Instruments for things too small to see. Poke them and watch what happens. Works in light and dark, with adjustable text size, high contrast and calm motion (the **Display** button).
 
@@ -12,7 +12,7 @@ Two things shape everything here. **Bonding is one spectrum, not a box of names*
 
 It installs. Served over https it is a progressive web app: add it to a home screen or install it from the browser's address bar and it opens full screen, with its own icon, and keeps working with no network at all — which matters in a classroom on school wifi, or on a tablet in a car.
 
-No build step, no dependencies. Open `index.html` or `life.html`, or serve the folder.
+No build step, no dependencies. Open `index.html`, `life.html` or `cell.html`, or serve the folder.
 
 ```
 python3 -m http.server 8000     # then visit http://localhost:8000
@@ -97,9 +97,32 @@ Two things worth knowing when an update does not appear:
 - **GitHub Pages is a CDN.** It serves assets with `Cache-Control: max-age=600`, so a change can take up to ten minutes to reach a browser that already has the old one, service worker or not. A hard reload skips it.
 - **The site deploys from `main`.** Work sitting on a branch, however thoroughly pushed, changes nothing about what is live until it is merged.
 
-`tools/gen-icons.js` draws both icons — two atoms sharing a leaning cloud for Bond Lab, two blocks joined with a drop of water lifting off for the Life Lab — and renders every size the web asks for — 192 and 512 for Android, a maskable pair for launchers that crop to a circle, a 180 for iOS, 32 and 16 for the tab, and the scalable `assets/icon.svg`. Chromium does the rasterising, so it needs Playwright, the same as the smoke test. Edit the drawing at the top of that file and re-run it; nothing else references the sizes directly.
+`tools/gen-icons.js` draws all three icons (the Cell Lab's is a cell ring with a nucleus and an organelle) — two atoms sharing a leaning cloud for Bond Lab, two blocks joined with a drop of water lifting off for the Life Lab — and renders every size the web asks for — 192 and 512 for Android, a maskable pair for launchers that crop to a circle, a 180 for iOS, 32 and 16 for the tab, and the scalable `assets/icon.svg`. Chromium does the rasterising, so it needs Playwright, the same as the smoke test. Edit the drawing at the top of that file and re-run it; nothing else references the sizes directly.
 
 The one-file build strips the manifest, the icon links, the service-worker registration and the card linking to the other lab, and inlines the icon as a data URI, because a single HTML file has no sibling files to point at and no origin to register against.
+
+## The Cell Lab
+
+Chapter 4 arrives as a parts list — a dozen organelles, each with a name and a one-line job — and is really one rule and six jobs. The hub says so before a learner reads a word. The rule: **a membrane makes a room**, and a room is how a cell runs two sets of conditions at once. The jobs: every organelle is there because the cell has to do one of six things (hold its shape, make energy, build proteins, store and clean up, divide, guard the plans), and the colour of each job follows it everywhere in the lab. Then the thread — the DNA, and how two metres of it get into a nucleus.
+
+| Field | Instrument | Idea it makes touchable |
+|---|---|---|
+| The rule | **Rooms** | The spine. The cell has a recycling enzyme that only works in acid and a DNA that acid would ruin. Make the whole cell acid and the plans go; make it neutral and the junk piles up. Draw a room round the enzymes (drag a loop) and both are fine. Pop the wall and watch what leaks. |
+| The rule | **Three Cells** | An animal cell, a plant cell and a bacterium, in 3D, each room tappable. The one-page chart is checked against the data behind the drawing, and a sorting game asks "room or not?" of ribosomes, centrosomes, the wall and the rest. |
+| Six jobs | **Shape** | A soft-body cell you can poke. Without its scaffold it rounds up; with a wall and water it stiffens; overfill it and it bursts. The membrane panel is the fluid mosaic. |
+| Six jobs | **Power** | Light to sugar to ATP to work, as a chain you can run in a plant cell and an animal cell, with the chloroplast and mitochondrion in 3D. Switch the light off and see which links keep going. |
+| Six jobs | **Assembly Line** | Ribosome, rough ER, vesicle, Golgi, out. Tap any station to break it and see what stops; make the ER smooth and the line has no start. |
+| Six jobs | **Cleanup** | Lysosome, peroxisome and vacuole as three small scenes with something to carry in. Links to Bobbing for Catalase. |
+| Six jobs | **Bobbing for Catalase** | Chapter 4's bench lab, with six cups of peroxide strength, a stopwatch, a results table, a graph of time or speed, a boiled-yeast control and a trend line. Real repeats scatter, and two near-neighbour cups can swap places. |
+| Six jobs | **Pull Apart** | Copy the centrosome, then pull the cell in two along fibres to the poles. Pull without copying, or cut the fibres, and see who gets the chromosomes. In 3D, with the nine bundles drawn in. |
+| Six jobs | **Gatekeeper** | The nucleus from the inside. Drag molecules to the pores: small ones go through, DNA is refused, an mRNA copy slips out. The nucleolus makes ribosome parts. |
+| The thread | **Complement** | Fill in the opposite strand of TACTG, then random ones. The strands run antiparallel, and the arrows say which way each one is read. |
+| The thread | **Thread** | A five-rung ladder, strictly in order: winding on histones (drag round the core), strung nucleosomes, coil, fold, chromosome. Meters track how long the thread is now and whether it fits. |
+| The thread | **Rings** | A dish of bacteria, a plasmid with a resistance gene, and pili. Nothing is told to evolve; a ring that copies and spreads, plus a drug that kills what lacks it, is enough. |
+
+It carries its own thirty-six challenges (`js/cell/quiz.js`), three for every instrument, written to the same rule and measured against it: why a lettuce goes limp in a warm car, why a potato fizzes on peroxide and a boiled one does not, why a hospital ward ends up with three species resisting one drug, why penicillin spares you. The correct answer is the strictly longest option in 19% (chance is 25%), the shortest in 8%, and uniquely the most technical in 8%.
+
+Three places the lab corrects the source material, because they would have taught something false: the centrosome is **not** membrane-bound (the one-pager's list of membrane-bound organelles includes it, and the data table and Three Cells say otherwise); "40 km in a tennis ball" is left out of the DNA scale because it does not agree with 2 m in a 6 µm nucleus; and the rule "a membrane makes a room" runs one way — every room has a membrane, but not everything in a cell is a room.
 
 ## Deploy to GitHub Pages
 
@@ -109,18 +132,20 @@ The one-file build strips the manifest, the icon links, the service-worker regis
 
 `.nojekyll` is included so Pages serves every file as is. All paths are relative, so it works under a repository subpath.
 
-Both labs go up together; `life.html` is a sibling of `index.html` and all paths stay relative.
+All three labs go up together; `life.html` and `cell.html` are siblings of `index.html` and all paths stay relative.
 
-Other builds: `node tools/bundle.js` writes a single self-contained `dist/bond-lab.html` (CSS, JS and fonts inlined), good for emailing or a USB stick, and `node tools/bundle.js --life` does the same for `dist/life-lab.html`.
+Other builds: `node tools/bundle.js` writes a single self-contained `dist/bond-lab.html` (CSS, JS and fonts inlined), good for emailing or a USB stick, and `node tools/bundle.js --life` and `--cell` do the same for `dist/life-lab.html` and `dist/cell-lab.html`.
 
 ## Layout
 
 ```
 index.html          Bond Lab's shell: header, #view, script tags
 life.html           the Life Lab's shell: the same machine, different instruments
+cell.html           the Cell Lab's shell
                     (order matters in both: core, lab config, engines, instruments, quiz, app)
 manifest.webmanifest  name, icons, colours: what makes Bond Lab installable
 manifest-life.webmanifest  the same for the Life Lab
+manifest-cell.webmanifest  the same for the Cell Lab
 sw.js               offline, network-first, so an update is never invisible
 css/style.css       light, dark and high-contrast tokens at the top
 assets/             self-hosted fonts (Atkinson Hyperlegible Next, Bricolage Grotesque)
@@ -134,6 +159,7 @@ js/view3d.js        the one way to turn a solid over, everywhere: drag to orbit 
 js/app.js           hash router and hub page, shared by both labs, driven by BL.lab
 js/lab-bond.js      what Bond Lab is: name, fields, spine, the link to the other lab
 js/lab-life.js      the same for the Life Lab
+js/lab-cell.js      the same for the Cell Lab
 js/quizkit.js       the challenge card, its marking and its storage — shared
 js/quiz.js          Bond Lab's 48 challenges
 js/moldraw.js       how a molecule looks: water, H2S-like, methane-like, ions, hydrogen bonds
@@ -150,6 +176,11 @@ js/life/fold3.js    the 3D bead chain behind Fold
 js/life/lipid.js    amphiphiles in implicit water, for Two Faces
 js/life/quiz.js     the Life Lab's 30 challenges
 js/life/<name>.js   one file per Life Lab instrument
+js/cell/kit.js      the structures table (one row per organelle: room or not, which cell types, which job)
+                    and the 3D drawing for each; BL.cell
+js/cell/catalase.js the bench-lab model behind Bobbing (saturating rate, scatter, boiled yeast never rises)
+js/cell/quiz.js     the Cell Lab's 36 challenges
+js/cell/<name>.js   one file per Cell Lab instrument
 tools/              Node checks and the browser smoke test (below)
 ```
 
@@ -207,6 +238,17 @@ And for the Life Lab:
 - **The 3D panels** (water's lone pairs in The Molecule, real ice in Float, the double helix in Letters, the bilayer/micelle/droplet in Two Faces) are drawn from real geometry, not decoration, but are not simulations. Ice is hexagonal ice Ih laid out from its unit cell (a = 4.52 Å, c = 7.37 Å, nearest oxygens 2.76 Å apart), so the channels you can look down are genuinely there. The melt slider is a picture of the lattice slumping into its own holes — each molecule drifts toward the nearest channel and starts to wobble — with the density read off the real 0.917 → 1.00 g/cm³; it is not a molecular-dynamics melt.
 - **Sweet** and **Letters** are models of shape, not simulations. Sweet's two chain geometries are the real reason starch coils and cellulose does not, drawn rather than computed. Letters tests a pair on two things — one double ring facing one single ring, and hydrogen-bond donors facing acceptors all along the edge — which is enough to leave exactly A–T and G–C standing out of the ten, and is the real reason; but it is a peg-and-hole cartoon of it.
 
+And for the Cell Lab:
+
+- **Rooms** is a rules demo, not a cell: the enzymes work only where it is acid, the DNA is spoiled by acid, and a room is a membrane you draw. It makes the dilemma impossible to dodge; it does not model how a lysosome actually pumps protons.
+- **Shape** is a soft-body ring with a scaffold of struts, an optional wall and a water slider, tuned so the behaviours are plain (rounds up without a scaffold, stiffens with a wall, bursts past a stretch of 35%); the constants are not measured values.
+- **Power** shows the chain light → sugar → ATP → work with the rates chosen so each link is visible in a few seconds; real photosynthesis and respiration have far more steps, and the ATP counts are for scale, not accounting.
+- **Bobbing for Catalase** uses a saturating rate, `t = T0 + BV·(KM + c)/c`, with 7% scatter. `tools/check-bobbing.js` pins that stronger peroxide is faster but never proportionally so, that water and boiled yeast never rise, and that repeats scatter. It reproduces the *behaviour* of the bench lab, not a particular classroom's numbers.
+- **Gatekeeper** and **Pull Apart** are cartoons of mechanism: pore size decides who passes, and the fibres pull toward the poles that exist. There is no spindle checkpoint, and no real timing.
+- **Thread** packs in four stages in the right order but does not compute real packing ratios; the length meter is a picture of the idea that each rung makes the thread shorter.
+- **Rings** is a small agent simulation: plasmid transfer through pili is a fixed chance per second, an antibiotic kills a bacterium without the plasmid, and carriers divide. Nothing is told to produce resistance; that it spreads and takes over once the drug arrives is what falls out.
+- The structures table in `js/cell/kit.js` is the single source for the chart, the drawing and the sorting game, and `tools/check-cell.js` compares it to the chapter's own chart.
+
 ## Checks
 
 ```
@@ -219,12 +261,16 @@ node tools/check-lattice.js     # density peaks mid-range for water-like, never 
 node tools/check-enzyme.js      # Hurry Up reproduces the bench lab's three tubes
 node tools/check-fold.js       # a chain folds with its non-polar beads inside, heat opens it, a pulled chain refolds, over several seeds
 node tools/check-lipid.js       # lipids make what the chapter says they make, over several seeds
+node tools/check-cell.js        # the structures table agrees with the chapter's chart; every room has a membrane
+node tools/check-bobbing.js     # the catalase bench lab behaves like the real one
+node tools/check-challenges.js js/quiz.js js/life/quiz.js js/cell/quiz.js   # how guessable each bank is
 node tools/check-contrast.js    # WCAG contrast of the tokens in all four themes
-node tools/bundle.js            # one-file build (add --life for the other lab)
+node tools/bundle.js            # one-file build (add --life or --cell for the other labs)
 node tools/gen-icons.js         # redraws the app icon at every size (needs Playwright)
 node tools/gen-caloric.js       # regenerates Slow's table (--check just verifies the effect)
 
 # needs Playwright: visits every route, reports console errors and horizontal overflow
 NODE_PATH=<path to playwright> BL_OUT=./shots node tools/smoke.js light 390 844 2 index.html
 NODE_PATH=<path to playwright> BL_OUT=./shots node tools/smoke.js light 390 844 2 life.html
+NODE_PATH=<path to playwright> BL_OUT=./shots node tools/smoke.js light 390 844 2 cell.html
 ```

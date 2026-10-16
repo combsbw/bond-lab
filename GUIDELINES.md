@@ -1,6 +1,6 @@
 # Guidelines for building the next lab
 
-This is the philosophy and pedagogy behind Bond Lab (Chapter 2) and the Life Lab (Chapter 3), **extracted from the labs themselves** — from each instrument's design header, lede and check-offs, the two hub configs, and the challenge banks — and written down so the next chapter starts from what was learned instead of from a blank page.
+This is the philosophy and pedagogy behind Bond Lab (Chapter 2), the Life Lab (Chapter 3) and the Cell Lab (Chapter 4), **extracted from the labs themselves** — from each instrument's design header, lede and check-offs, the two hub configs, and the challenge banks — and written down so the next chapter starts from what was learned instead of from a blank page.
 
 The README says *what exists* and *how the code is laid out*. This says *why it is the way it is*, and what to do when a new chapter arrives and the answer is not obvious. When a guideline here and a clever idea collide, the guideline wins unless you can say in one sentence what it costs the learner to follow it. Several rules exist because the first version broke them and the learner paid.
 
@@ -102,9 +102,11 @@ A lab is not a menu. The hub states the spine first, then the fields, each with 
 
 **Life Lab** (Chapter 3): *Carbon* — why it is carbon, and what a group bolted on does → *Building and breaking* — the one reaction, both directions, and what stops it being free (the hill) → *The four families* — four runs of the same reaction, each with its job explained by a shape.
 
-Both fields lists are arguments in three beats: **the parts → the rule → what the rule explains.**
+**Cell Lab** (Chapter 4): *The rule* — a membrane makes a room, and what two sets of conditions in one cell buys → *Six jobs* — every organelle is there because of one of six things the cell has to do, colour-coded and carried everywhere → *The thread* — what the plans are, how they are read, and how two metres fit in a nucleus.
 
-### 4.2 The map of the two labs
+All three fields lists are arguments in three beats: **the parts → the rule → what the rule explains.**
+
+### 4.2 The map of the labs
 
 | Lab · field | Instrument | The claim it makes touchable | Main move(s) | Hands the learner on to |
 |---|---|---|---|---|
@@ -134,6 +136,18 @@ Both fields lists are arguments in three beats: **the parts → the rule → wha
 | | **Sweet** | Starch vs cellulose: one ring turned over. | Turn one thing; same enzyme, two substrates. | Two Faces |
 | | **Two Faces** | Nobody builds a membrane; change the molecule, change the answer. | Emergent; necessity (no head). | Letters |
 | | **Letters** | Two of ten pairs survive two shape tests. | Reverse the story (a shape, not a rule). | (closes the lab) |
+| Cell · The rule | **Rooms** | *The spine.* Acid-only enzymes and acid-sensitive DNA: no single setting serves both; a drawn membrane does. | Necessity (no room → one fails); pop it. | Three Cells |
+| | **Three Cells** | Animal, plant, bacterium in 3D; the rule sorts what is present; "room or not?". | Chart agrees with the data behind the drawing. | Shape |
+| Cell · Six jobs | **Shape** | Scaffold, wall, water: what each does to a soft cell; the fluid-mosaic membrane. | Poke; remove the scaffold; overfill to burst. | Power |
+| | **Power** | Light → sugar → ATP → work; plants have both organelles. | Switch off the light; plant vs animal. | Assembly Line |
+| | **Assembly Line** | Ribosome → rough ER → vesicle → Golgi → out. | Break any station; smooth ER has no start. | Cleanup |
+| | **Cleanup** | Lysosome, peroxisome, vacuole: three small scenes. | Pop it; switch catalase off. | Bobbing |
+| | **Bobbing for Catalase** | The chapter's bench lab: saturating rate, boiled control, scatter. | Bench lab rehearsed; graph; irreversibility. | Pull Apart |
+| | **Pull Apart** | Copy first, then pull along fibres to two poles. | Necessity (no copy; cut the fibres). | Gatekeeper |
+| | **Gatekeeper** | Pores decide who passes; mRNA is the portable copy. | Release over a pore; DNA refused. | Complement |
+| Cell · Thread | **Complement** | One strand fixes the other; antiparallel; read 5′→3′. | Fill, then random; the reading direction. | Thread |
+| | **Thread** | Four ordered packing steps from helix to chromosome. | Strictly ordered ladder; length and fit meters. | Rings |
+| | **Rings** | A plasmid that copies and spreads, plus a drug, equals resistance with nothing told to evolve. | Emergent; add the drug; switch off pili. | (closes the lab) |
 
 When you plan a new lab, fill in this table *first*, before you write code. A row you cannot fill in is not an instrument yet.
 
@@ -267,13 +281,14 @@ Answered challenges are spent (you cannot un-know the answer); `BL.quizReset` is
 
 ## 12. Engineering conventions
 
-- **Zero build, zero dependencies.** Plain `<script>` tags in fixed order: core → view3d → lab config → engines → instruments → quiz → app. Open the HTML and it works — GitHub Pages, a USB stick, a double-click. `tools/bundle.js [--life]` makes a single file.
+- **Zero build, zero dependencies.** Plain `<script>` tags in fixed order: core → view3d → lab config → engines → instruments → quiz → app. Open the HTML and it works — GitHub Pages, a USB stick, a double-click. `tools/bundle.js [--life|--cell]` makes a single file.
 - **One shell, many labs.** `BL.lab` drives the hub (fields, spine, sibling, version). A new chapter is a new HTML file plus `js/lab-<name>.js`, sharing core, view3d, quizkit, app and the store. Share storage namespaces deliberately (`bondlab.*`; `goals.<id>`, `predicts.<id>`, `quiz`, display settings) so progress pips and resets need no special case.
 - **Models are pure and testable.** Physics lives in files that load in Node; drawing is separate. The frame loop uses time-budgeted stepping (≤ ~40 steps / 7 ms) so a slow tablet drops detail, not frames.
 - **Reuse before writing.** `BL.view3d`, `BL.drag`, `BL.sphere3`, `BL.stick3`, `BL.geom.layout`, `BL.water2d`, `BL.meter`, `BL.fold`, `BL.confirmBtn`, `BL.protocol`. A second copy of any of them means you are fixing the wrong thing.
 - **Accessibility is not optional.** Stages: `aria-label`, focusable; toggles `aria-pressed`; status `aria-live`; generous touch targets; `touch-action` set on interactive canvases.
 - **Offline matters.** The service worker is *network-first* on purpose (a classroom must not keep seeing last term's page). GitHub Pages serves with `max-age=600`, so a change can take ten minutes to appear.
 - **Deploy is from `main`.** A branch changes nothing live until merged. The user has asked for fast-forward merges to `main` after pushing the working branch.
+- **Tests find things by real coordinates.** An instrument that has draggable things exposes them with `if (window.__BL_TEST) window.__BL_TEST['<id>'] = S;` so a Playwright script can press where the thing actually is, instead of guessing. Re-measure after any scroll.
 - **Comments say why.** Headers explain the idea and the simplification; inline comments explain surprises; match the surrounding density.
 
 ---
@@ -302,6 +317,12 @@ Answered challenges are spent (you cannot un-know the answer); `BL.quizReset` is
 | A tray overlapped a bottom label (Letters). | Reserve space in layout arithmetic; screenshot at both sizes. |
 | Intermittent negative-radius `arc` in Meet. | Clamp canvas arithmetic at the call; smoothsteps can overshoot. |
 | Bulk find-and-replace of a vocabulary word broke object keys in a test file. | After a rename sweep, run every check and syntax-check every file. |
+| `V.add` called from inside a `V.flush` callback silently drew nothing (Pull Apart's centrioles). | Collect into the list before flushing; never add during a flush. |
+| `destination-out` to cut a hole in a bacterium's wall erased what was inside it. | Stroke the capsule path instead of erasing. |
+| `BL.mix` returns `rgb()`, which grey-shaded the 3D spheres and broke `BL.alpha`. | Use `BL.mixHex` for anything fed to shading or alpha. |
+| A fixed-depth drag could not reach a target on the far side of a 3D nucleus. | Let the drop decide: releasing over the target is the move. |
+| A drag measured in the pointer handler read zero, because the physics had not yet run. | Measure in the frame, after the step. |
+| Text in the challenge bank was easy to pick by length (61% longest). | Run `check-challenges`; lengthen the distractors, do not shorten the answer. |
 | Work pushed to a branch but not live. | Fast-forward `main`; the site deploys from `main`. |
 
 ---
@@ -357,6 +378,7 @@ Things the user decided, so they are not re-asked:
 - **Interactivity bar:** if it looks interactive, it is; if it is a solid, it turns.
 - **Vocabulary:** *polar* / *non-polar*, not "greasy" / "water-loving".
 - **Releases:** merge straight to `main` after pushing the working branch; commit messages end with the standard attribution lines.
+- **Cell Lab content corrections** the source material needed: the centrosome is not membrane-bound; the tennis-ball DNA scale was left out as inconsistent; the "membrane makes a room" rule runs one way.
 - **The brief for every chapter:** highly interactive, highly visual, highly intuitive, with built-in exercises and check-offs.
 
 When a decision here is wrong for a new chapter, change it *here* and say why.
