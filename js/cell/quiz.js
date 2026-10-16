@@ -1,0 +1,630 @@
+/* The Cell Lab's challenges: ordinary things that only this chapter explains.
+
+   Three for every instrument. The card, the marking and the storage are in js/quizkit.js; this file is
+   nothing but the questions. The rule the wrong answers follow is the one both other banks use, and it is worth
+   restating because the obvious way to write these fails badly. If three options are folk explanations and the
+   fourth is the only one that names an organelle, a learner who knows no biology scores full marks by picking
+   whichever one sounds like biology. They have been tested on register, not on understanding. So:
+
+     1. All four options are mechanisms. Every one names real structures and real processes, in the same voice.
+     2. Each wrong one is wrong for a reason you could put a finger on — another room's job given to this room,
+        the right idea with the cause and effect swapped, a true fact that does not answer this question.
+     3. No option can be picked out by being longest, or most technical, or most hedged.
+     4. Several distractors are things people say aloud, or that get printed.
+
+   Every one of these can be settled by going into the instrument named underneath and poking it. Each option
+   carries a `why`, shown after answering, so a wrong pick teaches the specific thing that was wrong with it.
+   tools/check-challenges.js measures how guessable the bank is without knowing any biology. */
+(function () {
+  'use strict';
+
+  const BANK = [
+    /* ============================================================ THE ONE RULE */
+
+    /* ---- Rooms ---- */
+    {
+      id: 'lyso-safe', field: 'rule', sim: 'rooms',
+      ask: 'Your cells recycle their own worn-out parts with enzymes that would digest the rest of the cell as readily — proteins, DNA, all of it — yet a healthy cell is not eaten away from the inside. What stops it?',
+      choices: [
+        { t: 'The enzymes are kept in a membrane-bound room where the acid they need is on; out in the rest of the cell they are not awake.', ok: true,
+          why: 'The enzymes only work in acid. Inside the room the acid is on; outside, the cell is nearly neutral and they are asleep. The membrane is what lets one cell hold two different conditions at once.' },
+        { t: 'The enzymes only recognise molecules that arrive from outside the cell, so the cell’s own proteins and DNA never fit them.', ok: false,
+          why: 'Then they could not recycle the cell’s own worn-out parts, which is exactly what they are for. They are not choosy about whose protein it is; they are choosy about where they are.' },
+        { t: 'The cell’s DNA and proteins are coated in a layer the enzymes cannot cut, and only damaged parts lose that coat and so get taken apart.', ok: false,
+          why: 'There is no such coat. A healthy protein or strand of DNA dropped into acid and these enzymes is digested like any other; what keeps it safe is that it is never in there.' },
+        { t: 'The enzymes are made only when a cell is about to die, so a healthy cell contains none of them and has nothing to hold back.', ok: false,
+          why: 'A healthy cell has them all the time and uses them daily to recycle. A cell that releases them is in trouble, not the other way round.' },
+      ],
+      after: 'No setting of the one dial does both jobs: neutral and the junk piles up, acid and the plans go with it. A membrane lets a cell have both, which is the whole point of a room.',
+      tryIt: 'In Rooms, make the whole cell acid and watch the DNA. Then put it back and draw a room round the enzymes instead.',
+    },
+    {
+      id: 'rooms-buy', field: 'rule', sim: 'rooms',
+      ask: 'A bacterium has no organelles at all and still feeds, grows and divides. Your cells are full of them. If a cell can live without rooms, what do the rooms actually buy?',
+      choices: [
+        { t: 'Several sets of conditions at once, acid here and neutral there, so chemistry that would clash in one open bag can run side by side.', ok: true,
+          why: 'A bacterium has one setting for the whole cell. A room can have its own acidity, its own poison, its own crowd of enzymes, and the rest of the cell is left alone.' },
+        { t: 'Strength: a membrane works like a girder, so a cell with no internal membranes cannot grow beyond about the size of a bacterium.', ok: false,
+          why: 'Shape and strength come from the cytoskeleton and the wall, not from rooms. And some bacteria are far bigger than a typical animal cell with no rooms at all.' },
+        { t: 'Speed: a reaction that takes place inside a membrane-bound room is sped up by the membrane itself, whatever is inside.', ok: false,
+          why: 'A membrane does not make anything react faster. What a room can do is concentrate the ingredients, or keep out something that would spoil the reaction.' },
+        { t: 'Energy storage: each organelle holds a charge, so a cell with more rooms has a bigger battery for hard work and lasts longer.', ok: false,
+          why: 'Mitochondria make ATP, but the cell does not store its energy in the number of rooms. A cell with many rooms and one with few can carry the same charge.' },
+      ],
+      after: 'A bacterium has one room: the whole cell. Eukaryotes divide the cell into many, and each can be run differently from the others.',
+      tryIt: 'In Rooms, try to clear the junk without hurting the plans using no room at all, then with one.',
+    },
+    {
+      id: 'lyso-spill', field: 'rule', sim: 'rooms',
+      ask: 'A damaged lysosome can burst, and one burst is not a disaster; a great many at once can kill the cell. What is happening to a cell whose lysosomes all let go?',
+      choices: [
+        { t: 'Its own enzymes are out of their room, with the acid, and begin to digest whatever they touch.', ok: true,
+          why: 'The membrane was the only thing between those enzymes and everything else. Without it the cell starts to do to itself what it does to its worn-out parts.' },
+        { t: 'The enzymes fall apart the moment they leave the room, so nothing is digested but the cell stops recycling.', ok: false,
+          why: 'They are not that fragile. They are less active in a neutral cell, but they do not simply disintegrate, and a lot of them let out at once can do a great deal of damage.' },
+        { t: 'The pieces of the burst membrane join up with the plasma membrane, which makes the cell too big and it splits.', ok: false,
+          why: 'A burst lysosome’s membrane does not feed the cell’s outer membrane. The damage is done by what was inside it.' },
+        { t: 'The water in the cell neutralises the acid at once, so the only cost is that the lysosomes’ recycling stops.', ok: false,
+          why: 'Water does dilute it, which is why one burst is survivable. A lot of acid and enzyme released together overwhelms that, and the digestion is the damage.' },
+      ],
+      after: 'The membrane is the safety. When it fails, the cell’s own enzymes do to the cell what they were built to do to its waste.',
+      tryIt: 'In Rooms, tap a room’s wall to pop it, and watch the plans.',
+    },
+
+    /* ---- Three Cells ---- */
+    {
+      id: 'penicillin', field: 'rule', sim: 'cells',
+      ask: 'Penicillin is a medicine because it attacks something bacteria have and your own cells do not. Which of these is it?',
+      choices: [
+        { t: 'The cell wall: a bacterium’s is built of peptidoglycan, and an animal cell has no wall at all.', ok: true,
+          why: 'Bacteria have a wall of peptidoglycan outside the membrane. Animal cells have no wall, so a drug that stops one being built has nothing to hit in us.' },
+        { t: 'The nucleus: a bacterium’s DNA is behind a thin membrane which the drug can dissolve without touching ours.', ok: false,
+          why: 'A bacterium has no nucleus. Its DNA is a ring lying loose in the cell, which is the whole point of being a prokaryote.' },
+        { t: 'The ribosomes: bacterial ribosomes are a different kind of thing, and human cells have none.', ok: false,
+          why: 'Every cell has ribosomes, human cells and bacterial cells alike; they are the one structure in all three cell types. Some drugs do exploit small differences, but not that we have none.' },
+        { t: 'The mitochondria: a bacterium has many, our cells few, so a drug that shuts them down starves the bacteria first.', ok: false,
+          why: 'It is the other way round. Bacteria have no mitochondria; they do not have any room of that kind. Our cells are the ones that have them.' },
+      ],
+      after: 'A wall of peptidoglycan is something only bacteria build, which is why a drug can go after it and leave us alone.',
+      tryIt: 'In Three Cells, switch between the cells and look for what is in the bacterium and not in the animal cell.',
+    },
+    {
+      id: 'limp-leaf', field: 'rule', sim: 'cells',
+      ask: 'A lettuce leaf goes limp in a warm car and is crisp again after a soak in cold water. A slice of steak does neither. Which two structures in a plant cell, that an animal cell lacks, explain it?',
+      choices: [
+        { t: 'A cell wall, and a big central vacuole whose water pushes the cell’s membrane out against that wall.', ok: true,
+          why: 'The wall does not give, and the vacuole is up to 80% of the cell. Water in the vacuole is the pressure that holds the cell out; lose it and the cell, and the leaf, goes limp.' },
+        { t: 'A nucleus and mitochondria, which store water between meals and let go of it when the plant is hot.', ok: false,
+          why: 'Animal cells have both, so they cannot be what a plant has that an animal lacks. Neither of them stores water.' },
+        { t: 'Lysosomes, which soak up water, and a centrosome, which holds the cell rigid while it is full of it.', ok: false,
+          why: 'Plant cells have neither of these; animal cells do. And a lysosome digests, it does not hold water.' },
+        { t: 'A thicker plasma membrane, and a bigger cytoskeleton, which together stop the cell giving way when it is dry.', ok: false,
+          why: 'Both kinds of cell have a plasma membrane and a cytoskeleton, and the plant’s are not thicker for it. What a plant has extra is outside the membrane and in the middle.' },
+      ],
+      after: 'Wall and vacuole are the two things a plant cell has that an animal cell does not, and between them they are why a plant stands up.',
+      tryIt: 'In Three Cells, pick the plant cell and tap its edge, then its big central vacuole.',
+    },
+    {
+      id: 'yoghurt', field: 'rule', sim: 'cells',
+      ask: 'Yoghurt is made by bacteria feeding on milk sugar and dividing. Under a powerful enough microscope, which of these would one of those bacteria have?',
+      choices: [
+        { t: 'Ribosomes, which build protein in every kind of cell and need no room.', ok: true,
+          why: 'Ribosomes are the one structure in a plant, an animal and a bacterium alike. With no membrane of their own there is no room to need.' },
+        { t: 'A Golgi apparatus, to package the proteins it releases into the milk as it grows.', ok: false,
+          why: 'A Golgi is a room made of membrane. Bacteria have no rooms of that kind: they release proteins straight through the cell’s own envelope.' },
+        { t: 'A nucleus, to keep its DNA safely away from the lactic acid that it makes.', ok: false,
+          why: 'A bacterium has no nucleus. Its DNA is a ring in a region with no membrane round it, which is exactly the difference between prokaryote and eukaryote.' },
+        { t: 'Mitochondria, to turn milk sugar into usable energy for its growth.', ok: false,
+          why: 'Bacteria do get energy from sugar, but not in a mitochondrion. That is a double-membrane room, and a bacterium has no rooms.' },
+      ],
+      after: 'The rule sorts it: whatever needs a membrane-bound room is missing from the bacterium, and whatever does not is there.',
+      tryIt: 'In Three Cells, press “Show the rooms” with the bacterium on screen, then sort a few structures in “Room or not?”.',
+    },
+
+    /* ============================================================ SIX JOBS */
+
+    /* ---- Shape ---- */
+    {
+      id: 'celery', field: 'jobs', sim: 'shape',
+      ask: 'A celery stick left on the side goes limp. Stood in a glass of water for an hour it is crisp again. It is the same stalk. What changed inside its cells?',
+      choices: [
+        { t: 'The central vacuoles refilled with water and pushed each membrane back out against its wall.', ok: true,
+          why: 'A firm plant cell is a full one. The wall does not give, so the water presses the cell out against it, and with every cell in the stalk doing that the whole thing stiffens.' },
+        { t: 'The cytoskeleton of each cell rebuilt itself in the water into a stiffer scaffold, so the cells hold their shape again.', ok: false,
+          why: 'The scaffold holds shape but cannot hold a limp cell up on its own. And it would not rebuild in an hour from soaking in water; what changed is how much water is inside.' },
+        { t: 'The cell walls soaked up the water and swelled into thicker, tougher walls, so they stand up on their own.', ok: false,
+          why: 'A wall does not thicken from a soak. It is the water inside the cell, pushing on the wall from within, that makes it firm.' },
+        { t: 'The membranes stretched tighter, because each cell made extra membrane while it was in the water.', ok: false,
+          why: 'Nothing like that is made in an hour. The membrane is the same size; what changes is that it is pressed harder against the wall.' },
+      ],
+      after: 'Water in the vacuole is pressure, and the wall is what the pressure pushes against. Let the water out and the cell goes limp.',
+      tryIt: 'In Shape, put a wall round the cell, fill it, then drain it.',
+    },
+    {
+      id: 'nerve-shape', field: 'jobs', sim: 'shape',
+      ask: 'A drop of water pulls itself into a ball. A nerve cell is also a bag of watery stuff in a membrane, with branches a thousand times longer than it is wide, and it does not round up. Why not?',
+      choices: [
+        { t: 'A scaffold of protein fibres inside it holds its shape against the water and the pull of its membrane.', ok: true,
+          why: 'That is the cytoskeleton. Without it, a bag of water inflates into a ball, which is what the cell does in Shape when you switch the scaffold off.' },
+        { t: 'The nucleus is anchored to the far end of the cell, and it holds the membrane out like the pole of a tent, branch by branch.', ok: false,
+          why: 'The nucleus does not hold anything out. It floats in the cell and is moved about by the same fibres that give the cell its shape.' },
+        { t: 'Its membrane is made of a different, stiffer lipid, which keeps a long thin shape however much water is inside.', ok: false,
+          why: 'A membrane is a floppy fluid sheet in every cell, which is why it needs help. Stiffer lipids would not turn a ball into a thread.' },
+        { t: 'A nerve cell has a cell wall, which fixes its shape in the way that a plant cell’s wall does, so it cannot round up.', ok: false,
+          why: 'Animal cells, nerve cells included, have no wall. The wall belongs to plants and bacteria.' },
+      ],
+      after: 'The membrane alone is a floppy bag. A scaffold of fibres inside is what lets a cell be any shape other than a ball.',
+      tryIt: 'In Shape, poke the cell, then switch the cytoskeleton off and see what shape it settles into.',
+    },
+    {
+      id: 'red-blood-water', field: 'jobs', sim: 'shape',
+      ask: 'A red blood cell dropped in pure water swells and bursts. A plant cell dropped in pure water swells and stays whole. What does the plant cell have that holds it?',
+      choices: [
+        { t: 'A cell wall outside its membrane that does not give, so the swelling cell presses on it instead of tearing.', ok: true,
+          why: 'The membrane tears at a few percent of stretch. With a wall outside, the cell can only swell until it touches it, and then the wall takes the strain.' },
+        { t: 'A tougher plasma membrane, with a stronger bilayer that will stretch much further than an animal cell’s can before it gives.', ok: false,
+          why: 'A plant cell’s membrane is much the same as an animal cell’s. What is different is outside it.' },
+        { t: 'A bigger nucleus, which soaks up the extra water before it can build up against the membrane and burst it.', ok: false,
+          why: 'A nucleus does not absorb water to protect a cell. It is a room for DNA, and a plant’s is no bigger than an animal’s.' },
+        { t: 'A stronger cytoskeleton, with more fibres to hold the membrane in against the water coming in.', ok: false,
+          why: 'Both kinds of cell have a scaffold, and it cannot hold back a swelling cell on its own. In Shape the scaffold gives way when the water builds up.' },
+      ],
+      after: 'A wall does not stop a cell filling up; it stops it filling past what the membrane can take.',
+      tryIt: 'In Shape, with no wall, fill the cell until something gives. Then switch the wall on and fill it again.',
+    },
+
+    /* ---- Power ---- */
+    {
+      id: 'night-plant', field: 'jobs', sim: 'power',
+      ask: 'A houseplant is alive in the dark all night, moving water about and growing a little, with no light at all. Where does its energy come from?',
+      choices: [
+        { t: 'Its mitochondria burn sugar made in the daytime to make ATP; the chloroplasts wait for light.', ok: true,
+          why: 'Mitochondria do not need light. They burn stored sugar for ATP in every plant cell, day and night. The chloroplasts are only the supply of sugar, and the supply stops.' },
+        { t: 'Its chloroplasts keep running on sunlight they stored in the day, which they give out slowly in the dark.', ok: false,
+          why: 'Chloroplasts do not store light. They use it at once to build sugar, and the sugar is what is stored.' },
+        { t: 'Its roots take in ATP from the soil, and carry it up to the leaves as the plant needs it overnight.', ok: false,
+          why: 'ATP is made inside each cell, by its own mitochondria, and spent where it is made. It is not carried round the plant.' },
+        { t: 'A plant only needs energy while it is photosynthesising, so at night it simply switches everything off and waits.', ok: false,
+          why: 'It needs energy all the time. A cell that makes no ATP stops working, and a plant that switched off every night would die.' },
+      ],
+      after: 'Chloroplasts make the sugar; mitochondria burn it. At night the first stops and the second carries on with what was stored.',
+      tryIt: 'In Power, switch off the light in the plant cell and watch the ATP.',
+    },
+    {
+      id: 'muscle-mito', field: 'jobs', sim: 'power',
+      ask: 'A marathon runner’s leg muscle cells are packed with mitochondria. The cells of an eye lens have far fewer, and a mature red blood cell has none. What does the number of mitochondria in a cell tell you?',
+      choices: [
+        { t: 'How much ATP the cell has to make: the harder it works, the more mitochondria it needs to burn sugar fast enough.', ok: true,
+          why: 'Mitochondria make the ATP the work uses up. A cell doing a lot of work needs a lot of them; one that does little needs few.' },
+        { t: 'How big the cell is: a larger cell holds more mitochondria in proportion to its volume, whatever it does.', ok: false,
+          why: 'A big cell with little to do has few, and a small busy one has many. It follows the work, not the size.' },
+        { t: 'How old the cell is: mitochondria wear out with age, so the older the cell the fewer it keeps.', ok: false,
+          why: 'Mitochondria are renewed, and a young muscle cell has far more than a mature lens cell. The difference is the job.' },
+        { t: 'How close the cell is to the blood: cells next to a blood vessel take up more mitochondria with the oxygen they receive.', ok: false,
+          why: 'Cells do not take mitochondria in from the blood. They make them, and make more when they need more ATP.' },
+      ],
+      after: 'More work means more ATP, and more ATP means more mitochondria. Cells size their power plant to their job.',
+      tryIt: 'In Power, work the cell flat out and see how many mitochondria it takes to keep the ATP up.',
+    },
+    {
+      id: 'solar-powered', field: 'jobs', sim: 'power',
+      ask: 'People say a plant cell is solar powered and an animal cell is not. Which structure explains the difference, and which do both kinds of cell share?',
+      choices: [
+        { t: 'Chloroplasts catch light to make sugar and only plants have them; mitochondria burn sugar for ATP, and both kinds of cell have them.', ok: true,
+          why: 'Light turns into sugar only in a chloroplast. But every cell needs ATP, so every plant cell also has mitochondria to burn the sugar it made.' },
+        { t: 'Mitochondria catch light to make sugar and only plants have them; chloroplasts burn sugar for ATP, and both kinds of cell have them.', ok: false,
+          why: 'The two jobs are the wrong way round. Chloroplasts catch light; mitochondria burn sugar. And mitochondria are in plants and animals alike.' },
+        { t: 'Chloroplasts are in plants and animals alike, but an animal’s are switched off because it lives in the dark of a body.', ok: false,
+          why: 'Animal cells do not have chloroplasts at all, switched off or otherwise. An animal eats its sugar rather than making it.' },
+        { t: 'Mitochondria are only in animals, because plants get all their energy from chloroplasts and need nothing else.', ok: false,
+          why: 'Plants have mitochondria as well. A chloroplast makes sugar, not ATP for the cell to spend, and the plant has to burn that sugar.' },
+      ],
+      after: 'Two energy organelles, two different jobs, and a plant has both. “Both are energy organelles” does not mean they are the same thing.',
+      tryIt: 'In Power, shine full sun on the animal cell and see what happens to its sugar.',
+    },
+
+    /* ---- Assembly Line ---- */
+    {
+      id: 'insulin', field: 'jobs', sim: 'line',
+      ask: 'The cells of the pancreas make insulin and ship it out into the blood. They are packed with rough ER and Golgi stacks, far more than a fat cell has. What is the rough ER doing for insulin?',
+      choices: [
+        { t: 'Ribosomes stuck to it build the protein, and the ER modifies it, then sends it in vesicles to the Golgi.', ok: true,
+          why: 'Ribosome builds, rough ER modifies, vesicle carries, Golgi finishes. The ER is the second room in the line, with the ribosomes on its surface.' },
+        { t: 'It stores the finished insulin until the blood needs it, and releases it directly through the cell membrane.', ok: false,
+          why: 'The protein has not been finished or sorted yet at the ER. Shipping it out is the end of the line, done by the Golgi’s vesicle.' },
+        { t: 'It sorts the insulin, puts the right label on it, and packs it in the vesicle that will carry it out of the cell.', ok: false,
+          why: 'That is the Golgi’s job. The ER comes earlier: it modifies the protein, and a vesicle carries it on to the Golgi.' },
+        { t: 'It breaks down faulty insulin, so only protein with the correct shape ever reaches the blood.', ok: false,
+          why: 'Breaking things down is a clean-up job, for a lysosome. The ER is part of building and shipping, not of disposing.' },
+      ],
+      after: 'Build, modify, carry, finish, deliver. The pancreas has so much ER and Golgi because insulin is its whole product.',
+      tryIt: 'In Assembly Line, run a protein through, then take out the rough ER and make another.',
+    },
+    {
+      id: 'vesicle-next', field: 'jobs', sim: 'line',
+      ask: 'A protein has been built and modified, and is sitting in a vesicle that has just budded off the rough ER. Where does the vesicle go next, and what happens there?',
+      choices: [
+        { t: 'To the Golgi apparatus, which finishes and sorts the protein and repackages it in a new vesicle for delivery.', ok: true,
+          why: 'The second leg of the line. The Golgi absorbs what the first vesicle brings, processes it, and repackages it to be sent where it is wanted.' },
+        { t: 'To the nucleus, which checks the protein against the DNA’s instructions before it is allowed to leave the cell.', ok: false,
+          why: 'The nucleus does not check finished proteins. Its instructions leave as mRNA to be read by ribosomes; it plays no part after that.' },
+        { t: 'To a lysosome, which trims the protein to its final length with acid and releases it into the cytoplasm.', ok: false,
+          why: 'A lysosome digests; it does not finish. A protein that was delivered to one would be broken up, not completed.' },
+        { t: 'Straight to the cell membrane, which finishes the protein as it passes out through the surface.', ok: false,
+          why: 'The membrane is where a delivery ends, not where a protein is finished. It has to be sorted and labelled first, and that is the Golgi’s part.' },
+      ],
+      after: 'The vesicle is the van; the Golgi is the depot. Nothing skips the depot.',
+      tryIt: 'In Assembly Line, take out the Golgi and make a few proteins.',
+    },
+    {
+      id: 'smooth-er', field: 'jobs', sim: 'line',
+      ask: 'Take the ribosomes off a stretch of rough ER and what is left is smooth ER. On the route a protein takes from ribosome to the cell’s outside, what part does smooth ER play?',
+      choices: [
+        { t: 'None: with no ribosomes on it, no protein is built there, so the line has nothing to modify or send.', ok: true,
+          why: 'Smooth ER is simply ER without the ribosomes. The line starts at a ribosome, so a stretch with none is not on it.' },
+        { t: 'It does the finishing: it adds the last touches to each protein before it goes to the Golgi to be sent.', ok: false,
+          why: 'Finishing is the Golgi’s part of the job, and the ER that handles proteins is the rough kind, the one with the ribosomes on it.' },
+        { t: 'It takes over the building where there are not enough ribosomes, making the protein itself from the RNA instructions.', ok: false,
+          why: 'Building protein is what a ribosome does, and only a ribosome. ER membrane cannot take that over.' },
+        { t: 'It stores the spare proteins that the rough ER makes, and gives them back when the cell needs more.', ok: false,
+          why: 'The cell does not keep a spare stock this way. A protein is modified and sent on, not held in a separate part of the ER.' },
+      ],
+      after: 'The route starts at a ribosome. Take the ribosomes away and what is left is a different room, not a stage in the line.',
+      tryIt: 'In Assembly Line, press “Make it smooth ER” and then make a protein.',
+    },
+
+    /* ---- Cleanup ---- */
+    {
+      id: 'white-cell', field: 'jobs', sim: 'cleanup',
+      ask: 'A white blood cell swallows a bacterium and takes it apart in a closed bubble full of acid. Which room does the bubble join, and why is the acid not a danger to the cell?',
+      choices: [
+        { t: 'A lysosome, whose membrane holds the acid and the enzymes in.', ok: true,
+          why: 'A lysosome is the acid room that digests. As long as its membrane is whole, nothing inside it reaches the rest of the cell.' },
+        { t: 'A peroxisome, whose catalase neutralises the acid on contact.', ok: false,
+          why: 'Catalase does a different job: it turns hydrogen peroxide into water and oxygen. It does nothing to acid, and a peroxisome is not where bacteria are taken apart.' },
+        { t: 'A vacuole, which stores the bacterium whole until the cell can export it.', ok: false,
+          why: 'A vacuole stores and exports, but this cell is breaking the bacterium up, which is digestion, not storage.' },
+        { t: 'The Golgi, whose inside is lined with a coat the acid cannot get through.', ok: false,
+          why: 'The Golgi sorts and ships protein; it is not an acid room. There is no acid for it to resist.' },
+      ],
+      after: 'The lysosome is the recycling stomach. Its membrane is the only reason it is safe to keep acid and enzymes in a living cell.',
+      tryIt: 'In Cleanup, carry a worn-out part into the lysosome, then split the lysosome open.',
+    },
+    {
+      id: 'peroxide-cells', field: 'jobs', sim: 'cleanup',
+      ask: 'Hydrogen peroxide from the first-aid box fizzes on a graze. Your own cells make it all the time, as a by-product of breaking fats down, and are not bleached by it. Why not?',
+      choices: [
+        { t: 'A peroxisome holds catalase, which turns peroxide into water and oxygen almost as fast as it is made.', ok: true,
+          why: 'The poison is made inside the peroxisome and dealt with there. The fizz on a graze is the same catalase at work in the damaged cells.' },
+        { t: 'Peroxide is only harmful outside the body; inside a cell the cytosol dissolves it harmlessly into water.', ok: false,
+          why: 'It is a poison inside a cell too. It would not dissolve harmlessly; it needs an enzyme to break it down.' },
+        { t: 'The mitochondria take it up and burn it, along with sugar, to make a little extra ATP.', ok: false,
+          why: 'Mitochondria burn sugar, not peroxide. The room that deals with peroxide is the one that makes it, a peroxisome.' },
+        { t: 'A lysosome digests the peroxide molecule by molecule with acid, before it can reach anything else.', ok: false,
+          why: 'Acid does not neutralise peroxide, and a lysosome is a recycling room for worn-out parts, not for a small poisonous molecule.' },
+      ],
+      after: 'The peroxisome makes the peroxide and mops it up in the same room. Without its catalase the peroxide would leak out and poison the cell.',
+      tryIt: 'In Cleanup, switch to the peroxisome, feed it fat, then switch its catalase off and feed it again.',
+    },
+    {
+      id: 'big-sac', field: 'jobs', sim: 'cleanup',
+      ask: 'In a mature plant cell the nucleus and chloroplasts are pushed into a thin layer against the wall, and the whole middle is one huge sac. What is the sac doing?',
+      choices: [
+        { t: 'Storing water, waste and nutrients, and with its pressure holding the cell firm against the wall.', ok: true,
+          why: 'A central vacuole can be up to 80% of the cell. It stores, exports waste, and the pressure of its water is what keeps the cell rigid.' },
+        { t: 'Making ATP for the cell, from the sugar that the chloroplasts are making round its edge, as a power plant does.', ok: false,
+          why: 'Making ATP from sugar is done by mitochondria, which are small and scattered through the cell. A vacuole is a store, not a power plant.' },
+        { t: 'Holding the cell’s DNA safely, away from the chloroplasts and everything else that could damage it.', ok: false,
+          why: 'DNA is kept in the nucleus, which is the small room pushed to the edge. The big sac has no DNA in it.' },
+        { t: 'Building the cell’s proteins, much as an animal cell’s ER and ribosomes do, then sending them out.', ok: false,
+          why: 'Proteins are built on ribosomes and processed by the ER and Golgi. A vacuole takes no part in that line.' },
+      ],
+      after: 'The vacuole is mostly water, and water under pressure is what holds a plant up.',
+      tryIt: 'In Cleanup, choose the plant cell and slide the vacuole’s water down.',
+    },
+
+    /* ---- Bobbing for Catalase ---- */
+    {
+      id: 'boiled-liver', field: 'jobs', sim: 'bobbing',
+      ask: 'Hydrogen peroxide foams on a piece of raw potato and does nothing at all on a piece that has been boiled. What has the boiling done?',
+      choices: [
+        { t: 'It has unfolded the catalase in the potato for good, so nothing is left to break the peroxide down.', ok: true,
+          why: 'Heat unfolds the enzyme and it does not go back. With no working catalase the peroxide just sits there, which is what boiled yeast does in the lab.' },
+        { t: 'It has used the catalase up, the way a candle uses up its wax, so there is none left to act.', ok: false,
+          why: 'An enzyme is not used up by what it does: one catalase can break down peroxide again and again. Boiling does not burn it away; it ruins its shape.' },
+        { t: 'It has driven the oxygen out of the potato, so there is no oxygen left for the foam to be made of.', ok: false,
+          why: 'The oxygen in the foam comes from the peroxide, not from the potato. Boiling does not take away what the reaction is made from.' },
+        { t: 'It has broken down the membranes round the enzyme, so the peroxide cannot get in to reach it.', ok: false,
+          why: 'Cut or boiled, the peroxide reaches the enzyme easily. What matters is whether the enzyme still works, and heat stops it working.' },
+      ],
+      after: 'Heat unfolds an enzyme and cooling does not refold it. It is the same result as the boiled pineapple juice in Chapter 3.',
+      tryIt: 'In Bobbing for Catalase, boil the yeast first and run the strongest cup.',
+    },
+    {
+      id: 'double-peroxide', field: 'jobs', sim: 'bobbing',
+      ask: 'A student doubles the peroxide, from the 50% cup to the 100% cup, expecting the paper to rise in half the time. It rises faster, but nowhere near twice as fast. Why?',
+      choices: [
+        { t: 'The enzyme can only work so fast: once nearly all of it is busy, extra peroxide has no free enzyme to meet.', ok: true,
+          why: 'The rate saturates. At a low strength most of the enzyme is idle and more peroxide helps a lot; at a high one nearly all of it is already working.' },
+        { t: 'Stronger peroxide breaks the enzyme down faster, so the extra strength is cancelled by the enzyme wearing out.', ok: false,
+          why: 'Not in these few seconds. The reason the times flatten is that the enzyme is already working as fast as it can.' },
+        { t: 'The paper can only hold so many bubbles, so the rise is capped at a fixed time whatever the strength.', ok: false,
+          why: 'The bubbles only have to gather until the paper floats, and gathering faster means rising sooner. What limits it is how fast the enzyme makes them.' },
+        { t: 'The paper sinks further in stronger peroxide, so it has a longer way to travel back up.', ok: false,
+          why: 'It sinks to the bottom of the cup in every strength, so the distance is the same. The difference is in how fast the bubbles come.' },
+      ],
+      after: 'Speed against strength climbs steeply and then levels off. That flattening is an enzyme working at its limit.',
+      tryIt: 'In Bobbing for Catalase, run all the cups and switch the graph to speed.',
+    },
+    {
+      id: 'three-times', field: 'jobs', sim: 'bobbing',
+      ask: 'Three papers in the same cup of the same peroxide rise in 15.2, 16.4 and 14.1 seconds, and a classmate says the experiment is broken. What is the honest reading?',
+      choices: [
+        { t: 'Scatter is normal: each paper holds a slightly different amount of yeast, so repeats are close but not equal.', ok: true,
+          why: 'Every paper soaks up a different amount of enzyme. That is why a lab asks for three trials and an average, and why points on a graph do not lie on a perfect line.' },
+        { t: 'One of the three must be wrong and should be thrown out, since the same cup should always give exactly the same time.', ok: false,
+          why: 'There is no reason to throw one away. Real repeats are never identical, and discarding the ones you do not like is how a result gets bent.' },
+        { t: 'The peroxide is used up a little each time, so the times should get steadily longer as the papers go in one after another.', ok: false,
+          why: 'Each paper goes into fresh peroxide, and the times here do not rise in order anyway. It is scatter, not a trend.' },
+        { t: 'The enzyme speeds up each time it is used, so the later papers should rise the faster.', ok: false,
+          why: 'An enzyme is no better on its second job than its first, and these times do not fall in order either.' },
+      ],
+      after: 'Close but never identical is what a measurement looks like. It is also why two cups near the top of the strength range can swap places.',
+      tryIt: 'In Bobbing for Catalase, run the same cup three times and read the three times.',
+    },
+
+    /* ---- Pull Apart ---- */
+    {
+      id: 'copy-order', field: 'jobs', sim: 'split',
+      ask: 'A cell copies its centrosome before it divides, and only then are the two halves pulled apart. Why does the order matter?',
+      choices: [
+        { t: 'Each new cell needs its own centrosome to pull towards; with just one, every chromosome would be dragged the one way.', ok: true,
+          why: 'Two poles share the chromosomes between them. One pole pulls them all to the same end, and one new cell would get everything and the other nothing.' },
+        { t: 'The copy tells the cell membrane where to pinch, so the pinch falls in the right place whichever way the chromosomes go.', ok: false,
+          why: 'The membrane pinches between the two ends, and that is where the chromosomes have been pulled. A copy does not mark the spot.' },
+        { t: 'The centrosome is destroyed when the cell splits, so the copy is a spare kept in case the first is lost.', ok: false,
+          why: 'Neither is destroyed: each new cell keeps one. The copy is not a spare, it is the second cell’s own.' },
+        { t: 'Copying a centrosome uses up the cell’s energy, so it has to be done while there is plenty to spare, before the pull starts.', ok: false,
+          why: 'The order has nothing to do with energy. It is about having a second pole to pull towards when the pull starts.' },
+      ],
+      after: 'A pole at each end is what makes the sharing even. Copy first, then pull.',
+      tryIt: 'In Pull Apart, pull the cell apart with one centrosome, then start over and copy it first.',
+    },
+    {
+      id: 'spindle-fibres', field: 'jobs', sim: 'split',
+      ask: 'Look inside a cell about to divide: two centrosomes at opposite ends, and fibres running from them to the chromosomes. What are the fibres, and what do they do?',
+      choices: [
+        { t: 'Fibres of the cytoskeleton, which grip the chromosomes and pull them towards the two ends.', ok: true,
+          why: 'The cytoskeleton is the cell’s fibres, and the ones from the centrosomes are the cell’s means of moving the chromosomes about.' },
+        { t: 'Strands of DNA, stretched between the ends so that each chromosome unwinds towards one pole.', ok: false,
+          why: 'DNA is inside the chromosomes, not strung out between the poles. It is not what moves them.' },
+        { t: 'Strands of the nuclear envelope, which wrap each chromosome and carry it away like a bag.', ok: false,
+          why: 'The nuclear envelope has its own jobs and does not form fibres to move chromosomes. That is the cytoskeleton’s work.' },
+        { t: 'Tails of the ribosomes, which reach out and read each chromosome as it is carried across the cell.', ok: false,
+          why: 'Ribosomes have no tails and read RNA, not chromosomes. They have nothing to do with the move.' },
+      ],
+      after: 'Centrosomes are the anchors; the fibres do the pulling.',
+      tryIt: 'In Pull Apart, press “Cut the fibres” and try to pull the cell apart.',
+    },
+    {
+      id: 'chemo', field: 'jobs', sim: 'split',
+      ask: 'A drug stops a cell’s cytoskeleton fibres from forming. Cells treated with it copy their centrosomes as usual and then cannot divide. Why?',
+      choices: [
+        { t: 'The centrosomes are in place, but nothing is left to pull the chromosomes with, so they cannot be shared.', ok: true,
+          why: 'Two poles are no use without fibres. The pull is done through them, so without them the chromosomes stay where they are.' },
+        { t: 'Without fibres the DNA cannot be copied, so there is nothing for the two cells to divide between them.', ok: false,
+          why: 'Copying DNA does not need those fibres, and the cells here do not lack the DNA. It is the moving of it that fails.' },
+        { t: 'Without fibres the nuclear pores close, which locks the DNA inside the nucleus so it cannot be reached.', ok: false,
+          why: 'The pores are openings in the envelope, not a part of the fibre system. They stay as they are.' },
+        { t: 'Without fibres the plasma membrane cannot form, so the new cell has no outside to separate from the old one.', ok: false,
+          why: 'The membrane is built from lipids and is already there. The fibres are not what makes it.' },
+      ],
+      after: 'Some cancer drugs work exactly this way: they stop a fast-growing cell from pulling itself in two.',
+      tryIt: 'In Pull Apart, copy the centrosome and cut the fibres before you pull.',
+    },
+
+    /* ---- Gatekeeper ---- */
+    {
+      id: 'mrna-out', field: 'jobs', sim: 'gate',
+      ask: 'Your DNA never leaves the nucleus, yet its instructions reach the ribosomes out in the cytoplasm. How do they get there?',
+      choices: [
+        { t: 'A copy of the instruction, mRNA, is made and slips out through the nuclear pores, small enough to pass.', ok: true,
+          why: 'The DNA stays put. A copy small enough for a pore goes to the ribosomes, which is why the instructions have to be copied at all.' },
+        { t: 'The nuclear envelope opens for a moment, and the DNA itself slides out to the ribosomes and back again.', ok: false,
+          why: 'The envelope does not open and shut. And the DNA is thousands of times too big to leave through a pore.' },
+        { t: 'Ribosomes inside the nucleus read the DNA, and send the finished proteins out through the pores.', ok: false,
+          why: 'Ribosomes are in the cytoplasm. Only parts of them are made in the nucleus, and they read mRNA, not DNA.' },
+        { t: 'The ER, which is joined to the envelope, carries a copy of the DNA out along its channels to the ribosomes.', ok: false,
+          why: 'The ER is joined to the envelope, true, but it does not carry DNA. The instructions go as mRNA, through the pores.' },
+      ],
+      after: 'DNA is too big for a pore. mRNA is a short copy that is not.',
+      tryIt: 'In Gatekeeper, carry an mRNA out through a pore, and then try the DNA.',
+    },
+    {
+      id: 'pores-in', field: 'jobs', sim: 'gate',
+      ask: 'The nuclear envelope is a membrane, and membranes keep things apart. So how do the building blocks for new RNA get in from the cytoplasm?',
+      choices: [
+        { t: 'Through the nuclear pores: openings in the envelope that let organic molecules pass.', ok: true,
+          why: 'The pores are the doors in the wall. Small molecules like nucleotides pass in, and instructions and ribosome parts pass out.' },
+        { t: 'Through the membrane itself, which lets small molecules dissolve straight through its lipid layers.', ok: false,
+          why: 'A phospholipid bilayer keeps polar molecules like nucleotides out. Dissolving through is what the oily middle prevents, which is why pores exist.' },
+        { t: 'By vesicles that fuse with the envelope and empty out on the other side.', ok: false,
+          why: 'Vesicles carry things between rooms in the protein line, not across the nucleus’s wall. The nucleus uses pores.' },
+        { t: 'They are made inside the nucleus from smaller atoms, so nothing needs to be brought in.', ok: false,
+          why: 'The building blocks are made in the cytoplasm, and the nucleus has to take them in.' },
+      ],
+      after: 'A wall with doors. The doors are the nuclear pores, and a small molecule can use them where a big one cannot.',
+      tryIt: 'In Gatekeeper, carry two nucleotides in, and try to carry one through the wall away from a pore.',
+    },
+    {
+      id: 'dark-patch', field: 'jobs', sim: 'gate',
+      ask: 'In a nucleus there is a dark, dense patch, and the cells that make the most protein have the biggest. What is it doing?',
+      choices: [
+        { t: 'Making the parts of ribosomes, which a cell needs more of the more protein it makes.', ok: true,
+          why: 'The nucleolus is where the proteins used to make ribosomes are created. A cell that builds a lot of protein needs a lot of ribosomes.' },
+        { t: 'Storing the DNA that is not being read, packed away so that it cannot be switched on.', ok: false,
+          why: 'DNA is kept all through the nucleus, wound onto histones. The dark patch is not a store for it.' },
+        { t: 'Making the nuclear pores, one for every protein that the cell builds.', ok: false,
+          why: 'Pores are part of the envelope, not made in the dark patch. And no cell has one pore per protein.' },
+        { t: 'Holding a second copy of the DNA, kept in case the main one is damaged.', ok: false,
+          why: 'There is no spare copy kept there. Every cell has the one set, packed into chromosomes.' },
+      ],
+      after: 'The nucleolus makes the parts that ribosomes are put together from, which then leave through the pores.',
+      tryIt: 'In Gatekeeper, tap the nucleolus and carry a ribosome part out.',
+    },
+
+    /* ============================================================ THE THREAD */
+
+    /* ---- Complement ---- */
+    {
+      id: 'forensic', field: 'thread', sim: 'complement',
+      ask: 'A lab has one strand of DNA from a hair, 5′-TACTG-3′, and wants the strand that pairs with it. Which is it?',
+      choices: [
+        { t: 'Pair each base in turn, T with A, A with T, C with G, T with A, G with C, and the new strand runs the other way: 3′-ATGAC-5′.', ok: true,
+          why: 'Each base has one partner, and the two strands run in opposite directions, so the new one reads 3′ to 5′ when set against the first.' },
+        { t: 'Pair each base in turn, and the new strand runs the same way as the first, so it reads 5′-ATGAC-3′ beside it.', ok: false,
+          why: 'The pairing is right but the direction is not. The two strands of a double helix are antiparallel: when one runs 5′ to 3′, the other runs 3′ to 5′ beside it.' },
+        { t: 'Pair each base in turn, then flip the strand end to end so it reads from the 5′ side: 3′-CAGTA-5′ in the end.', ok: false,
+          why: 'Flipping the strand reverses the letters but not the labels. Read from its own 5′ end, the new strand says CAGTA; set beside the first it is ATGAC.' },
+        { t: 'Swap each base for the one with the same number of rings, so T becomes C and A becomes G: 3′-CGTCA-5′ and so on.', ok: false,
+          why: 'That pairs a single ring with a single ring and a double with a double, which is too narrow or too wide. A double ring has to meet a single one.' },
+      ],
+      after: 'Every base has exactly one partner, and the strand it makes runs the opposite way.',
+      tryIt: 'In Complement, fill in the chapter’s TACTG strand and press “Read it 5′ → 3′”.',
+    },
+    {
+      id: 'thirty-percent', field: 'thread', sim: 'complement',
+      ask: 'A sample of DNA from a bacterium is 30% adenine. What percentage is thymine?',
+      choices: [
+        { t: '30%: every adenine on one strand is paired with a thymine on the other, so the two are equal.', ok: true,
+          why: 'In a double helix every A sits opposite a T, so there are exactly as many of one as the other. That leaves 40% for G and C, 20% each.' },
+        { t: '20%: the four bases are shared out so that the two purines, A and G, always make up exactly half.', ok: false,
+          why: 'Purines are half of the bases because each pairs with a pyrimidine, but it is A with T and G with C, one for one, that fixes the amounts.' },
+        { t: '70%: whatever is not adenine is thymine, since a base that does not pair with another must pair with this one.', ok: false,
+          why: 'Thymine is only the partner of adenine. G and C are a pair of their own, and they must have a share too.' },
+        { t: '15%: thymine is spread over both strands, so each strand carries half of what a single base would.', ok: false,
+          why: 'Counting both strands, the thymine matches the adenine exactly. There is no halving.' },
+      ],
+      after: 'A with T and G with C means the amounts of each pair are equal. Know the percentage of one and you know its partner.',
+      tryIt: 'In Complement, complete a few strands and count the A against the T.',
+    },
+    {
+      id: 'heat-split', field: 'thread', sim: 'complement',
+      ask: 'Two samples of DNA are warmed slowly. One is rich in G and C, the other in A and T. The strands of one come apart at a lower temperature. Which, and why?',
+      choices: [
+        { t: 'The A–T-rich one: an A–T pair has two hydrogen bonds and a G–C pair three, so there is less to break.', ok: true,
+          why: 'It takes more heat to pull apart a pair with three bonds than one with two, so DNA with more A–T pairs comes apart first.' },
+        { t: 'The G–C-rich one: its bases are bigger, so they move about more in the warmth and shake free much sooner.', ok: false,
+          why: 'Size is not what holds the pair; the bonds between them are. More bonds means more to break, and G–C has more.' },
+        { t: 'The G–C-rich one: its hydrogen bonds are shared among three bases at once, which makes each of them weaker.', ok: false,
+          why: 'A hydrogen bond is between two molecules, and the three in a G–C pair are as strong as any other. There are simply more of them.' },
+        { t: 'Neither: both have the same number of rungs, so both come apart at the same temperature, give or take.', ok: false,
+          why: 'The number of rungs is the same, but not the number of bonds in each, and that is what heat has to overcome.' },
+      ],
+      after: 'Two hydrogen bonds in an A–T rung, three in a G–C one. In the helix the three-bonded rungs hold harder.',
+      tryIt: 'In Complement, place an A–T pair and a G–C pair and count the dashes between them.',
+    },
+
+    /* ---- Thread ---- */
+    {
+      id: 'two-metres', field: 'thread', sim: 'thread',
+      ask: 'Stretched out, the DNA in one human cell would be about two metres long, in a nucleus a few millionths of a metre across. What makes the fit possible?',
+      choices: [
+        { t: 'The DNA is packed in stages, each packing the last: wound on histones, strung, coiled, and folded.', ok: true,
+          why: 'Four packing steps, in order. Each is the one before, packed tighter, and none can be skipped.' },
+        { t: 'Most of the DNA is not kept in the nucleus: only the part being read is, and the rest waits in the cytoplasm.', ok: false,
+          why: 'All of a cell’s DNA is in its nucleus. Whatever is not being read is still there, packed away with the rest.' },
+        { t: 'The nucleus stretches to hold it, like a balloon, and shrinks back once the DNA has been packed inside.', ok: false,
+          why: 'A nucleus does not stretch to take in the DNA. The DNA is folded small enough to fit.' },
+        { t: 'Each cell holds only a short piece of the DNA, and the rest is in other cells that share it between them.', ok: false,
+          why: 'Every cell carries the whole genome. Nothing is shared out between cells.' },
+      ],
+      after: 'About two metres of thread into a space too small to see: there is no trick, only four steps of folding.',
+      tryIt: 'In Thread, climb the ladder rung by rung.',
+    },
+    {
+      id: 'histone-stick', field: 'thread', sim: 'thread',
+      ask: 'DNA winds tightly round the histone proteins and stays there. What holds it on?',
+      choices: [
+        { t: 'DNA’s phosphate backbone is negative and histones are positive, so opposite charges hold the two together.', ok: true,
+          why: 'Histones are positively-charged proteins. The backbone of DNA is negatively charged, and unlike charges attract.' },
+        { t: 'Histones are made of the same four bases as DNA, so each one pairs with its partner along the strand.', ok: false,
+          why: 'Histones are proteins, built from amino acids. Bases pair only with other bases.' },
+        { t: 'Hydrogen bonds between matching bases on the DNA and the histones hold them, as they do between the two strands.', ok: false,
+          why: 'That kind of base pairing is between the two strands of DNA. The histones carry no bases to pair with.' },
+        { t: 'Both are non-polar, and water pushes non-polar things together, so they are squeezed into a clump.', ok: false,
+          why: 'DNA’s backbone is charged, and so are histones; they are not non-polar. That squeezing is what folds the non-polar beads of a protein, not this.' },
+      ],
+      after: 'Positive histones, negative DNA. The same charges you met in Chapter 2 hold the first rung of the ladder together.',
+      tryIt: 'In Thread, wind the DNA round the histones and count what is in the core.',
+    },
+    {
+      id: 'packing-not-copying', field: 'thread', sim: 'thread',
+      ask: 'Cells copy their DNA before dividing, and then pack it into chromosomes. A student says the packing is what makes the extra DNA, since it is “more” once it is in a chromosome. What is true?',
+      choices: [
+        { t: 'Packing changes how tightly the DNA is folded, not how much there is. Copying is separate, and it is what doubles it.', ok: true,
+          why: 'Wrapping and coiling make the same thread smaller. A cell has twice as much DNA only after it has been copied.' },
+        { t: 'Packing winds DNA round histones, and each histone is made partly of DNA, so packing does add a little.', ok: false,
+          why: 'Histones are proteins. There is no DNA in them, so winding DNA round them adds none.' },
+        { t: 'Packing and copying are the same process seen at two stages: the DNA doubles as it is wound into a chromosome.', ok: false,
+          why: 'They are separate. The same amount of DNA can be loose or packed, and it can be copied in either state.' },
+        { t: 'Packing removes the parts of the DNA that are not used, so a chromosome holds less DNA than the same stretch unwound.', ok: false,
+          why: 'Nothing is cut out. A chromosome holds all of the DNA, and the unused parts are folded away with the rest.' },
+      ],
+      after: 'More tightly packed is not more. The same thread, folded smaller.',
+      tryIt: 'In Thread, pack the chromatin into a chromosome and watch what happens to the amount of thread.',
+    },
+
+    /* ---- Rings ---- */
+    {
+      id: 'stopped-early', field: 'thread', sim: 'rings',
+      ask: 'A course of antibiotics is stopped early, a few bacteria survive, and the next infection is harder to treat. Which story fits what happened in the dish?',
+      choices: [
+        { t: 'The survivors carry a plasmid with a resistance gene; they regrow with no one to compete with, and may pass it on.', ok: true,
+          why: 'The drug killed everything without the plasmid, so whoever had it took over the dish and could hand it to others.' },
+        { t: 'The drug taught the survivors to resist it, and they passed that lesson on to their daughter cells and to others.', ok: false,
+          why: 'A drug does not teach anything. The survivors were already resistant before the drug arrived, and it only removed what was not.' },
+        { t: 'The survivors are simply tougher in every way, so they will shrug off any drug that comes next without trouble.', ok: false,
+          why: 'Resistance is to the one drug, not toughness in general. A bacterium that resists one can be killed easily by another.' },
+        { t: 'The survivors hid inside the patient’s own cells, so the drug never reached them in the first place.', ok: false,
+          why: 'That is not what the dish shows. They survived because of what they carried, with the drug all round them.' },
+      ],
+      after: 'Nothing here is told to produce resistance. A plasmid copied into daughters, passed across a touch, and a drug that kills what lacks it: that is enough.',
+      tryIt: 'In Rings, let the plasmid spread, then add the antibiotic and see who is left.',
+    },
+    {
+      id: 'ward', field: 'thread', sim: 'rings',
+      ask: 'A hospital finds that three different species of bacteria on one ward all resist the same antibiotic, though they split from a common ancestor long ago. How could they have come to share the resistance?',
+      choices: [
+        { t: 'A plasmid carrying the gene passed from one bacterium to another on contact, even between species.', ok: true,
+          why: 'Plasmids can cross from one bacterium to another through pili. That is how a gene can move sideways between species that are not otherwise close relatives.' },
+        { t: 'Each species evolved the same gene by itself, at the same time, because conditions on the ward were the same.', ok: false,
+          why: 'It is very unlikely the same gene would appear three times at once. Passing it on is far likelier, and it is what plasmids do.' },
+        { t: 'The bacteria took the gene in from the air, and it settled into their ring of DNA as they divided.', ok: false,
+          why: 'Genes do not drift in from the air. They are passed on, mostly by a plasmid on contact.' },
+        { t: 'The antibiotic itself put the resistance gene into the bacteria it failed to kill.', ok: false,
+          why: 'A drug does not carry or insert genes. It only kills those that cannot resist it.' },
+      ],
+      after: 'Plasmids pass sideways, between bacteria, so resistance can spread much faster than the bacteria can divide.',
+      tryIt: 'In Rings, switch the pili off and see how much slower a plasmid spreads.',
+    },
+    {
+      id: 'no-histones', field: 'thread', sim: 'rings',
+      ask: 'A human cell folds about two metres of DNA in stages: wound on histones, strung, coiled, folded. A bacterium’s DNA is a closed ring, roughly a thousandth as long, with no histones at all. Why can it do without them?',
+      choices: [
+        { t: 'Its DNA is a small ring that needs far less coiling to fit, so the long run of packing steps is not needed.', ok: true,
+          why: 'A short ring in a small cell does not have to be wound, strung, coiled and folded. That is the difference the chapter draws: no histones, no nucleosomes, no chromatin.' },
+        { t: 'It keeps its DNA in a nucleus, which is already so small that the DNA fits without any help from histones.', ok: false,
+          why: 'A bacterium has no nucleus. Its DNA lies loose in a region with no membrane round it.' },
+        { t: 'It packs its DNA into plasmids, which are small enough to fit anywhere in the cell without being wound up.', ok: false,
+          why: 'Plasmids are extra rings, not where the main DNA is kept. The main DNA is one closed ring.' },
+        { t: 'Its DNA is cut into many short pieces, each too short to need any folding or wrapping at all.', ok: false,
+          why: 'It is one ring, not many pieces. It is short compared with ours, but it is whole.' },
+      ],
+      after: 'A ring that small needs no ladder. The four-step ladder is what a long linear chromosome needs, and a bacterium skips it.',
+      tryIt: 'In Rings, tap a bacterium and look at its DNA, then compare it with the thread you packed.',
+    },
+  ];
+
+  BL.quizAdd(BANK);
+})();

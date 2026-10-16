@@ -604,3 +604,14 @@ html[data-calm="yes"] a.tile:hover { transform: none; }
 .sort-game .said { padding: 10px 12px; border-radius: 10px; border-left: 5px solid var(--line-2); background: var(--panel-2); line-height: 1.4; }
 .sort-game .said.right { border-left-color: var(--ui); }
 .sort-game .said.wrong { border-left-color: var(--pos); }
+
+/* The DNA packing ladder (Thread): five rungs, each locked until the one before it is done. */
+.ladder { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.rung { display: grid; grid-template-columns: 2rem 1fr; gap: 12px; align-items: start; padding: 10px 12px; border: 2px solid var(--line); border-radius: 12px; background: var(--panel); cursor: pointer; }
+.rung p { margin: 2px 0 0; font-size: 0.92rem; color: var(--muted); line-height: 1.35; }
+.rung-n { width: 1.9rem; height: 1.9rem; border-radius: 50%; display: grid; place-items: center; font-weight: 800; border: 2px solid var(--line-2); }
+.rung.now { border-color: var(--fn-genetic); background: color-mix(in srgb, var(--fn-genetic) 10%, var(--panel)); }
+.rung.done .rung-n { background: var(--fn-genetic); color: var(--bg); border-color: var(--fn-genetic); }
+.rung.locked { opacity: .55; }
+.rung.locked .rung-n::after { content: ''; }
+.rung:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
