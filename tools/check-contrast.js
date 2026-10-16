@@ -17,9 +17,10 @@ for (const [name, t] of Object.entries(T)) {
   const hi = name.startsWith('high'), tx = hi ? 7 : 4.5;
   const text = [['fg', 'bg'], ['fg', 'panel'], ['muted', 'panel'], ['muted', 'bg'], ['muted', 'panel-2'], ['ui', 'panel'], ['ui', 'bg'], ['ui-ink', 'ui'], ['fg', 'ui-soft'],
     ['electron', 'panel'], ['pos', 'panel'], ['neg', 'panel'], ['cloud', 'panel'], ['t-covalent', 'panel'], ['t-ionic', 'panel'], ['t-hydrogen', 'panel'], ['t-dipole', 'panel'], ['t-iondipole', 'panel'], ['t-vdw', 'panel'], ['focus', 'panel'], ['focus', 'bg'],
-    ['e-c', 'panel'], ['e-n', 'panel'], ['e-p', 'panel'], ['e-s', 'panel'], ['e-tail', 'panel']];
+    ['e-c', 'panel'], ['e-n', 'panel'], ['e-p', 'panel'], ['e-s', 'panel'], ['e-tail', 'panel'],
+    ['fn-struct', 'panel'], ['fn-energy', 'panel'], ['fn-protein', 'panel'], ['fn-store', 'panel'], ['fn-divide', 'panel'], ['fn-genetic', 'panel']];
   const gfx = [['line-2', 'panel'], ['line-2', 'bg']];
-  for (const [a, b] of text) { if (!t[a] || !t[b]) continue; const r = ratio(t[a], t[b]); const need = a === 'electron' || a === 'cloud' || a.startsWith('t-') || a.startsWith('e-') || a === 'pos' || a === 'neg' ? Math.min(tx, 4.5) : tx; if (r < need) { bad++; console.log('FAIL', name, a, 'on', b, r.toFixed(2), 'needs', need); } }
+  for (const [a, b] of text) { if (!t[a] || !t[b]) continue; const r = ratio(t[a], t[b]); const need = a === 'electron' || a === 'cloud' || a.startsWith('t-') || a.startsWith('e-') || a.startsWith('fn-') || a === 'pos' || a === 'neg' ? Math.min(tx, 4.5) : tx; if (r < need) { bad++; console.log('FAIL', name, a, 'on', b, r.toFixed(2), 'needs', need); } }
   for (const [a, b] of gfx) { const r = ratio(t[a], t[b]); if (r < 3) { bad++; console.log('FAIL', name, a, 'on', b, r.toFixed(2), 'needs 3'); } }
 }
 console.log(bad ? bad + ' failing pairs' : 'all pairs pass in all four themes');

@@ -102,16 +102,18 @@
       view.appendChild(section);
     });
 
-    /* The other lab. The two cover consecutive chapters and the second one
-       leans on the first, so each hub says where the other is. */
-    if (L.sibling) {
-      view.appendChild(h('a', { class: 'spine sibling', href: L.sibling.href },
+    /* The neighbouring labs. The chapters build on each other, so each hub says
+       where the one before and the one after are. `sibling` is the one-neighbour
+       form; `siblings` is a list. */
+    const neighbours = L.siblings || (L.sibling ? [L.sibling] : []);
+    neighbours.forEach((n, i) => {
+      view.appendChild(h('a', { class: 'spine sibling', href: n.href, style: i ? 'margin-top:14px' : null },
         h('div', { class: 'spine-head' },
-          h('span', { class: 'tag' }, L.sibling.kicker),
-          h('h2', {}, L.sibling.title),
-          h('p', {}, L.sibling.blurb)),
-        h('span', { class: 'spine-go' }, L.sibling.go)));
-    }
+          h('span', { class: 'tag' }, n.kicker),
+          h('h2', {}, n.title),
+          h('p', {}, n.blurb)),
+        h('span', { class: 'spine-go' }, n.go)));
+    });
   }
 
   function showSim(sim, params) {

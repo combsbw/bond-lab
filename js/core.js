@@ -60,7 +60,8 @@
 
   const VARS = ['bg', 'panel', 'panel-2', 'line', 'line-2', 'fg', 'muted', 'ui', 'ui-ink', 'electron', 'pos', 'neg', 'cloud', 'wash',
     't-covalent', 't-ionic', 't-hydrogen', 't-dipole', 't-iondipole', 't-vdw',
-    'e-c', 'e-n', 'e-p', 'e-s', 'e-tail'];
+    'e-c', 'e-n', 'e-p', 'e-s', 'e-tail',
+    'fn-struct', 'fn-energy', 'fn-protein', 'fn-store', 'fn-divide', 'fn-genetic'];
   const camel = (s) => s.replace(/-([a-z0-9])/g, (_, c) => c.toUpperCase());   // 'line-2' -> 'line2'
 
   BL.readPalette = function () {
@@ -73,6 +74,8 @@
        the ones they had as water's two ends, so the same molecule looks the
        same in both labs. */
     p.el = { C: p.eC, H: p.pos, O: p.neg, N: p.eN, P: p.eP, S: p.eS };
+    /* The Cell Lab's six jobs, one colour each, the same in every instrument. */
+    p.fn = { struct: p.fnStruct, energy: p.fnEnergy, protein: p.fnProtein, store: p.fnStore, divide: p.fnDivide, genetic: p.fnGenetic };
     BL.pal = p;
     return p;
   };

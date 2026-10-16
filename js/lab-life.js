@@ -32,12 +32,21 @@
       go: 'Open The Template →',
     },
 
-    sibling: {
-      href: 'index.html',
-      kicker: 'The chapter before',
-      title: 'Bond Lab',
-      blurb: 'Every bond in here is a bond from there. Covalent sharing, polar ends, hydrogen bonds and non-polar hydrocarbons are what folds a protein and what holds a membrane together. If any of that is shaky, go back one chapter.',
-      go: 'Open Bond Lab →',
-    },
+    siblings: [
+      {
+        href: 'index.html',
+        kicker: 'The chapter before',
+        title: 'Bond Lab',
+        blurb: 'Every bond in here is a bond from there. Covalent sharing, polar ends, hydrogen bonds and non-polar hydrocarbons are what folds a protein and what holds a membrane together. If any of that is shaky, go back one chapter.',
+        go: 'Open Bond Lab →',
+      },
+      {
+        href: 'cell.html',
+        kicker: 'The chapter after',
+        title: 'Cell Lab',
+        blurb: 'Everything you built here goes to work. The membrane you watched assemble wraps every cell, the proteins fold and ship down an assembly line, and the DNA you paired up has to be folded small enough to fit in a nucleus.',
+        go: 'Open the Cell Lab →',
+      },
+    ],
   };
 })();

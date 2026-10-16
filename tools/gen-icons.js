@@ -9,8 +9,11 @@
    shapes, and it still reads at 32 pixels.
 
    Life Lab: two units joined by a bond, and one drop of water lifting off.
-   That is the whole of The Template, and it reads at 32 pixels too. The two
-   marks share a background and a weight so they look like one pair of apps.
+   That is the whole of The Template, and it reads at 32 pixels too.
+
+   Cell Lab: a cell, which is a room with rooms in it. A membrane ring, a
+   nucleus, one bean of an organelle. The three marks share a background and a
+   weight so they look like one set of apps.
 
    Chromium does the rasterising, because it is the renderer the icons will
    actually be seen in and it is already here for the smoke test. */
@@ -30,6 +33,11 @@ const UNIT = '#8ee28b';         // a monomer
 const UNIT_DEEP = '#3f9b48';
 const DROP = '#7ebaff';         // the water that leaves when the bond forms
 const DROP_DEEP = '#2d6fc4';
+const MEMBRANE = '#7fe0c9';     // the cell's outer wall
+const NUC = '#b8aaff';          // the nucleus, in the genetic-control colour
+const NUC_DEEP = '#5748a0';
+const MITO = '#ffbe5c';         // an organelle, in the energy colour
+const MITO_DEEP = '#c27a14';
 
 /* One drawing, in a 512 box.
    o.round  : rounded corners (a normal app icon)
@@ -100,6 +108,35 @@ function lifeSvg(o) {
 </svg>`;
 }
 
+/* The Cell Lab's mark: a membrane, and the rooms inside it. */
+function cellSvg(o) {
+  o = o || {};
+  const S = 512;
+  const k = o.bleed ? 0.84 : 1;
+  const T = (v) => (256 + (v - 256) * k).toFixed(1);
+  const L = (v) => (v * k).toFixed(1);
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${S}" height="${S}" viewBox="0 0 ${S} ${S}">
+<defs>
+<radialGradient id="n" cx="34%" cy="30%" r="80%">
+<stop offset="0" stop-color="#e6dfff"/>
+<stop offset="0.4" stop-color="${NUC}"/>
+<stop offset="1" stop-color="${NUC_DEEP}"/>
+</radialGradient>
+<radialGradient id="m" cx="34%" cy="30%" r="80%">
+<stop offset="0" stop-color="#ffe6b8"/>
+<stop offset="0.45" stop-color="${MITO}"/>
+<stop offset="1" stop-color="${MITO_DEEP}"/>
+</radialGradient>
+</defs>
+<rect width="${S}" height="${S}"${o.round ? ' rx="112"' : ''} fill="${INK}"/>
+<ellipse cx="${T(256)}" cy="${T(258)}" rx="${L(196)}" ry="${L(172)}" fill="none" stroke="${MEMBRANE}" stroke-width="${L(30)}"/>
+<circle cx="${T(222)}" cy="${T(236)}" r="${L(82)}" fill="url(#n)"/>
+<ellipse cx="${T(352)}" cy="${T(328)}" rx="${L(56)}" ry="${L(30)}" transform="rotate(-28 ${T(352)} ${T(328)})" fill="url(#m)"/>
+<circle cx="${T(336)}" cy="${T(196)}" r="${L(20)}" fill="${EDGE}" opacity=".85"/>
+</svg>`;
+}
+
 /* Every size, and why each one exists. */
 const SIZES = [
   { file: 'icon-192.png', px: 192, opts: { round: true } },
@@ -111,10 +148,11 @@ const SIZES = [
   { file: 'favicon-16.png', px: 16, opts: { round: true } },
 ];
 
-/* The two labs, each with its own mark and its own file prefix. */
+/* The three labs, each with its own mark and its own file prefix. */
 const MARKS = [
   { draw: svg, prefix: '', scalable: 'icon.svg' },
   { draw: lifeSvg, prefix: 'life-', scalable: 'life-icon.svg' },
+  { draw: cellSvg, prefix: 'cell-', scalable: 'cell-icon.svg' },
 ];
 
 (async () => {

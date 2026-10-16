@@ -1,0 +1,29 @@
+{
+  "name": "Cell Lab",
+  "short_name": "Cell Lab",
+  "description": "Chapter 4 as a set of instruments. A membrane makes a room, and a cell is a bag of molecules divided into them. Poke the six jobs the rooms do, then pack two metres of DNA into one.",
+  "lang": "en",
+  "dir": "ltr",
+  "start_url": "./cell.html",
+  "scope": "./",
+  "id": "./cell.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#08151a",
+  "theme_color": "#08151a",
+  "categories": ["education", "science"],
+  "icons": [
+    { "src": "assets/icons/cell-favicon-16.png", "sizes": "16x16", "type": "image/png" },
+    { "src": "assets/icons/cell-favicon-32.png", "sizes": "32x32", "type": "image/png" },
+    { "src": "assets/icons/cell-apple-touch-icon.png", "sizes": "180x180", "type": "image/png" },
+    { "src": "assets/icons/cell-icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/cell-icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/icons/cell-icon-maskable-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/icons/cell-icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/cell-icon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ],
+  "shortcuts": [
+    { "name": "Rooms", "short_name": "Rooms", "description": "A membrane makes a room", "url": "./cell.html#/rooms", "icons": [{ "src": "assets/icons/cell-icon-192.png", "sizes": "192x192" }] },
+    { "name": "Thread", "short_name": "Thread", "description": "Two metres of DNA into a room too small to see", "url": "./cell.html#/thread", "icons": [{ "src": "assets/icons/cell-icon-192.png", "sizes": "192x192" }] }
+  ]
+}

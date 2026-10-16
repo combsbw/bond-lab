@@ -10,7 +10,7 @@
    and have never changed.
 
    Bump CACHE whenever you want every old copy thrown away. */
-const CACHE = 'bond-lab-v1';
+const CACHE = 'bond-lab-v2';
 
 /* Enough to open the lab from a cold start with no network. Everything else —
    the instruments, the fonts — is cached the first time it is fetched, which
@@ -19,15 +19,20 @@ const CORE = [
   './',
   './index.html',
   './life.html',
+  './cell.html',
   './css/style.css',
   './manifest.webmanifest',
   './manifest-life.webmanifest',
+  './manifest-cell.webmanifest',
   './assets/icon.svg',
   './assets/life-icon.svg',
+  './assets/cell-icon.svg',
   './assets/icons/icon-192.png',
   './assets/icons/icon-512.png',
   './assets/icons/life-icon-192.png',
   './assets/icons/life-icon-512.png',
+  './assets/icons/cell-icon-192.png',
+  './assets/icons/cell-icon-512.png',
 ];
 
 self.addEventListener('install', (e) => {
