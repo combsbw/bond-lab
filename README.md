@@ -74,6 +74,8 @@ It carries its own thirty challenges (`js/life/quiz.js`), written to the same ru
 
 ## How the instruments are meant to teach
 
+> Building the next chapter? Read **[GUIDELINES.md](GUIDELINES.md)** first: the pedagogy extracted from both labs, the catalogue of teaching moves, how a lab is shaped, the standards for interaction, honesty, language and challenges, a map of every instrument, and the mistakes already made.
+
 These are the rules every instrument follows. Use them as a checklist when adding one.
 
 1. **Perturb, do not present.** Every idea is reached by changing something and watching what answers: pull, heat, charge, swap an atom.
