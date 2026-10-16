@@ -268,6 +268,7 @@
       }
 
       sync();
+      if (window.__BL_TEST) window.__BL_TEST['cells'] = S;   // lets a test page find things by their real coordinates
       const loop = BL.loop(frame); loop.start();
       return { destroy() { loop.stop(); stage.destroy(); } };
     },
